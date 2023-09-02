@@ -1,4 +1,5 @@
 from collections import defaultdict
+from unittest import result
 
 import cv2
 import numpy as np
@@ -9,14 +10,24 @@ import os
 from datetime import datetime
 import pytz
 from pathlib import Path
-
+from PIL import Image
 from ultralytics.utils.plotting import Annotator
 
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors as colorPdf
+from collections import Counter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Image as ImgRl
+from reportlab.platypus import Table, TableStyle, Paragraph
+from reportlab.platypus import Spacer
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import letter
+
 # Load the YOLOv8 model
-model = YOLO('/home/sdz/grading/inference/Models/yolov8-25-8-23-best.pt')
+model = YOLO('/home/grading/yolov8/weights/yolov8n_25_agus_sampling_tanpa_brondol_kosong/weights/best.pt')
 
 # Open the video file
-video_path = "/home/sdz/grading/inference/Sources/Sampel_SCM.mp4"
+video_path = "/home/grading/sampel_video/scm/Sampel_SCM.mp4"
 cap = cv2.VideoCapture(video_path)
 
 # Store the track history
@@ -24,9 +35,19 @@ track_history = defaultdict(lambda: [])
 
 # Initialize variables for counting
 object_count = 0
+countOnFrame = 0
 kastrasi = 0
+skor_tertinggi = 0
+jum_tertinggi = 0
+skor_terendah = 1000
+skorTotal = 0
 object_ids_passed = set()
-
+baseSkorUr = 0
+baseSkorRp = 3
+baseSkorOv = 2
+baseSkorEm = 0
+baseSkorAb = 2
+baseSkorKas = 1
 names = list(model.names.values())
 class_count = [0] * len(names)
 
@@ -42,16 +63,196 @@ for hex_color in hexs:
     
     bgr_colors.append((blue, green, red))  # Appending as (Blue, Green, Red)\
 
-max_area = 20000
+max_area = 25000
 font = 2
 fontRipeness = 1
-log_inference = Path('/home/grading/Yolov5_DeepSort_Pytorch-master_lama/log_inference_sampling')
+log_inference = Path('/home/grading/Yolov5_DeepSort_Pytorch-master/log_inference_sampling')
 log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 tzInfo = pytz.timezone('Asia/Bangkok')
 current_date = datetime.now()
 formatted_date = current_date.strftime('%Y-%m-%d')
 
 date_start = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
+
+def generate_report(content, path):
+    
+    print(path)
+    arrData = content.split(';')
+
+    TotalJjg = 0
+    prctgUnripe = 0
+    prctgRipe = 0
+    prctgEmptyBunch = 0
+    prctgOverripe = 0
+    prctgAbnormal = 0
+    prctgKastrasi = 0
+    prctgLongStalk = 0
+    TotalRipeness = 0
+    no_tiket = str(arrData[0])
+    no_plat = str(arrData[1])
+    nama_driver = str(arrData[2])
+    bisnis_unit = str(arrData[3]).replace('\n','')
+    divisi = str(arrData[4])
+    blok = str(arrData[5])
+    status = str(arrData[6])    
+    # str(unripe) + ";" + str(ripe)+ ";" + str(overripe) + ";" + str(empty_bunch) + ";" + str(abnormal)
+    Ripe = arrData[9]
+    Overripe = arrData[10]
+    Unripe = arrData[8]
+    EmptyBunch = arrData[11]
+    Abnormal = arrData[12]
+    Kastrasi = arrData[13]
+    LongStalk = arrData[14]
+    dateStart = str(arrData[15])
+    dateEnd = str(arrData[16]).replace('\n','')
+    
+    TotalJjg = int(Ripe) + int(Overripe) + int(Unripe) + int(EmptyBunch) + int(Abnormal) + int(Kastrasi)
+    detectBuah = False
+    if int(TotalJjg) != 0:
+        detectBuah = True
+        prctgUnripe = round((int(Unripe) / int(TotalJjg)) * 100,2)
+        prctgRipe = round((int(Ripe) / int(TotalJjg)) * 100,2)
+        prctgEmptyBunch = round((int(EmptyBunch) / int(TotalJjg)) * 100,2)
+        prctgOverripe = round((int(Overripe) / int(TotalJjg)) * 100,2)
+        prctgAbnormal = round((int(Abnormal) / int(TotalJjg)) * 100,2)
+        prctgKastrasi = round((int(Kastrasi) / int(TotalJjg)) * 100,2)
+        prctgLongStalk = round((int(LongStalk) / int(TotalJjg)) * 100,2)
+        
+        TotalRipeness = round((int(Ripe) / int(TotalJjg)) * 100,2)
+
+    date = dateStart.split(' ')
+
+    
+    TabelAtas = [
+        ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
+        ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
+        ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
+        ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
+        ['Status',  str(status)]
+    ]
+
+    colEachTable1 = [1.2*inch, 1.6*inch,  0.8*inch, 0.8*inch, 0.8*inch, 1.2*inch, 1.6*inch]
+
+    TabelBawah = [
+        ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],
+        [TotalJjg, Ripe , Overripe , Unripe ,EmptyBunch , Abnormal , Kastrasi ,LongStalk , str(TotalRipeness) + ' % '],
+        ['',  str(prctgRipe) + ' %', str(prctgOverripe)+ ' %', str(prctgUnripe) +' %', str(prctgEmptyBunch) +  ' %',  str(prctgAbnormal)+ ' %',  str(prctgKastrasi)+ ' %',str(prctgLongStalk)+ ' %','']
+    ]   
+
+
+    colEachTable2 = [0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch]
+
+    spacer = Spacer(1, 0.25*inch)
+    
+    checkImgBest = os.path.isfile(os.path.join(path, '_best_.JPG'))
+    if checkImgBest:
+        best_last_modified = datetime.fromtimestamp(os.path.getmtime(os.path.join(path, '_best_.JPG'))).date()
+        best_last_modified_str = best_last_modified.strftime('%Y-%m-%d')
+        if best_last_modified_str == formatted_date and detectBuah:
+            image = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference/_best_.JPG")
+        else:
+            image = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference/no_image.png")
+    else:
+        image = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference/no_image.png")
+
+    # Check if _worst_.JPG file exists
+    checkImgWorst = os.path.isfile(os.path.join(path, '_worst_.JPG'))
+    if checkImgWorst:
+        worst_last_modified = datetime.fromtimestamp(os.path.getmtime(os.path.join(path, '_worst_.JPG'))).date()
+        worst_last_modified_str = worst_last_modified.strftime('%Y-%m-%d')
+        if worst_last_modified_str == formatted_date and detectBuah:
+            image2 = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference/_worst_.JPG")
+        else:
+            image2 = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference/no_image.png")
+    else:
+        image2 = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference/no_image.png")
+    
+    logoCbi = ImgRl("/home/grading/Yolov5_DeepSort_Pytorch-master/Logo CBI.png")
+    max_width = 285  # The maximum allowed width of the image
+    max_widthLogo = 70  # The maximum allowed width of the image
+    widthLogo = min(logoCbi.drawWidth, max_widthLogo)  # The desired width of the image
+    width1 = min(image.drawWidth, max_width)  # The desired width of the image
+    width2 = min(image2.drawWidth, max_width)  # The desired width of the image
+    image._restrictSize(width1, image.drawHeight)
+    image2._restrictSize(width2, image2.drawHeight)
+    logoCbi._restrictSize(widthLogo, logoCbi.drawHeight)
+
+    styleTitle = ParagraphStyle(name='Normal', fontName='Helvetica-Bold',fontSize=12,fontWeight='bold')
+    t1 = Paragraph('CROP RIPENESS CHECK REPORT' )
+    title_section = [[logoCbi, 'CROP RIPENESS CHECK REPORT', '']]
+
+    
+    titleImg = Table(title_section, colWidths=[100,375,100])
+    titleImg.setStyle(TableStyle([
+         ('GRID', (0, 0), (-1, -1), 1,  colorPdf.black),
+        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (1, 0), (1, 0), 15),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+    ]))
+
+    
+    dataImg = [[image, image2],['Kondisi Paling Baik', 'Kondisi Paling Buruk']]
+    tblImg = Table(dataImg, [4.0*inch,4.0*inch])
+    tblImg.setStyle(TableStyle([
+    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
+       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+    ]))
+
+    
+
+    dataP1 = [['KONDISI TBS : ']]
+    tblP1 = Table(dataP1,[8*inch])
+    tblP1.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+    ]))
+
+
+    doc = SimpleDocTemplate("/home/grading/Yolov5_DeepSort_Pytorch-master/pdf/" + str(dateStart) + '_' + bisnis_unit +'_' + divisi  + '.pdf', pagesize=letter)
+    
+    table1 = Table(TabelAtas,colWidths=colEachTable1)
+    table1.setStyle(TableStyle([
+        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+        ('GRID', (0, 0), (1, 4), 1, colorPdf.black),
+        ('GRID', (5, 0), (8, 3), 1, colorPdf.black)
+    ]))
+    table2 = Table(TabelBawah, colWidths=colEachTable2)
+    table2.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (8, 0), 'CENTER'),
+        ('ALIGN', (0, 1), (8, 1), 'LEFT'),
+        ('VALIGN', (0, 0), (8, 0), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 1, colorPdf.black),
+        ('SPAN', (0, 1), (0, 2)),
+        ('SPAN', (8, 1), (8, 2)),
+        ('ALIGN', (8, 1), (8, 2), 'CENTER'), 
+        ('VALIGN', (8, 1), (8, 2), 'MIDDLE'), 
+        ('ALIGN', (0, 1), (0, 2), 'CENTER'),  
+        ('VALIGN', (0, 1), (0, 2), 'MIDDLE'), 
+    ]))
+
+
+
+    elements = []
+    elements.append(titleImg)
+    elements.append(spacer)
+    elements.append(table1)
+    elements.append(spacer)
+    elements.append(tblP1)
+    
+    elements.append(tblImg)
+    elements.append(spacer)
+    elements.append(table2)
+    doc.build(elements)
+
+def save_img_inference_sampling(img, save_dir, name):
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    imgP = Image.frombytes("RGB", (int(img.shape[1]), int(img.shape[0])), img)
+    myHeight, myWidth = imgP.size
+    imgP = imgP.resize((myHeight, myWidth))
+    imgP.save(save_dir +name+".JPG", optimize=True, quality=25)
 
 def save_inference_data(count_per_classes,date_start, date_end, path):
 
@@ -60,13 +261,10 @@ def save_inference_data(count_per_classes,date_start, date_end, path):
     for count in count_per_classes:
         str_result += str(count) + ';'
 
-    # print(date_start)
     str_result += date_start + ';'
     str_result += str(current_date.strftime('%Y-%m-%d %H:%M:%S'))
-    # print(date_end)
 
     path_inference_truk = path +'/' +formatted_date + '_log.TXT'
-    
 
     with open(path_inference_truk, 'r') as x:
         content = x.readlines()
@@ -148,21 +346,26 @@ def append_inference_data(count_per_classes,date_start, date_end, path, no_line)
 def delete_inference_file(path_plat):
     os.remove(path_plat)
     
+
+
 # Loop through the video frames
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
+    
     if success:
+        
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
         results = model.track(frame, persist=True, conf=0.05, iou=0.5, imgsz=1280)
         
         # Get the boxes and track IDs
         boxes = results[0].boxes.xywh.cpu()
+            
         try:
             track_ids = results[0].boxes.id.int().cpu().tolist()
         except:
             track_ids = []
-            
+        # track_ids = results[0].boxes.id.int().cpu().tolist()
         clss = results[0].boxes.cls.cpu().tolist()
 
         # Visualize the results on the frame
@@ -174,6 +377,7 @@ while cap.isOpened():
         # Draw the horizontal line
         cv2.line(annotated_frame, (0, middle_y), (annotated_frame.shape[1], middle_y), (0, 255, 0), 2)  # Green line
 
+        nilai = 0
         # Plot the tracks and count objects passing the line
         for box, track_id, cl in zip(boxes, track_ids, clss):
             x, y, w, h = box
@@ -185,16 +389,9 @@ while cap.isOpened():
             
             track.append((float(x), float(y)))  # x, y center point
             
-            # print(float(x), float(y))
             if len(track) > 10:  # retain 10 tracks for 10 frames
                 track.pop(0)
-            
-            # intCl = int(cl)
-            # intCc = len(class_count)
-            
-            # print(f"id:{track_id} | cl:{cl} | cc:{intCc}")
-            
-            #print kastrasi
+          
             if wideArea < max_area and int(cl) < (int(len(class_count)-1)):
                 text = "kastrasi"
                 text_size, _ = cv2.getTextSize(text, font, fontRipeness, 2)
@@ -213,14 +410,17 @@ while cap.isOpened():
             cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
             # Check if the object's center point has crossed the line
+            
             if y > middle_y and track_id not in object_ids_passed:
                 object_ids_passed.add(track_id)
                 if int(cl) != len(class_count)-1:
                     object_count += 1
                     if wideArea < max_area:
                         kastrasi += 1
-                class_count[int(cl)] += 1      
-
+                class_count[int(cl)] += 1
+                
+            
+        
         # Display the object count on the frame
         cv2.putText(annotated_frame, f"TOTAL: {object_count}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (100, 100, 100), 15)
         cv2.putText(annotated_frame, f"TOTAL: {object_count}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
@@ -228,27 +428,111 @@ while cap.isOpened():
             cv2.putText(annotated_frame, f"{name}: {cc}", (20, ((index + 2) * 40)), font, fontRipeness, bgr_colors[index], 2)
         cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
         
-        #datetime
+        
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
         
+        values_per_class = results[0].boxes.cls.cpu().tolist()
+
+        value_counter = Counter(values_per_class)
+
+        # Print the value counts
+        skorTotal = 0
+        countOnFrame = 0
+        skorA  = 0 
+        skorB  = 0 
+        skorC  = 0
+        skorD = 0  
+        skorE = 0 
+        skorF = 0
+        nilai = 0
+        # print(value_counter)
+        for value, count in value_counter.items():
+          
+            # print(count)
+            if value == 0:
+                skorA = count * baseSkorUr
+                # print(f"Value {value}: {count } * {baseSkorUr}  = {skorA} ")
+            elif value == 1:
+                skorB = count * baseSkorRp
+                # print(f"Value {value}: {count } * {baseSkorRp}  = {skorB} ")
+            elif value == 2:
+                skorC = count * baseSkorOv
+                # print(f"Value {value}: {count } * {baseSkorOv}  = {skorC} ")
+            elif value ==3:
+                skorD = count * baseSkorEm
+                # print(f"Value {value}: {count } * {baseSkorEm}  = {skorD} ")
+            elif value == 4:
+                skorE = count * baseSkorAb
+                # print(f"Value {value}: {count } * {baseSkorAb}  = {skorE} ")
+            elif value == 5:
+                skorF = count * baseSkorKas
+                # print(f"Value {value}: {count } * {baseSkorKas}  = {skorF} ")
+             
+            countOnFrame += count
+
+
+        
+        skorTotal += skorA + skorB + skorC + skorD + skorE +skorF
+
+        nilai = skorTotal / countOnFrame / 3 * 100
+
+
+        print(nilai)
+
+        if countOnFrame > jum_tertinggi:
+                    jum_tertinggi = countOnFrame
+        
+        print(jum_tertinggi)
+        if  countOnFrame >= 2 and nilai > skor_tertinggi:
+            skor_tertinggi = round(nilai,2)
+            save_img_inference_sampling(annotated_frame, '/home/grading/Yolov5_DeepSort_Pytorch-master/','img_inference/_best_')
+            print('tersimpan best')
+        elif nilai == skor_tertinggi and countOnFrame > jum_tertinggi:
+            skor_tertinggi = round(nilai,2)
+            save_img_inference_sampling(annotated_frame, '/home/grading/Yolov5_DeepSort_Pytorch-master/','/img_inference/_best_')
+            print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
+        elif countOnFrame >2 and nilai < skor_terendah:
+            skor_terendah = round(nilai,2)
+            save_img_inference_sampling(annotated_frame, '/home/grading/Yolov5_DeepSort_Pytorch-master/','/img_inference/_worst_')
+            print('terburuk best')
+        elif nilai == skor_terendah and countOnFrame > jum_tertinggi:
+            skor_terendah = round(nilai,2)
+            save_img_inference_sampling(annotated_frame, '/home/grading/Yolov5_DeepSort_Pytorch-master/','/img_inference/_worst_')
+            print('terburuk best dengan jumlah tertinggi : ', str(jum_tertinggi))
+
+
         # Display the annotated frame
         cv2.imshow("YOLOv8 Tracking", annotated_frame)
 
+        
         # print(class_count)
+        
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord("q"):
+            class_count.append(kastrasi)
 
-            # save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
-            # append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
-            # delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
+            save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
+            append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
+            delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
+
+            file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
+                    
+            content = ''
+            with open(file_path, 'r') as z:
+                content = z.readlines()
+                content = content[no_line_log]
+
+            generate_report(content, Path('/home/grading/Yolov5_DeepSort_Pytorch-master/img_inference'))
+
             break
 
 
     else:
         # Break the loop if the end of the video is reached
         break
-
+    # except:
+    #     print("Tidak ada janjang")
 
 # Release the video capture object and close the display window
 cap.release()
