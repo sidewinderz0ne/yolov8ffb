@@ -25,7 +25,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', nargs='+', type=str, default='/home/grading/yolov8/weights/yolov8n_25_agus_sampling_dengan_brondol_kosong/weights/best.pt', help='model.pt path(s)')
+parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/weights/yolov8n_25_agus_sampling_dengan_brondol_kosong/weights/best.pt', help='model.pt path')
 parser.add_argument('--source', type=str, default='/home/grading/sampel_video/scm/sampel_agustus/ch01_00000000229000000.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
@@ -64,11 +64,10 @@ def varTry(valStr, defVal):
     return valTry
 
 # Load the YOLOv8 model
-
-model = YOLO('/home/sdz/grading/inference/Models/yolov8-25-8-23-best.pt')
+model = YOLO(yolo_model_str)
 
 # Open the video filfe
-video_path = "/home/sdz/grading/inference/Sources/Sampel_SCM.mp4"
+video_path = source
 cap = cv2.VideoCapture(video_path)
 
 # Store the track history
