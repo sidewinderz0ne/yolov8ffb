@@ -68,9 +68,9 @@ def append_hasil(apStr):
     if file_extension.lower() in ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv']:
         try:
             folder_path = os.path.dirname(video_path)
-            # Get the file name without 
-# print("bis: "+bisnis_unit)
-# print("div: "+divisi)
+            # Get the file name without the extension
+            file_name = os.path.splitext(os.path.basename(video_path))[0]
+
             # Replace the extension with ".txt"
             output_path = os.path.join(folder_path, file_name + ".txt")
 
