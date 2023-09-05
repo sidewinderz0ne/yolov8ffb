@@ -31,7 +31,7 @@ parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, defau
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
 parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
-parser.add_argument('--roi', type=float, default=0.3, help='line height')
+parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--bisnis_unit', type=str, default='-')
 parser.add_argument('--divisi', type=str, default='-')
@@ -46,6 +46,8 @@ roi = opt.roi
 show = opt.show
 bisnis_unit = opt.bisnis_unit
 divisi = opt.divisi
+
+TotalJjg = 0
 
 # print("bis: "+bisnis_unit)
 # print("div: "+divisi)
@@ -63,6 +65,33 @@ def varTry(valStr, defVal):
         valTry = defVal
     return valTry
 
+def append_hasil(apStr):
+    video_path = source
+    file_extension = os.path.splitext(video_path)[1]
+    if file_extension.lower() in ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv']:
+        try:
+            folder_path = os.path.dirname(video_path)
+            # Get the file name without the extension
+            file_name = os.path.splitext(os.path.basename(video_path))[0]
+
+            # Replace the extension with ".txt"
+            output_path = os.path.join(folder_path, file_name + ".txt")
+
+            # Open the file in append mode
+            with open(output_path, 'a') as file:
+                # Text to append
+                line_to_append = apStr
+
+                # Append the line with a newline character
+                file.write(line_to_append + '\n')
+        except:
+            print("error append!")   
+    else:
+        print("The source is not a video file.")
+
+
+
+
 # Load the YOLOv8 model
 model = YOLO(yolo_model_str)
 
@@ -74,7 +103,6 @@ cap = cv2.VideoCapture(video_path)
 track_history = defaultdict(lambda: [])
 
 # Initialize variables for counting
-object_count = 0
 countOnFrame = 0
 kastrasi = 0
 skor_tertinggi = 0
@@ -97,10 +125,10 @@ for hex_color in hexs:
     
     bgr_colors.append((blue, green, red))  # Appending as (Blue, Green, Red)\
 
-max_area = 25000
+max_area = 22000
 font = 2
 fontRipeness = 1
-log_inference = Path('//home/sdz/grading/inference/github/yolov8ffb/log_inference_sampling/')
+log_inference = Path('/home/sdz/grading/inference/github/yolov8ffb/log_inference_sampling/')
 log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 tzInfo = pytz.timezone('Asia/Bangkok')
 current_date = datetime.now()
@@ -112,7 +140,6 @@ def generate_report(content, path, prefix_pdf):
     
     arrData = content.split(';')
 
-    TotalJjg = 0
     prctgUnripe = 0
     prctgRipe = 0
     prctgEmptyBunch = 0
@@ -132,9 +159,7 @@ def generate_report(content, path, prefix_pdf):
 
     dateStart = date_start
     dateEnd = date_end
-    
-    TotalJjg = sum(class_count[:-1]) + kastrasi
-    
+        
     # print("Total janjang : " + str(TotalJjg))
     detectBuah = False
 
@@ -392,7 +417,30 @@ def append_inference_data(count_per_classes,date_start, date_end, path, no_line)
     
 def delete_inference_file(path_plat):
     os.remove(path_plat)
+
+def close():
+    class_count.append(kastrasi)
+    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+    # print(log_inference)
+    save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
+    append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
+    delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
+
+    file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
+            
+    content = ''
+    with open(file_path, 'r') as z:
+        content = z.readlines()
+        content = content[no_line_log]
+        # content = content[0]
+
+    date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
+    generate_report(content, Path('/home/sdz/grading/inference/github/yolov8ffb/hasil/') ,prefix)
+
+
     
+last_id = 0
+track_idsArr = []
 
 while cap.isOpened():
     # Read a frame from the video
@@ -400,7 +448,7 @@ while cap.isOpened():
     if success:
         
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
-        results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker)
+        results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False)
         
         # Get the boxes and track IDs
         boxes = results[0].boxes.xywh.cpu()
@@ -419,11 +467,12 @@ while cap.isOpened():
         middle_y = frame.shape[0] * (1-float(roi))
         # Draw the horizontal line
         cv2.line(annotated_frame, (0, int(middle_y)), (annotated_frame.shape[1], int(middle_y)), (0, 255, 0), 2)  # Green line
-
        # Print the value counts
         skorTotal = 0
         countOnFrame = 0
         nilai = 0
+
+        track_idsArr.append(track_ids)
         # Plot the tracks and count objects passing the line
         for box, track_id, cl in zip(boxes, track_ids, clss):
             x, y, w, h = box
@@ -456,20 +505,31 @@ while cap.isOpened():
             cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
             # Check if the object's center point has crossed the line
-            
+
             if y > middle_y and track_id not in object_ids_passed:
-                object_ids_passed.add(track_id)
-                if int(cl) != len(class_count)-1:
-                    object_count += 1
-                    if wideArea < max_area:
-                        kastrasi += 1
-                class_count[int(cl)] += 1 
+                tid = True
+                for tis in track_idsArr:
+                    print("track_id: "+str(track_id))
+                    print("tis: "+str(tis))
+                    if int(track_id) not in tis:
+                        tid = False
+                        print(tid)
+                if tid:
+                    object_ids_passed.add(track_id)
+                    last_id = track_id
+                    if int(cl) != len(class_count)-1:
+                        if wideArea < max_area:
+                            kastrasi += 1
+                    class_count[int(cl)] += 1 
             
-            if wideArea < max_area:
-                skorTotal += baseScore[-1]
-            elif int(y-(int(h)/2))>50 and int(y+(int(h)/2))<(frame.shape[0]-50):
-                skorTotal += baseScore[int(cl)]
-            countOnFrame += 1    
+                    if wideArea < max_area:
+                        skorTotal += baseScore[-1]
+                    elif int(y-(int(h)/2))>50 and int(y+(int(h)/2))<(frame.shape[0]-50):
+                        skorTotal += baseScore[int(cl)]
+                    countOnFrame += 1    
+
+            if len(track_idsArr) > 10:
+                del track_idsArr[0]
 
         try:
             nilai = skorTotal / countOnFrame / 3 * 100
@@ -478,14 +538,17 @@ while cap.isOpened():
         # print(nilai)        
 
         # Display the object count on the frame
-        cv2.putText(annotated_frame, f"TOTAL: {object_count}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (100, 100, 100), 15)
-        cv2.putText(annotated_frame, f"TOTAL: {object_count}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
+        TotalJjg = sum(class_count)-int(class_count[5])+int(kastrasi)
+        cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (100, 100, 100), 15)
+        cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
         for index, (name, cc) in enumerate(zip(names, class_count)):
             cv2.putText(annotated_frame, f"{name}: {cc}", (20, ((index + 2) * 40)), font, fontRipeness, bgr_colors[index], 2)
         cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
                 
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
+        cv2.putText(annotated_frame, str(last_id), (850, 80), font, 1.5, (0, 0, 255), 2)
+
 
         if countOnFrame > jum_tertinggi:
                     jum_tertinggi = countOnFrame
@@ -517,29 +580,13 @@ while cap.isOpened():
         
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord("q"):
-            class_count.append(kastrasi)
-
-            # print(log_inference)
-            save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
-            append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
-            delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
-
-            file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
-                    
-            content = ''
-            with open(file_path, 'r') as z:
-                content = z.readlines()
-                content = content[no_line_log]
-                # content = content[0]
-
-            date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-            generate_report(content, Path('/home/sdz/grading/inference/github/yolov8ffb/hasil/') ,prefix)
-
+            close()
             break
 
 
     else:
         # Break the loop if the end of the video is reached
+        close()
         break
     # except:
     #     print("Tidak ada janjang")
