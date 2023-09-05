@@ -1,6 +1,6 @@
 from collections import defaultdict
 from unittest import result
-
+import qrcode
 import cv2
 import numpy as np
 import argparse
@@ -25,7 +25,7 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/weights/yolov8n_25_agus_sampling_dengan_brondol_kosong/weights/best.pt', help='model.pt path')
+parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/2023-09-04-20-28_yolov8n_640/train/weights/best.pt', help='model.pt path')
 parser.add_argument('--source', type=str, default='/home/grading/sampel_video/scm/sampel_agustus/ch01_00000000229000000.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
@@ -49,9 +49,6 @@ divisi = opt.divisi
 
 TotalJjg = 0
 
-# print("bis: "+bisnis_unit)
-# print("div: "+divisi)
-
 def varTry(valStr, defVal):
     # print(valStr)
     try:
@@ -71,9 +68,9 @@ def append_hasil(apStr):
     if file_extension.lower() in ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv']:
         try:
             folder_path = os.path.dirname(video_path)
-            # Get the file name without the extension
-            file_name = os.path.splitext(os.path.basename(video_path))[0]
-
+            # Get the file name without 
+# print("bis: "+bisnis_unit)
+# print("div: "+divisi)
             # Replace the extension with ".txt"
             output_path = os.path.join(folder_path, file_name + ".txt")
 
@@ -128,13 +125,24 @@ for hex_color in hexs:
 max_area = 22000
 font = 2
 fontRipeness = 1
-log_inference = Path('/home/sdz/grading/inference/github/yolov8ffb/log_inference_sampling/')
+log_inference = Path(os.getcwd() + '/log_inference_sampling')
 log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 tzInfo = pytz.timezone('Asia/Bangkok')
 current_date = datetime.now()
 formatted_date = current_date.strftime('%Y-%m-%d')
 
 date_start = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
+date_end = None
+date_start_no_space = str(date_start).split(' ')
+bt = False
+def mouse_callback(event, x, y, flags, param):
+    
+    global bt  # Declare that you want to modify the global variable bt
+    
+    if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click event
+        print(f"Mouse clicked at ({x}, {y})")
+        if x > 1720 and y < 200:
+            bt = True
 
 def generate_report(content, path, prefix_pdf):
     
@@ -162,9 +170,10 @@ def generate_report(content, path, prefix_pdf):
         
     # print("Total janjang : " + str(TotalJjg))
     detectBuah = False
-
+    max_widthQr = 200
     if int(TotalJjg) != 0:
         detectBuah = True
+        max_widthQr = 140
         prctgUnripe = round((int(class_count[0]) / int(TotalJjg)) * 100,2)
         prctgRipe =  round((int(class_count[1]) / int(TotalJjg)) * 100,2)
         prctgEmptyBunch =  round((int(class_count[2]) / int(TotalJjg)) * 100,2)
@@ -199,42 +208,34 @@ def generate_report(content, path, prefix_pdf):
     
     # print(prefix_pdf)
 
-    checkImgBest = os.path.isfile(os.path.join(path, os.path.join(path, str(formatted_date) + '/' + prefix_pdf + 'best_.JPG')))
+    img_dir = str(path) + '/' + str(formatted_date)   + '/' + prefix_pdf 
 
-    # print(checkImgBest)
+    print(img_dir)
+
+    checkImgBest = os.path.isfile(str(img_dir) +'best.JPG')
     if checkImgBest:
-        best_last_modified = datetime.fromtimestamp(os.path.getmtime(os.path.join(path, '_best_.JPG'))).date()
-        best_last_modified_str = best_last_modified.strftime('%Y-%m-%d')
-        if best_last_modified_str == formatted_date and detectBuah:
-            image = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/hasil/" + str(formatted_date) + '/' + prefix_pdf + "best.JPG")
-        else:
-            image = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/default-img/no_image.png")
+        image = ImgRl(str(img_dir) + 'best.JPG')
     else:
-        image = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/default-img/no_image.png")
+        image = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
 
-    
-    #Check if _worst_.JPG file exists
-    checkImgWorst = os.path.isfile(os.path.join(path, str(formatted_date) + '/' + prefix_pdf + 'worst_.JPG'))
-    # print(checkImgWorst)
+    checkImgWorst = os.path.isfile(str(img_dir) +'worst.JPG')  
     if checkImgWorst:
-        worst_last_modified = datetime.fromtimestamp(os.path.getmtime(os.path.join(path, '_worst_.JPG'))).date()
-        worst_last_modified_str = worst_last_modified.strftime('%Y-%m-%d')
-        if worst_last_modified_str == formatted_date and detectBuah:
-            image2 = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/hasil/" + str(formatted_date) + str(formatted_date) + '/' + prefix_pdf + "worst.JPG")
-        else:
-            image2 = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/default-img/no_image.png")
+        image2 = ImgRl(str(img_dir) + 'worst.JPG')
     else:
-        image2 = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/default-img/no_image.png")
+        image2 = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
     
-    logoCbi = ImgRl("/home/sdz/grading/inference/github/yolov8ffb/default-img/Logo CBI.png")
+    logoCbi = ImgRl(Path(os.getcwd() + '/default-img/Logo CBI.png'))
+    imageQr = ImgRl(Path(os.getcwd() + '/default-img/qr.png'))
     max_width = 285  # The maximum allowed width of the image
     max_widthLogo = 70  # The maximum allowed width of the image
     widthLogo = min(logoCbi.drawWidth, max_widthLogo)  # The desired width of the image
     width1 = min(image.drawWidth, max_width)  # The desired width of the image
     width2 = min(image2.drawWidth, max_width)  # The desired width of the image
+    widthQr = min(imageQr.drawWidth, max_widthQr)  # The desired width of the image
     image._restrictSize(width1, image.drawHeight)
     image2._restrictSize(width2, image2.drawHeight)
     logoCbi._restrictSize(widthLogo, logoCbi.drawHeight)
+    imageQr._restrictSize(widthQr, imageQr.drawHeight)
 
     styleTitle = ParagraphStyle(name='Normal', fontName='Helvetica-Bold',fontSize=12,fontWeight='bold')
     t1 = Paragraph('CROP RIPENESS CHECK REPORT' )
@@ -270,7 +271,9 @@ def generate_report(content, path, prefix_pdf):
     ]))
 
     
-    doc = SimpleDocTemplate("/home/sdz/grading/inference/github/yolov8ffb/hasil/" + formatted_date + '/' + str(dateStart) + '_' + bisnis_unit +'_' + divisi  + '.pdf', pagesize=letter)
+    name_pdf = str(path) +'/' + str(formatted_date) + '/'+ str(prefix_pdf) + '.pdf'
+    
+    doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
     
     table1 = Table(TabelAtas,colWidths=colEachTable1)
     table1.setStyle(TableStyle([
@@ -292,7 +295,14 @@ def generate_report(content, path, prefix_pdf):
         ('VALIGN', (0, 1), (0, 2), 'MIDDLE'), 
     ]))
 
+    qr_data = [[imageQr]]
 
+    tblQr = Table(qr_data, [4.0*inch])
+    tblQr.setStyle(TableStyle([
+    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
+       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+    ]))
 
     elements = []
     elements.append(titleImg)
@@ -304,6 +314,7 @@ def generate_report(content, path, prefix_pdf):
     elements.append(tblImg)
     elements.append(spacer)
     elements.append(table2)
+    elements.append(tblQr)
     doc.build(elements)
 
 def save_img_inference_sampling(img, name):
@@ -380,8 +391,6 @@ def save_inference_data(count_per_classes,date_start, date_end, path):
                         # LOGGER.info('70')
                         wr.write(str_result)
                     wr.close()
-            else:
-                print('data_tidak_tersimpan')
 
             count += 1          
 
@@ -393,7 +402,7 @@ def append_inference_data(count_per_classes,date_start, date_end, path, no_line)
 
     str_result += date_start + ';'
     str_result += date_end
-    print(path)
+    
     file_path = path + '/' + formatted_date + '_log.TXT'
     file_path_inference = path + '/log_inference.TXT'
     
@@ -427,17 +436,36 @@ def close():
     delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
 
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
-            
+    
+    qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+
     content = ''
     with open(file_path, 'r') as z:
         content = z.readlines()
         content = content[no_line_log]
         # content = content[0]
 
+    urlPDF = "https://www.srs-ssms.com/pdf_grading/hasil/" + str(formatted_date) +'/' + str(prefix) + '.pdf'
+    
+    qr.add_data(urlPDF)
+    qr.make(fit=True)
+    
+    qr_image = qr.make_image(fill_color="black", back_color="white")
+
+    qr_image.save(Path(os.getcwd() + '/default-img/qr.png'))
+
+    print(prefix)
+
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-    generate_report(content, Path('/home/sdz/grading/inference/github/yolov8ffb/hasil/') ,prefix)
+    generate_report(content,  Path(os.getcwd() + '/hasil/') ,prefix)
 
-
+cv2.namedWindow("Detect FFB Yolov8")
+cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
     
 last_id = 0
 track_idsArr = []
@@ -509,11 +537,11 @@ while cap.isOpened():
             if y > middle_y and track_id not in object_ids_passed:
                 tid = True
                 for tis in track_idsArr:
-                    print("track_id: "+str(track_id))
-                    print("tis: "+str(tis))
+                    # print("track_id: "+str(track_id))
+                    # print("tis: "+str(tis))
                     if int(track_id) not in tis:
                         tid = False
-                        print(tid)
+                        # print(tid)
                 if tid:
                     object_ids_passed.add(track_id)
                     last_id = track_id
@@ -554,35 +582,47 @@ while cap.isOpened():
                     jum_tertinggi = countOnFrame
         
         
-        prefix = str(date_start) +'_'+  str(bisnis_unit) + '_' + str(divisi) + '_'  
+        prefix = str(date_start_no_space[0]) +'_'+ str(date_start_no_space[1])+ '_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
         
         if  countOnFrame >= 2 and nilai > skor_tertinggi:
             skor_tertinggi = round(nilai,2)
             save_img_inference_sampling(annotated_frame, prefix + 'best.JPG')
-            print('tersimpan best')
+            # print('tersimpan best')
         elif nilai == skor_tertinggi and countOnFrame > jum_tertinggi:
             skor_tertinggi = round(nilai,2)
             save_img_inference_sampling(annotated_frame, prefix +'best.JPG')
-            print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
+            # print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
         elif countOnFrame >2 and nilai < skor_terendah:
             skor_terendah = round(nilai,2)
             save_img_inference_sampling(annotated_frame, prefix +'worst.JPG')
-            print('tersimpan worst')
+            # print('tersimpan worst')
         elif nilai == skor_terendah and countOnFrame > jum_tertinggi:
             skor_terendah = round(nilai,2)
             save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
-            print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
+            # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
 
 
         # Display the annotated frame
-        cv2.imshow("YOLOv8 Tracking", annotated_frame)
+        width, height = 100, 100
+        background_color = (255, 255, 255)  # White in BGR format
+
+        # Define the center and radius of the circular stop sign
+        center = (width // 2, height // 2)
+        radius = width // 2 - 5  # Leave a small border
+
+        cv2.circle(annotated_frame, (1820,100), radius, (0, 0, 255), -1)  # Red in BGR format
+
+        # Create the white border
+        cv2.circle(annotated_frame, (1820,100), radius, (255, 255, 255), 5)
+        # Display the annotated frame
+        cv2.imshow("Detect FFB Yolov8", annotated_frame)
 
         
         # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord("q"):
+        if cv2.waitKey(1) & 0xFF == ord("q") or bt:
             close()
             break
-
+            
 
     else:
         # Break the loop if the end of the video is reached

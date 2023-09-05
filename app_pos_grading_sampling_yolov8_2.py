@@ -46,13 +46,13 @@ def save_info_truk(header, log_inference):
 
 def enter_data(self, tiket,plat, driver, unit, divisi, blok, status, entry_fields):
 
-    tiket = str(tiket)
-    plat = str(plat)
-    driver = str(driver)
-    unit = str(unit)
-    divisi = str(divisi)
-    blok = str(blok)
-    status = str(status)
+    tiket = str(tiket).replace(' ', '')
+    plat = str(plat).replace(' ', '')
+    driver = str(driver).replace(' ', '')
+    unit = str(unit).replace(' ', '')
+    divisi = str(divisi).replace(' ', '')
+    blok = str(blok).replace(' ', '')
+    status = str(status).replace(' ', '')
 
 
     # if tiket != '' and plat != '' and driver != '' and unit != '' and divisi != '' and blok != '' and status != '':
@@ -117,12 +117,12 @@ class Frame1(tk.Frame):
 
         self.title_label = tk.Label(self, text="Tabel List Truk FFB Grading Sampling SCM", font=("Helvetica", 16, "bold"))
         self.title_label.grid(row=0, column=0, padx=700, pady=10, sticky="w")
-        self.logo_image = tk.PhotoImage(file="/home/sdz/grading/inference/github/yolov8ffb/default-img/Logo-CBI(4).png")  # Replace "logo.png" with your image file path
+        self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
         self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
         logo_label = tk.Label(self, image=self.logo_image)
         logo_label.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
 
-        self.logo_image2 = tk.PhotoImage(file="/home/sdz/grading/inference/github/yolov8ffb/default-img/LOGO-SRS(1).png")
+        self.logo_image2 = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/LOGO-SRS(1).png'))
         self.logo_image2 = self.logo_image2.subsample(2, 2)
         logo_label2 = tk.Label(self, image=self.logo_image2)
         logo_label2.grid(row=0, column=0, padx=160, pady=15, sticky="nw")  # Change column to 0 and sticky to "ne"
@@ -337,22 +337,20 @@ class Frame1(tk.Frame):
         
         try:
 
-            shell_command = f'sh /home/sdz/grading/inference/github/yolov8ffb/script_inference_sampling.sh "{bisnis_unit}" "{divisi}"'
-
-            script_output = os.popen(shell_command).read()
+            subprocess.run(['python', str(Path(os.getcwd())) + '/8-track-batas_2.py', '--bisnis_unit', bisnis_unit, '--divisi', divisi], check=True)
+            # script_output = os.popen(shell_command).read()
             self.running_script = False
             self.button.config(state=tk.NORMAL)
 
-        except Exception as e:
-            print("Error:", str(e))
+        except subprocess.CalledProcessError as e:
+            print("Error running other_script.py:", str(e))
         finally:
-
-
+       
             
-            # try:
-            #     subprocess.run(['python', '/home/grading/yolov8/send_pdf_inference.py'], check=True)
-            # except subprocess.CalledProcessError as e:
-            #     print("Error running other_script.py:", str(e))
+            try:
+                subprocess.run(['python', str(Path(os.getcwd())) +'/send_pdf_inference.py'], check=True)
+            except subprocess.CalledProcessError as e:
+                print("Error running other_script.py:", str(e))
             
             if os.path.exists(log_dir):
                     with open(log_dir, 'r') as z:
@@ -402,12 +400,12 @@ class Frame2(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
-        self.logo_image = tk.PhotoImage(file="/home/sdz/grading/inference/github/yolov8ffb/default-img/Logo-CBI(4).png")  # Replace "logo.png" with your image file path
+        self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
         self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
         logo_label = tk.Label(self, image=self.logo_image)
         logo_label.grid(row=0, column=0, padx=40, pady=10, sticky="nw")
 
-        self.logo_image2 = tk.PhotoImage(file="/home/sdz/grading/inference/github/yolov8ffb/default-img/LOGO-SRS(1).png")
+        self.logo_image2 = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/LOGO-SRS(1).png'))
         self.logo_image2 = self.logo_image2.subsample(2, 2)
         logo_label2 = tk.Label(self, image=self.logo_image2)
         logo_label2.grid(row=0, column=0, padx=190, pady=15, sticky="nw")  # Change column to 0 and sticky to "ne"
