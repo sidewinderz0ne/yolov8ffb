@@ -23,6 +23,10 @@ log_dir = Path(os.getcwd() + '/log_inference_sampling/' + formatted_date  + '_lo
 if not log_dir.exists():
     log_dir.touch()
 
+pdf_dir = Path(os.getcwd() + '/hasil/' + formatted_date)
+
+pdf_dir.mkdir(parents=True, exist_ok=True)  # make dir
+
 def save_info_truk(header, log_inference):
     header_str = str(header) 
 
