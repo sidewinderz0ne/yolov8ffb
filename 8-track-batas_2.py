@@ -13,7 +13,7 @@ import pytz
 from pathlib import Path
 from PIL import Image
 from ultralytics.utils.plotting import Annotator
-
+import pymssql
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors as colorPdf
 from collections import Counter
@@ -25,16 +25,15 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/2023-09-04-20-28_yolov8n_640/train/weights/best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='/home/grading/sampel_video/scm/sampel_agustus/ch01_00000000229000000.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--yolo_model', type=str, default='/home/sdz/grading/inference/Models/yolov8-25-8-23-best.pt', help='model.pt path')
+parser.add_argument('--source', type=str, default='/home/sdz/yolonas/sampel_scm/sampel_scm.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
 parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
-parser.add_argument('--bisnis_unit', type=str, default='-')
-parser.add_argument('--divisi', type=str, default='-')
+parser.add_argument('--pull_data', type=str, default='-')
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
@@ -44,8 +43,9 @@ iou_thres = opt.iou_thres
 tracker = opt.tracker
 roi = opt.roi
 show = opt.show
-bisnis_unit = opt.bisnis_unit
-divisi = opt.divisi
+pull_data = opt.pull_data
+# bisnis_unit = opt.bisnis_unit
+# divisi = opt.divisi
 
 TotalJjg = 0
 
@@ -146,7 +146,7 @@ def mouse_callback(event, x, y, flags, param):
 
 def generate_report(content, path, prefix_pdf):
     
-    arrData = content.split(';')
+    # arrData = content.split(';')
 
     prctgUnripe = 0
     prctgRipe = 0
@@ -157,13 +157,13 @@ def generate_report(content, path, prefix_pdf):
     prctgLongStalk = 0
     TotalRipeness = 0
 
-    no_tiket = varTry(str(arrData[0]),"000000")
-    no_plat = varTry(str(arrData[1]),"KH 0000 ZZ")
-    nama_driver = varTry(str(arrData[2]), "FULAN")
-    bisnis_unit = varTry(str(arrData[3]).replace('\n',''),"SSE")
-    divisi = varTry(str(arrData[4]),"OZ")
-    blok = varTry(str(arrData[5]),"Z9999")
-    status = varTry(str(arrData[6]),"-")  
+    no_tiket = varTry(str(content[0]),"000000")
+    no_plat = varTry(str(content[1]),"KH 0000 ZZ")
+    nama_driver = varTry(str(content[2]), "FULAN")
+    bisnis_unit = varTry(str(content[3]).replace('\n',''),"SSE")
+    divisi = varTry(str(content[4]),"OZ")
+    blok = varTry(str(content[5]),"Z9999")
+    status = varTry(str(content[7]),"-")  
 
     dateStart = date_start
     dateEnd = date_end
@@ -210,7 +210,7 @@ def generate_report(content, path, prefix_pdf):
 
     img_dir = str(path) + '/' + str(formatted_date)   + '/' + prefix_pdf 
 
-    print(img_dir)
+    # print(img_dir)
 
     checkImgBest = os.path.isfile(str(img_dir) +'best.JPG')
     if checkImgBest:
@@ -272,7 +272,7 @@ def generate_report(content, path, prefix_pdf):
 
     
     name_pdf = str(path) +'/' + str(formatted_date) + '/'+ str(prefix_pdf) + '.pdf'
-    
+    print(name_pdf)
     doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
     
     table1 = Table(TabelAtas,colWidths=colEachTable1)
@@ -336,6 +336,31 @@ def save_img_inference_sampling(img, name):
 
     print(directory_path+name)
     imgP.save( directory_path+name, optimize=True, quality=25)
+
+def change_push_time():
+
+
+    # Database connection
+    conn = pymssql.connect(
+        server='192.168.1.254\DBSTAGING',
+        user='usertesting',
+        password='Qwerty@123',
+        database='skmstagingdb'
+    )
+
+    notiket = raw[0]
+    print(notiket)
+    print(date_end)
+    cursor = conn.cursor()
+    SQL_UPDATE = """
+    UPDATE MOPweighbridgeTicket_Staging
+    SET AI_pull_time = GETDATE()
+    WHERE WBTicketNo = %s;
+    """
+
+    cursor.execute(SQL_UPDATE, (notiket))
+    conn.commit()
+    conn.close()
 
 def save_inference_data(count_per_classes,date_start, date_end, path):
 
@@ -432,8 +457,8 @@ def close():
     append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
     # print(log_inference)
     save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
-    append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
-    delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
+    # append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
+    # delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
 
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
@@ -443,12 +468,12 @@ def close():
                 box_size=10,
                 border=4,
             )
-
-    content = ''
-    with open(file_path, 'r') as z:
-        content = z.readlines()
-        content = content[no_line_log]
-        # content = content[0]
+    change_push_time()
+    # content = ''
+    # with open(file_path, 'r') as z:
+    #     content = z.readlines()
+    #     content = content[no_line_log]
+    #     # content = content[0]
 
     urlPDF = "https://www.srs-ssms.com/pdf_grading/hasil/" + str(formatted_date) +'/' + str(prefix) + '.pdf'
     
@@ -459,16 +484,22 @@ def close():
 
     qr_image.save(Path(os.getcwd() + '/default-img/qr.png'))
 
-    print(prefix)
+    # print(prefix)
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-    generate_report(content,  Path(os.getcwd() + '/hasil/') ,prefix)
+    generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
+
+    change_push_time()
 
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
     
 last_id = 0
 track_idsArr = []
+
+raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
+bisnis_unit = raw[3]
+divisi = raw[4]
 
 while cap.isOpened():
     # Read a frame from the video
