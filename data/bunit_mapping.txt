@@ -1,0 +1,45 @@
+1: Sulung Estate
+2: Kenambui Estate
+3: Rangda Estate
+4: Pulau Estate
+5: Kondang Estate
+6: Rungun Estate
+7: Selangkun Estate
+8: Sulung Mill
+9: Selangkun Mill
+10: HEAD OFFICE - SSS
+11: Central Worskhop R1
+12: Head Office Transit Store - SSS
+13: Batu Kotam Estate
+14: Natai Baru Estate
+15: Natai Baru Mill
+16: HEAD OFFICE - KSA
+18: Suayap Estate
+19: Umpang Estate
+20: Suayap Mill
+21: HEAD OFFICE - MMS
+23: Kanamit Estate
+24: Badirih Estate
+27: Bahaur Estate
+28: Kanamit Mill
+29: Central Worskhop R3
+30: HEAD OFFICE - MKM
+33: Pedongatan Estate
+34: Sepondam Estate
+35: Nangakiu Estate
+36: Merambang Estate
+37: Batu Tunggal Estate
+38: Malata Estate
+39: Sungai Bulik Estate
+41: Nanga Kiu Mill
+42: Nanuah Estate
+43: Malata Mill
+44: Sumber Cahaya Estate
+45: HEAD OFFICE - MPP
+46: Sumber Cahaya Mill
+47: HEAD OFFICE - SMU
+48: Central Worskhop R2
+49: HEAD OFFICE - TSA
+51: KCP Suayap Mill
+52: Sungai Kuning Mill
+53: HEAD OFFICE - CBI
