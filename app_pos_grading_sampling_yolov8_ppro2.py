@@ -257,7 +257,7 @@ class Frame1(tk.Frame):
         
         return records
 
-    def process_data(self, record, master_bunit, master_div):
+    def process_data(self, record, master_bunit, master_div, master_block):
         arr_data = []
         for data in record:
 
@@ -273,13 +273,19 @@ class Frame1(tk.Frame):
             else:
                 ppro_div_name = div
 
+            block = data['Field']
+            if block != 'None':
+                ppro_block_name = master_block.get(block, block)
+            else:
+                ppro_block_name = block
+
             arr_data.append((
                 data['WBTicketNo'],
                 data['VehiclePoliceNO'],
                 data['DriverName'],
                 ppro_bunit_name,
                 ppro_div_name,
-                data['Field'],
+                ppro_block_name,
                 data['Bunches'],
                 data['Ownership'],
                 data['Ppro_push_time']
@@ -291,9 +297,9 @@ class Frame1(tk.Frame):
         self.tree.delete(*self.tree.get_children())
         master_bunit = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
         master_div = self.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
-        #master_block = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_block)
+        master_block = self.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
         record = self.pull_data_ppro() 
-        arr_data = self.process_data(record, master_bunit, master_div)
+        arr_data = self.process_data(record, master_bunit, master_div, master_block)
         self.after(10, lambda: self.populate_treeview(arr_data))
 
     def update_row(self, row_item):
