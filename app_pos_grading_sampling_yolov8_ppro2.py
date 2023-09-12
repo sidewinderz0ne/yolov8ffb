@@ -205,29 +205,29 @@ class Frame1(tk.Frame):
             as_dict=True
         )
 
-    def pull_master_bunit(self):
+    def pull_master(self, table, code, name, file_name):
         connection = self.connect_to_database()
-        sql_query = "SELECT Ppro_BUnitCode, Ppro_BUnitName FROM MasterBunit_staging WHERE AI_pull_time IS NULL"
+        sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
         cursor = connection.cursor()
         cursor.execute(sql_query)
         records = cursor.fetchall()
         connection.close()
 
-        if len(records) > 0 or not data_bunit.exists():
-            sql_query = "SELECT Ppro_BUnitCode, Ppro_BUnitName FROM MasterBunit_staging"
+        if len(records) > 0 or not file_name.exists():
+            sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)}"
             connection = self.connect_to_database()  
             cursor = connection.cursor()
             cursor.execute(sql_query)
             records = cursor.fetchall()
             connection.close()
-            bunit_mapping = {r['Ppro_BUnitCode']: r['Ppro_BUnitName'] for r in records}
-            data_bunit.touch()
-            with open(data_bunit, 'w') as file:
-                for code, name in bunit_mapping.items():
-                    file.write(f"{code}: {name}\n")
-
+            mapping = {r[str(code)]: r[str(name)] for r in records}
+            
+            file_name.touch()
+            with open(file_name, 'w') as file:
+                for code, name in mapping.items():
+                    file.write(f"{code}:{name}\n")
             connection = self.connect_to_database()
-            update_query = "UPDATE MasterBunit_staging SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
+            update_query = f"UPDATE {str(table)} SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
             cursor = connection.cursor()
             try:
                 cursor.execute(update_query)
@@ -236,20 +236,20 @@ class Frame1(tk.Frame):
                 connection.rollback()  # Rollback the transaction in case of an error
                 print(f"Error executing update query: {str(e)}")
             connection.close()
-            return bunit_mapping
+            return mapping
         else:
-            bunit_mapping = {}
-            with open(data_bunit, 'r') as file:
+            mapping = {}
+            with open(file_name, 'r') as file:
                 lines = file.readlines()
                 for line in lines:
-                    code, name = line.strip().split(': ')
-                    bunit_mapping[code] = name
-            return bunit_mapping
-
+                    code, name = line.strip().split(':')
+                    mapping[int(code)] = name
+            return mapping
 
     def pull_data_ppro(self):
         connection = self.connect_to_database()
-        sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE AI_pull_time IS NULL"
+        #sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE AI_pull_time IS NULL"
+        sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging" #TRIGGER
         cursor = connection.cursor()
         cursor.execute(sql_query)
         records = cursor.fetchall()
@@ -257,21 +257,28 @@ class Frame1(tk.Frame):
         
         return records
 
-    def process_data(self, record, master_bunit):
+    def process_data(self, record, master_bunit, master_div):
         arr_data = []
         for data in record:
+
             bunit = data['BUnitCode']
             if bunit != 'None':
                 ppro_bunit_name = master_bunit.get(bunit, bunit)
             else:
                 ppro_bunit_name = bunit
 
+            div = data['DivisionCode']
+            if div != 'None':
+                ppro_div_name = master_div.get(div, div)
+            else:
+                ppro_div_name = div
+
             arr_data.append((
                 data['WBTicketNo'],
                 data['VehiclePoliceNO'],
                 data['DriverName'],
                 ppro_bunit_name,
-                data['DivisionCode'],
+                ppro_div_name,
                 data['Field'],
                 data['Bunches'],
                 data['Ownership'],
@@ -282,9 +289,11 @@ class Frame1(tk.Frame):
 
     def refresh_data(self):
         self.tree.delete(*self.tree.get_children())
-        master_bunit = self.pull_master_bunit()  # Use self to access the method
-        record = self.pull_data_ppro()  # Use self to access the method
-        arr_data = self.process_data(record, master_bunit)
+        master_bunit = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
+        master_div = self.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
+        #master_block = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_block)
+        record = self.pull_data_ppro() 
+        arr_data = self.process_data(record, master_bunit, master_div)
         self.after(10, lambda: self.populate_treeview(arr_data))
 
     def update_row(self, row_item):
