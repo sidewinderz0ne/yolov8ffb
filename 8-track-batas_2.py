@@ -25,8 +25,8 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='/home/sdz/grading/inference/Models/yolov8-25-8-23-best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='/home/sdz/yolonas/sampel_scm/sampel_scm.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/yolov5su_640/train/weights/best.pt', help='model.pt path')
+parser.add_argument('--source', type=str, default='/home/grading/sampel_video/scm/Sampel_SCM.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
@@ -454,9 +454,9 @@ def delete_inference_file(path_plat):
 
 def close():
     class_count.append(kastrasi)
-    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+    # append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
     # print(log_inference)
-    save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
+    # save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
     # append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
     # delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
 
@@ -468,7 +468,7 @@ def close():
                 box_size=10,
                 border=4,
             )
-    change_push_time()
+    # change_push_time()
     # content = ''
     # with open(file_path, 'r') as z:
     #     content = z.readlines()
@@ -487,9 +487,11 @@ def close():
     # print(prefix)
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-    generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
+    # generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
+    names.append('kastrasi')
 
-    change_push_time()
+    print(class_count, names)
+    # change_push_time()
 
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
@@ -615,22 +617,22 @@ while cap.isOpened():
         
         prefix = str(date_start_no_space[0]) +'_'+ str(date_start_no_space[1])+ '_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
         
-        if  countOnFrame >= 2 and nilai > skor_tertinggi:
-            skor_tertinggi = round(nilai,2)
-            save_img_inference_sampling(annotated_frame, prefix + 'best.JPG')
-            # print('tersimpan best')
-        elif nilai == skor_tertinggi and countOnFrame > jum_tertinggi:
-            skor_tertinggi = round(nilai,2)
-            save_img_inference_sampling(annotated_frame, prefix +'best.JPG')
-            # print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
-        elif countOnFrame >2 and nilai < skor_terendah:
-            skor_terendah = round(nilai,2)
-            save_img_inference_sampling(annotated_frame, prefix +'worst.JPG')
-            # print('tersimpan worst')
-        elif nilai == skor_terendah and countOnFrame > jum_tertinggi:
-            skor_terendah = round(nilai,2)
-            save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
-            # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
+        # if  countOnFrame >= 2 and nilai > skor_tertinggi:
+        #     skor_tertinggi = round(nilai,2)
+        #     save_img_inference_sampling(annotated_frame, prefix + 'best.JPG')
+        #     # print('tersimpan best')
+        # elif nilai == skor_tertinggi and countOnFrame > jum_tertinggi:
+        #     skor_tertinggi = round(nilai,2)
+        #     save_img_inference_sampling(annotated_frame, prefix +'best.JPG')
+        #     # print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
+        # elif countOnFrame >2 and nilai < skor_terendah:
+        #     skor_terendah = round(nilai,2)
+        #     save_img_inference_sampling(annotated_frame, prefix +'worst.JPG')
+        #     # print('tersimpan worst')
+        # elif nilai == skor_terendah and countOnFrame > jum_tertinggi:
+        #     skor_terendah = round(nilai,2)
+        #     save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
+        #     # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
 
 
         # Display the annotated frame
