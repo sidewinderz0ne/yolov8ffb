@@ -28,6 +28,8 @@ log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 log_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/'+ formatted_date+'_log.TXT')
 
 if not log_dir.exists():
+    log_folder = os.path.dirname(log_dir)
+    os.makedirs(log_folder, exist_ok=True)
     log_dir.touch()
 
 def remove_non_numeric(input_str):
@@ -572,4 +574,13 @@ class MainWindow(tk.Tk):
 
 if __name__ == "__main__":
     app = MainWindow()
+    app.option_add("*tearOff", False) # This is always a good idea
+    # Create a style
+    style = ttk.Style(app)
+
+    # Import the tcl file
+    app.tk.call("source", "forest-light.tcl")
+
+    # Set the theme with the theme_use method
+    style.theme_use("forest-light")
     app.mainloop()

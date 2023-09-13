@@ -25,8 +25,8 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='/home/sdz/grading/inference/Models/yolov8-25-8-23-best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='/home/sdz/yolonas/sampel_scm/sampel_scm.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
+parser.add_argument('--source', type=str, default='./sampel_scm/sampel_scm.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
@@ -47,18 +47,6 @@ pull_data = opt.pull_data
 no_tiket = ""
 
 TotalJjg = 0
-
-def varTry(valStr, defVal):
-    try:
-        if len(valStr) > 0:
-            valTry = valStr
-        else:
-            # Handle the case where arrData is empty
-            valTry = defVal
-    except IndexError:
-        # Handle the case where arrData is empty (IndexError will be raised if it's empty)
-        valTry = defVal
-    return valTry
 
 def append_hasil(apStr):
     video_path = source
@@ -153,13 +141,41 @@ def generate_report(content, path, prefix_pdf):
     prctgLongStalk = 0
     TotalRipeness = 0
 
-    no_tiket = varTry(str(raw[0]),"000000")
-    no_plat = varTry(str(raw[1]),"KH 0000 ZZ")
-    nama_driver = varTry(str(raw[2]), "FULAN")
-    bisnis_unit = varTry(str(raw[3]).replace('\n',''),"SSE")
-    divisi = varTry(str(raw[4]),"OZ")
-    blok = varTry(str(raw[5]),"Z9999")
-    status = varTry(str(raw[7]),"-")  
+    try:
+        no_tiket = str(raw[0])
+    except Exception as e:
+        print(f"An error occurred-no_tiket: {str(e)}")
+        no_tiket = "000000"
+    try:
+        no_plat = str(raw[1])
+    except Exception as e:
+        print(f"An error occurred-no_plat: {str(e)}")
+        no_plat = "KH 0000 ZZ"
+    try:
+        nama_driver = str(raw[2])
+    except Exception as e:
+        print(f"An error occurred-nama_driver: {str(e)}")
+        nama_driver = "FULAN"
+    try:
+        bisnis_unit = str(raw[3])
+    except Exception as e:
+        print(f"An error occurred-bisnis_unit: {str(e)}")
+        bisnis_unit = "SSE"
+    try:
+        divisi = str(raw[4])
+    except Exception as e:
+        print(f"An error occurred-divisi: {str(e)}")
+        divisi = "OZ"
+    try:
+        blok = str(raw[5])
+    except Exception as e:
+        print(f"An error occurred-blok: {str(e)}")
+        blok = "Z9999"
+    try:
+        status = str(raw[7])
+    except Exception as e:
+        print(f"An error occurred-status: {str(e)}")
+        status = "-"
 
     dateStart = date_start
     dateEnd = date_end
@@ -355,7 +371,7 @@ def change_push_time():
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"An error occurred-change_push_time: {str(e)}")
 
 def push_grading_quality():
     try:
@@ -397,7 +413,7 @@ def push_grading_quality():
                 elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(class_count[index]) != 0:
                     push_data(gradecode, class_count[index])
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        print(f"An error occurred-push_grading_quality: {str(e)}")
 
 
 def push_data(intCat,intVal):
@@ -411,7 +427,7 @@ def push_data(intCat,intVal):
 
     # Values for the new row
     new_row = {
-        'AI_NoTicket': varTry(str(raw[0]),"000000"),
+        'AI_NoTicket': str(raw[0]) if raw else "000000",
         'AI_Grading': str(intCat),
         'AI_JanjangSample': str(TotalJjg), 
         'AI_TotalJanjang': str(TotalJjg),
@@ -434,105 +450,9 @@ def push_data(intCat,intVal):
     # Close the database connection
     conn.close()
 
-def save_inference_data(count_per_classes,date_start, date_end, path):
-
-    global path_no_plat, no_line_log, path_plat
-    str_result = ''
-    for count in count_per_classes:
-        str_result += str(count) + ';'
-
-    str_result += date_start + ';'
-    str_result += str(current_date.strftime('%Y-%m-%d %H:%M:%S'))
-
-    path_inference_truk = path +'/' +formatted_date + '_log.TXT'
-
-    with open(path_inference_truk, 'r') as x:
-        content = x.readlines()
-        
-        count = 0
-        # LOGGER.info('63')
-        for line in content:
-            if 'Sedang Berjalan' in line:
-                # LOGGER.info('65')
-                targetLine = content[count]
-                wr = open(path_inference_truk, "w")
-                content[count] = targetLine.replace(";Sedang Berjalan","")
-                wr.writelines(content)
-                wr.close()
-
-                strData = content[count].split(';')
-                no_plat = strData[1]
-
-                path_no_plat = path + '/' + no_plat + '.TXT'
-                
-                path_plat = strData[1]
-                no_line_log = count
-               
-                if not os.path.exists(path_no_plat):
-                    
-                    f = open(path_no_plat, "a")
-                    f.write("")
-                    f.close()
-    
-                with open(path_no_plat, 'r') as z:
-                    content = z.readlines()
-                    wr = open(path_no_plat, "w")
-                    try:
-                        # LOGGER.info('68')
-                        if len(content[0].strip()) == 0 | content[0] in ['\n', '\r\n']:
-                            wr.write(str_result)
-                            # LOGGER.info('69')
-                        else:
-                            wr.write(str_result)
-                    except Exception as e:
-                        print(f"An error occurred: {str(e)}")
-                        # LOGGER.info('70')
-                        wr.write(str_result)
-                    wr.close()
-
-            count += 1          
-
-
-def append_inference_data(count_per_classes,date_start, date_end, path, no_line):
-    str_result = ''
-    for count in count_per_classes:
-        str_result += str(count) + ';'
-
-    str_result += date_start + ';'
-    str_result += date_end
-    
-    file_path = path + '/' + formatted_date + '_log.TXT'
-    file_path_inference = path + '/log_inference.TXT'
-    
-    with open(file_path, 'r') as z:
-        content = z.readlines()
-
-        content[no_line] = content[no_line].rstrip("\n") + ";" +   str_result + '\n'
-
-        with open(file_path,"w") as file:
-            file.writelines(content)
-
-        wr = open(file_path_inference, "a")
-        try:
-            if len(content[0].strip()) == 0 | content[0] in ['\n', '\r\n']:
-                wr.write(content[no_line])
-            else:
-                wr.write(content[no_line])
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
-            wr.write(content[no_line])
-        wr.close()
-    
-def delete_inference_file(path_plat):
-    os.remove(path_plat)
-
 def close():
     class_count.append(kastrasi)
     append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
-    # print(log_inference)
-    save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
-    # append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
-    # delete_inference_file(str(log_inference) + '/' + path_plat + '.TXT')
 
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
@@ -572,14 +492,14 @@ track_idsArr = []
 
 raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
 try:
-    bisnis_unit = varTry(str(raw[3]),"-") 
+    bisnis_unit = str(raw[3])
 except Exception as e:
-    print(f"An error occurred: {str(e)}")
+    print(f"An error occurred-bisnis_unit: {str(e)}")
     bisnis_unit = "-"
 try:
-    divisi = varTry(str(raw[7]),"-")
+    divisi = str(raw[7])
 except Exception as e:
-    print(f"An error occurred: {str(e)}")
+    print(f"An error occurred-divisi: {str(e)}")
     divisi = "-"
 
 while cap.isOpened():
@@ -596,7 +516,7 @@ while cap.isOpened():
         try:
             track_ids = results[0].boxes.id.int().cpu().tolist()
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
+            #print(f"An error occurred-track_ids: {str(e)}")
             track_ids = []
         # track_ids = results[0].boxes.id.int().cpu().tolist()
         clss = results[0].boxes.cls.cpu().tolist()
@@ -681,7 +601,7 @@ while cap.isOpened():
         try:
             nilai = skorTotal / countOnFrame / 3 * 100
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
+            #print(f"An error occurred-nilai: {str(e)}")
             nilai = 0
         # print(nilai)        
 
