@@ -5,12 +5,14 @@ from tkinter.messagebox import YES, showinfo
 import os
 from pathlib import Path
 import datetime
+from datetime import datetime as dt
 import threading
 import tkinter.font as tkFont
 import subprocess
 import pymssql
 import re
 
+columns = ('no', 'notiket', 'nopol', 'driver', 'b_unit','divisi', 'field', 'bunches', 'ownership', 'pushtime', 'action')
 
 current_date = datetime.datetime.now()
 
@@ -35,13 +37,11 @@ if not log_dir.exists():
 def remove_non_numeric(input_str):
     return re.sub(r'[^0-9.]', '', input_str)
 class Frame1(tk.Frame):
+
     def __init__(self, master):
         super().__init__(master)
-        
-        columns = ('no', 'notiket', 'nopol', 'driver', 'b_unit','divisi', 'field', 'bunches', 'ownership', 'pushtime', 'action')
-        
+        self.clicked_buttons = []
         self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
-        
         self.style = ttk.Style(self)
         self.row_height = 100  # Set the desired row height
         self.detail_window = None
@@ -63,21 +63,15 @@ class Frame1(tk.Frame):
         # Adjust column widths
         self.tree.column("no", width=25)         
         self.tree.column("notiket", width=250) 
-        self.tree.column("nopol", width=100) 
+        self.tree.column("nopol", width=100, anchor="center") 
         self.tree.column("driver") 
         self.tree.column("b_unit") 
         self.tree.column("divisi") 
         self.tree.column("field") 
         self.tree.column("bunches", width=70) 
-        self.tree.column("ownership") 
-        self.tree.column("pushtime") 
-        self.tree.column("action") 
-        # self.tree.column("eb", width=150) 
-        # self.tree.column("ab", width=150) 
-        # self.tree.column("tp", width=150)
-        
-
-        # self.clicked_buttons = set()  # Set to keep track of clicked buttons
+        self.tree.column("ownership", anchor="center") 
+        self.tree.column("pushtime", anchor="center") 
+        self.tree.column("action", anchor="center") 
 
         top_frame = ttk.Frame(self)
         top_frame.grid(row=0, column=0, sticky='ew')
@@ -119,9 +113,7 @@ class Frame1(tk.Frame):
 
         last_model = tk.Label(self.last_update_model, text="Tanggal Update Model AI : 08 Agustus 2023",font=("Helvetica", 12, "italic"))
         last_model.pack()
-        
-        self.clicked_buttons = set()  # Set to keep track of clicked buttons
-        
+                
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
 
@@ -131,18 +123,17 @@ class Frame1(tk.Frame):
     def populate_treeview(self, arrData):
 
         custom_font = tkFont.Font(family="Helvetica", size=11)
-        key = 0
         
         for i, data in enumerate(arrData, start=1):
             item = self.tree.insert("", "end", values=data, tags=i)
-            self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item))
+            self.tree.set(item, "#11", "READY")
+
+            self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))
 
             if "Selesai" in data:
                 self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
             else:
-                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color
-
-            key += 1
+                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color      
 
     def connect_to_database(self):
         return pymssql.connect(
@@ -227,6 +218,17 @@ class Frame1(tk.Frame):
             else:
                 ppro_block_name = block
 
+            try:
+                # Parse the input string into a datetime object
+                input_datetime = dt.strptime(data['Ppro_push_time'], "%Y-%m-%d %H:%M:%S.%f")
+
+                # Format the datetime object as a string in the desired format
+                output_datetime_str = input_datetime.strftime("%Y-%m-%d %H:%M:%S")
+            except Exception as e:
+                print(f"Error executing update query: {str(e)}")
+                output_datetime_str = "NULL"
+
+
             arr_data.append((
                 str(index+1),
                 data['WBTicketNo'],
@@ -237,7 +239,7 @@ class Frame1(tk.Frame):
                 ppro_block_name,
                 data['Bunches'],
                 data['Ownership'],
-                data['Ppro_push_time']
+                output_datetime_str
             ))
         
         return arr_data
@@ -250,27 +252,36 @@ class Frame1(tk.Frame):
         record = self.pull_data_ppro() 
         arr_data = self.process_data(record, master_bunit, master_div, master_block)
         self.after(10, lambda: self.populate_treeview(arr_data))
-
-    def update_row(self, row_item):
+    
+    def update_row(self, row_item, event):
         row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
+
+        column = self.tree.identify_column(event.x)  # Identify the column clicked
+
+        # Extract the column name from the column identifier
+        column = column.split("#")[-1]
+        #print(self.clicked_buttons)
+        for cb in self.clicked_buttons:
+            
+            self.tree.tag_configure(cb, background="#ffffff")  # Change row color
+            self.clicked_buttons.remove(cb)
         
+        #print("column:" + str(column) + "|columns:"+ str(len(columns)))
         if row_id not in self.clicked_buttons and not self.running_script:
-            
-            row_values = self.tree.item(row_item, "values")  # Get values of the row
-            
 
-
-            # self.tree.item(row_item, values=(plat_est,'', "Sedang Berjalan"))
             self.tree.tag_configure(row_id, background="#cccdce")  # Change row color
-            self.clicked_buttons.add(row_id)
+            self.clicked_buttons.append(row_id)
 
-            self.running_script = True  # Set flag to indicate script is running
-            self.button.config(state=tk.DISABLED)  # Disable the button
+            if int(column) == len(columns):
             
-            
+                row_values = self.tree.item(row_item, "values")  # Get values of the row
+                                
+                self.running_script = True  # Set flag to indicate script is running
+                self.button.config(state=tk.DISABLED)  # Disable the button
 
-            thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
-            thread.start()
+                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
+                thread.start()
+
 
     def run_script(self, row_item, row_id, row_values):
 
