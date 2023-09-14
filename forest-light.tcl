@@ -282,7 +282,7 @@ namespace eval ttk::theme::forest-light {
             ] -width 15 -sticky e
 
         # AccentButton
-        ttk::style configure Accent.TButton -padding {8 4 8 4} -width -10 -anchor center -foreground #eeeeee
+        ttk::style configure Accent.TButton -padding {8 4 8 4} -width -10 -anchor center -foreground #eeeeee -font {Helvetica 10 bold}
 
         ttk::style element create AccentButton.button image \
             [list $I(rect-accent) \
@@ -530,6 +530,8 @@ namespace eval ttk::theme::forest-light {
 
         ttk::style configure Treeview -background $colors(-bg)
         ttk::style configure Treeview.Item -padding {2 0 0 0}
+        # Set the new row height in the Treeview style
+        ttk::style configure Treeview -rowheight 70
 
         ttk::style map Treeview \
             -background [list selected $colors(-selectbg)] \

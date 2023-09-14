@@ -38,40 +38,37 @@ class Frame1(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         
-        self.scrollbar = tk.Scrollbar(self)
-        self.scrollbar.grid(row=1, column=1, rowspan=100,sticky="ns")
+        columns = ('no', 'notiket', 'nopol', 'driver', 'b_unit','divisi', 'field', 'bunches', 'ownership', 'pushtime', 'action')
         
-        columns = ('notiket', 'nopol', 'driver', 'b_unit','divisi', 'field', 'bunches', 'ownership', 'pushtime', 'action')
-        
-        self.tree = ttk.Treeview(self, columns=columns, yscrollcommand=self.scrollbar.set, selectmode="none",  show="headings")
+        self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
         
         self.style = ttk.Style(self)
-        self.row_height = 80  # Set the desired row height
+        self.row_height = 100  # Set the desired row height
         self.detail_window = None
         
         self.style.configure("Treeview", rowheight=self.row_height)
-        # self.tree.heading("#1", text="No")
-        self.tree.heading("#1", text="Nomor Tiket")
-        self.tree.heading("#2", text="Nomor Polisi")
-        self.tree.heading("#3", text="Nama Drvier")
-        self.tree.heading("#4", text="Bisnis Unit")
-        self.tree.heading("#5", text="Divisi")
-        self.tree.heading("#6", text="Field")
-        self.tree.heading("#7", text="Bunches")
-        self.tree.heading("#8", text="Ownership")
-        self.tree.heading("#9", text="Push Time")
-        self.tree.heading("#10", text="Aksi")
+        self.tree.heading("#1", text="No")
+        self.tree.heading("#2", text="NOMOR TIKET")
+        self.tree.heading("#3", text="NOMOR POLISI")
+        self.tree.heading("#4", text="NAMA DRIVER")
+        self.tree.heading("#5", text="BISNIS UNIT")
+        self.tree.heading("#6", text="DIVISI")
+        self.tree.heading("#7", text="FIELD")
+        self.tree.heading("#8", text="BUNCHES")
+        self.tree.heading("#9", text="OWNERSHIP")
+        self.tree.heading("#10", text="PUSH TIME")
+        self.tree.heading("#11", text="ACTION")
         
 
         # Adjust column widths
-        # self.tree.column("no", width=50)         
-        self.tree.column("notiket") 
-        self.tree.column("nopol") 
+        self.tree.column("no", width=25)         
+        self.tree.column("notiket", width=250) 
+        self.tree.column("nopol", width=100) 
         self.tree.column("driver") 
         self.tree.column("b_unit") 
         self.tree.column("divisi") 
         self.tree.column("field") 
-        self.tree.column("bunches") 
+        self.tree.column("bunches", width=70) 
         self.tree.column("ownership") 
         self.tree.column("pushtime") 
         self.tree.column("action") 
@@ -82,36 +79,39 @@ class Frame1(tk.Frame):
 
         # self.clicked_buttons = set()  # Set to keep track of clicked buttons
 
-        self.title_label = tk.Label(self, text="Tabel List Truk FFB Grading Sampling SCM", font=("Helvetica", 16, "bold"))
-        self.title_label.grid(row=0, column=0, padx=700, pady=10, sticky="w")
+        top_frame = ttk.Frame(self)
+        top_frame.grid(row=0, column=0, sticky='ew')
+
+        top_frame.grid_columnconfigure(0, weight=1)
+        top_frame.grid_columnconfigure(1, weight=1)
+        top_frame.grid_columnconfigure(2, weight=50)
+        top_frame.grid_columnconfigure(3, weight=28)
+
+
+        self.title_label = tk.Label(top_frame, text="TABEL LIST TRUK FFB GRADING PER TRUK SCM", font=("Helvetica", 16, "bold"))
+        self.title_label.grid(row=0, column=2)
         self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
         self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
-        logo_label = tk.Label(self, image=self.logo_image)
-        logo_label.grid(row=0, column=0, padx=10, pady=10, sticky="nw")
+        logo_label = tk.Label(top_frame, image=self.logo_image)
+        logo_label.grid(row=0, column=0)
 
         self.logo_image2 = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/LOGO-SRS(1).png'))
         self.logo_image2 = self.logo_image2.subsample(2, 2)
-        logo_label2 = tk.Label(self, image=self.logo_image2)
-        logo_label2.grid(row=0, column=0, padx=160, pady=15, sticky="nw")  # Change column to 0 and sticky to "ne"
-
-        self.style = ttk.Style()
-        self.style.configure("refresh.TButton", padding=6, borderwidth=3, relief="groove", font=("Helvetica", 10))
+        logo_label2 = tk.Label(top_frame, image=self.logo_image2)
+        logo_label2.grid(row=0, column=1)  # Change column to 0 and sticky to "ne"
 
          # Create a styled button
-        self.button = ttk.Button(self, text="Refresh", style="refresh.TButton", command=self.refresh_data)
-        self.button.grid(row=0, column=0, padx=30, pady=30, sticky="ne")
+        self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
+        self.button.grid(row=0, column=3)
 
         self.refresh_data()
 
-        self.tree.grid(row=1, column=0, columnspan=3, sticky="nsew")  # Use columnspan to span all columns
-
-        self.scrollbar.config(command=self.tree.yview)
-        self.scrollbar.grid(row=1, column=3, rowspan=1, sticky="ns")  # Adjust rowspan as needed
+        self.tree.grid(row=1, column=0, columnspan=4, sticky="nsew")  # Use columnspan to span all columns
 
         self.footer_frame = tk.Frame(self)
         self.footer_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=40)  # Use columnspan to span all columns
 
-        footer_label = tk.Label(self.footer_frame, text="Copyright @ Digital Architect 2023", font=("Helvetica", 14, "bold"))
+        footer_label = tk.Label(self.footer_frame, text="Copyright @ Digital Architect SRS 2023", font=("Helvetica", 14, "bold"))
         footer_label.pack()
 
         self.last_update_model = tk.Frame(self)
@@ -207,7 +207,7 @@ class Frame1(tk.Frame):
 
     def process_data(self, record, master_bunit, master_div, master_block):
         arr_data = []
-        for data in record:
+        for index, data in enumerate(record):
 
             bunit = data['BUnitCode']
             if bunit != 'None':
@@ -228,6 +228,7 @@ class Frame1(tk.Frame):
                 ppro_block_name = block
 
             arr_data.append((
+                str(index+1),
                 data['WBTicketNo'],
                 data['VehiclePoliceNO'],
                 data['DriverName'],
@@ -513,7 +514,6 @@ class Frame3(tk.Frame):
 
     def save_and_switch(self, count_per_class, row_values):
 
-    
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
         dirt = self.dirtEntry.get()
@@ -561,7 +561,7 @@ class MainWindow(tk.Tk):
         self.frame3 = Frame3(self,  self.output_inference , self.row_values)  
 
         self.current_frame = self.frame1
-        self.current_frame.pack()
+        self.current_frame.pack(padx=50, pady=50)
 
     def switch_frame(self, new_frame_class, output_inference=None, row_values=None):
         self.current_frame.destroy()
