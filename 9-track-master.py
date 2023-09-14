@@ -484,6 +484,10 @@ def close():
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
     generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
 
+    names.append('kastrasi')
+
+    print(class_count, names)
+
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
     
