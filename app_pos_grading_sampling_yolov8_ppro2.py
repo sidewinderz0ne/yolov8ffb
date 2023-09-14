@@ -121,7 +121,7 @@ class Frame1(tk.Frame):
 
 
     def populate_treeview(self, arrData):
-
+        #clearprint(arrData)
         custom_font = tkFont.Font(family="Helvetica", size=11)
         
         for i, data in enumerate(arrData, start=1):
@@ -220,14 +220,13 @@ class Frame1(tk.Frame):
 
             try:
                 # Parse the input string into a datetime object
-                input_datetime = dt.strptime(data['Ppro_push_time'], "%Y-%m-%d %H:%M:%S.%f")
+                input_datetime = dt.strptime(str(data['Ppro_push_time']), "%Y-%m-%d %H:%M:%S.%f")
 
                 # Format the datetime object as a string in the desired format
                 output_datetime_str = input_datetime.strftime("%Y-%m-%d %H:%M:%S")
             except Exception as e:
                 print(f"Error executing update query: {str(e)}")
-                output_datetime_str = "NULL"
-
+                output_datetime_str = str(data['Ppro_push_time'])
 
             arr_data.append((
                 str(index+1),
@@ -241,8 +240,10 @@ class Frame1(tk.Frame):
                 data['Ownership'],
                 output_datetime_str
             ))
+
+        sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)
         
-        return arr_data
+        return sorted_data
 
     def refresh_data(self):
         self.tree.delete(*self.tree.get_children())
