@@ -264,10 +264,13 @@ class RegisterFrame(tk.Frame):
                 self.feedback_label.config(text="Tidak dapat menyimpan User!", fg="red")
 
             self.after(3000, self.clear_feedback)
+
+source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
 
     def __init__(self, master):
         super().__init__(master)
+        global source
         self.clicked_buttons = []
         self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
         self.style = ttk.Style(self)
@@ -327,14 +330,17 @@ class Frame1(tk.Frame):
         cctv_choices.append('Video - Test')
         self.cctv_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=cctv_choices)
         self.mill_var.set(cctv_choices[0])
-        self.cctv_combobox.grid(row=0, column=3)
+        source = self.mill_var.get()
+        self.cctv_combobox.grid(row=0, column=4)
+
+        self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
         
         self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
-        self.button.grid(row=0, column=4)
+        self.button.grid(row=0, column=3)
 
         self.refresh_data()
 
-        self.tree.grid(row=1, column=0, columnspan=4, sticky="nsew")  # Use columnspan to span all columns
+        self.tree.grid(row=1, column=0, columnspan=5, sticky="nsew")  # Use columnspan to span all columns
 
         self.footer_frame = tk.Frame(self)
         self.footer_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=40)  # Use columnspan to span all columns
@@ -354,9 +360,13 @@ class Frame1(tk.Frame):
         self.running_script = False  # Flag to track if script is running
 
     def on_combobox_focus_out(self, event):
+        global source  # Declare 'source' as a global variable
         selected_value = self.mill_var.get()
         self.selected_combobox_value = selected_value  # Store the selected value in a class variable
-        print("Selected value:", selected_value)
+        # print("Selected value:", selected_value)
+        
+        # Update 'source' to the current combobox value
+        source = selected_value
 
 
     def populate_treeview(self, arrData):
@@ -464,7 +474,7 @@ class Frame1(tk.Frame):
                 # Format the datetime object as a string in the desired format
                 output_datetime_str = input_datetime.strftime("%Y-%m-%d %H:%M:%S")
             except Exception as e:
-                print(f"Error executing update query: {str(e)}")
+                print(f"Error executing update query 2: {str(e)}")
                 output_datetime_str = str(data['Ppro_push_time'])
 
             arr_data.append((
@@ -525,10 +535,12 @@ class Frame1(tk.Frame):
 
     def run_script(self, row_item, row_id, row_values):
 
+        global source
+
         output_inference = None
         try:
             
-            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values)], 
+            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)], 
                             capture_output=True, 
                             text=True, 
                             check=True)

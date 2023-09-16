@@ -23,10 +23,11 @@ from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
+import re
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='./sampel_scm/sampel_scm.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/2023-09-06-10-13_yolov5su_1280/train/weights/best.pt', help='model.pt path')
+parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
@@ -48,6 +49,18 @@ no_tiket = ""
 
 TotalJjg = 0
 
+stream = None
+ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
+
+# Use regular expression to find the IP address in the source string
+ip_match = re.search(ip_pattern, source)
+
+if ip_match:
+    extracted_ip = ip_match.group(1)
+    stream = f'rtsp://admin:gr4d!ngs@{extracted_ip}/video'
+else:
+    stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
+    
 def append_hasil(apStr):
     video_path = source
     file_extension = os.path.splitext(video_path)[1]
@@ -76,7 +89,7 @@ def append_hasil(apStr):
 model = YOLO(yolo_model_str)
 
 # Open the video filfe
-video_path = source
+video_path = stream
 cap = cv2.VideoCapture(video_path)
 
 # Store the track history
