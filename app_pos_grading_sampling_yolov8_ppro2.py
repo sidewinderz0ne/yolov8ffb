@@ -1,3 +1,4 @@
+from itertools import count
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
@@ -550,7 +551,6 @@ class Frame1(tk.Frame):
         except subprocess.CalledProcessError as e:
             print("Error running other_script.py:", str(e))
 
-        
         if output_inference:
             self.master.switch_frame(Frame3, output_inference, row_values)
         else:
@@ -562,35 +562,27 @@ class Frame3(tk.Frame):
         super().__init__(master)
       
         totalJjg = 0
-        count_per_class = None
+        counter_per_class = None
 
         if output_inference is not None:
-            first_list_end = output_inference.find("]")
-            if first_list_end != -1:
-                count_per_class_str = output_inference[:first_list_end + 1]
-                try:
-                    count_per_class = eval(count_per_class_str)
-                except Exception as e:
-                    print(f"Error evaluating count_per_class: {e}")
-            
-            class_names = output_inference[first_list_end + 1:]
+            start_index = output_inference.index('[')
+            end_index = output_inference.index(']')
 
-            if isinstance(count_per_class, list) and count_per_class:
-                totalJjg = sum(count_per_class)
-            else:
-                # Handle the case when count_per_class is not a valid list
-                totalJjg = 0  # or some other default value
+            # Extract the substrings between the brackets and convert them to lists
+            counter_per_class = eval(output_inference[start_index:end_index + 1])
+            class_name = eval(output_inference[end_index + 2:])
 
+            totalJjg = sum(counter_per_class)
 
-        WBTicketNo = row_values[0] if row_values else ''
-        VehiclePoliceNO = row_values[1]if row_values else ''
-        DriverName = row_values[2]if row_values else ''
-        BUnit = row_values[3]if row_values else ''
-        Divisi = row_values[4]if row_values else ''
-        Field = row_values[5]if row_values else ''
-        Bunches = row_values[6]if row_values else ''
-        Ownership = row_values[7]if row_values else ''
-        push_time = row_values[8]if row_values else ''
+        WBTicketNo = row_values[1] if row_values else ''
+        VehiclePoliceNO = row_values[2]if row_values else ''
+        DriverName = row_values[3]if row_values else ''
+        BUnit = row_values[4]if row_values else ''
+        Divisi = row_values[5]if row_values else ''
+        Field = row_values[6]if row_values else ''
+        Bunches = row_values[7]if row_values else ''
+        Ownership = row_values[8]if row_values else ''
+        push_time = row_values[9]if row_values else ''
         # pull_time = row_values[9]if row_values else ''
 
         # Title for Frame3
@@ -675,65 +667,65 @@ class Frame3(tk.Frame):
         param_label9 = tk.Label(self, text=str(totalJjg))
         param_label9.grid(row=10, column=1, sticky="w",  pady=5)
 
-        label10 = tk.Label(self, text="Unripe : ")
+        label10 = tk.Label(self, text=f"{class_name[0]} :")
         label10.grid(row=10, column=2, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 0:
-            param_label10 = tk.Label(self, text=count_per_class[0])
+        if counter_per_class and len(counter_per_class) > 0:
+            param_label10 = tk.Label(self, text=counter_per_class[0])
         else:
             param_label10 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or None
         param_label10.grid(row=10, column=3,  sticky="w", pady=5)
 
-        label11 = tk.Label(self, text="Ripe : ")
+        label11 = tk.Label(self, text=f"{class_name[1]} :")
         label11.grid(row=11, column=0, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 1:
-            param_label11 = tk.Label(self, text=count_per_class[1])
+        if counter_per_class and len(counter_per_class) > 1:
+            param_label11 = tk.Label(self, text=counter_per_class[1])
         else:
             param_label11 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 2 elements
         param_label11.grid(row=11, column=1, sticky="w",  pady=5)
 
-        label12 = tk.Label(self, text="Overripe : ")
+        label12 = tk.Label(self, text=f"{class_name[2]} :")
         label12.grid(row=11, column=2, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 2:
-            param_label12 = tk.Label(self, text=count_per_class[2])
+        if counter_per_class and len(counter_per_class) > 2:
+            param_label12 = tk.Label(self, text=counter_per_class[2])
         else:
-            param_label12 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 3 elements
+            param_label12 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
         param_label12.grid(row=11, column=3,  sticky="w", pady=5)
 
-        label13 = tk.Label(self, text="Empty Bunch : ")
+        label13 = tk.Label(self, text=f"{class_name[3]} :")
         label13.grid(row=12, column=0, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 2:
-            param_label13 = tk.Label(self, text=count_per_class[3])
+        if counter_per_class and len(counter_per_class) > 2:
+            param_label13 = tk.Label(self, text=counter_per_class[3])
         else:
-            param_label13 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 3 elements
+            param_label13 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
         param_label13.grid(row=12, column=1,  sticky="w", pady=5)
 
-        label14 = tk.Label(self, text="Abnormal : ")
+        label14 = tk.Label(self, text=f"{class_name[4]} :")
         label14.grid(row=12, column=2, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 2:
-            param_label12 = tk.Label(self, text=count_per_class[4])
+        if counter_per_class and len(counter_per_class) > 2:
+            param_label12 = tk.Label(self, text=counter_per_class[4])
         else:
-            param_label12 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 3 elements
+            param_label12 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
         param_label12.grid(row=12, column=3,  sticky="w", pady=5)
 
-        label15 = tk.Label(self, text="Tangkai Panjang : ")
+        label15 = tk.Label(self, text=f"{class_name[5]} :")
         label15.grid(row=13, column=0, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 2:
-            param_label12 = tk.Label(self, text=count_per_class[5])
+        if counter_per_class and len(counter_per_class) > 2:
+            param_label12 = tk.Label(self, text=counter_per_class[5])
         else:
-            param_label12 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 3 elements
+            param_label12 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
         param_label12.grid(row=13, column=1,  sticky="w", pady=5)
 
-        label16 = tk.Label(self, text="Kastrasi : ")
+        label16 = tk.Label(self, text=f"{class_name[6]} :")
         label16.grid(row=13, column=2, sticky="w",  pady=5)
 
-        if count_per_class and len(count_per_class) > 2:
-            param_label12 = tk.Label(self, text=count_per_class[6])
+        if counter_per_class and len(counter_per_class) > 2:
+            param_label12 = tk.Label(self, text=counter_per_class[6])
         else:
             param_label12 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 3 elements
         param_label12.grid(row=13, column=3,  sticky="w", pady=5)
@@ -776,7 +768,6 @@ class Frame3(tk.Frame):
 
 
     def save_and_switch(self, count_per_class, row_values):
-
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
         dirt = self.dirtEntry.get()
