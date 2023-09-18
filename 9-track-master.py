@@ -46,7 +46,7 @@ roi = opt.roi
 show = opt.show
 pull_data = opt.pull_data
 no_tiket = ""
-
+img_dir = None
 TotalJjg = 0
 
 stream = None
@@ -142,6 +142,8 @@ def mouse_callback(event, x, y, flags, param):
             bt = True
 
 def generate_report(content, path, prefix_pdf):
+
+    global img_dir
     
     # arrData = content.split(';')
 
@@ -464,6 +466,7 @@ def push_data(intCat,intVal):
     conn.close()
 
 def close():
+    global img_dir
     class_count.append(kastrasi)
     append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
 
@@ -499,7 +502,7 @@ def close():
 
     names.append('kastrasi')
 
-    print(class_count, names)
+    print(class_count, names, f"[{img_dir}]")
 
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)

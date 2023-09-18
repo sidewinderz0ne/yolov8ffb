@@ -15,6 +15,7 @@ import re
 from urllib.request import urlopen
 import json
 import hashlib
+from PIL import Image, ImageTk, ImageOps
 
 url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
 
@@ -380,10 +381,10 @@ class Frame1(tk.Frame):
 
             self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))
 
-            if "Selesai" in data:
-                self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
-            else:
-                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color      
+            # if "Selesai" in data:
+            #     self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
+            # else:
+            #     self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color      
 
     def connect_to_database(self):
         return pymssql.connect(
@@ -560,19 +561,67 @@ class Frame1(tk.Frame):
 class Frame3(tk.Frame):
     def __init__(self, master, output_inference, row_values):
         super().__init__(master)
-      
+
+        
+        
         totalJjg = 0
         counter_per_class = None
+        img_dir = None
 
         if output_inference is not None:
-            start_index = output_inference.index('[')
-            end_index = output_inference.index(']')
+            print(output_inference)
+            # Split the string by ']' to separate the three parts
+            # Find the first set of square brackets
+            start_index = output_inference.find("[")
+            end_index = output_inference.find("]")
 
-            # Extract the substrings between the brackets and convert them to lists
-            counter_per_class = eval(output_inference[start_index:end_index + 1])
-            class_name = eval(output_inference[end_index + 2:])
+            # Extract the content within the first set of brackets
+            content_within_brackets = output_inference[start_index + 1:end_index]
+
+            # Split the content by comma and strip spaces
+            split_content = [x.strip() for x in content_within_brackets.split(',')]
+
+            # Extract the other parts outside of the first set of brackets
+            part2_start = end_index + 1
+            part2_end = output_inference.find("[", part2_start)
+            part2_content = output_inference[part2_start:part2_end].strip(" '[],")
+
+            part3_start = part2_end + 1
+            part3_content = output_inference[part3_start:].strip(" '[]")
+
+            # Print the split content and other parts
+            print("Part 1:", split_content)
+            print("Part 2:", part2_content)
+            print("Part 3:", part3_content)
 
             totalJjg = sum(counter_per_class)
+
+        image_path = self.check_img(img_dir)  #'/home/grading/yolov8ffb/hasil/2023-09-18/2023-09-18_14:43:10_KISWOYO_None_best.JPG'
+        print(counter_per_class)
+        self.image_best = tk.Label(self)
+        self.image_best.grid(row=0, column=0, rowspan=27, padx=(0, 60), pady=(100,100))
+
+        width, height = 950, 700  # Set your desired width and height
+        
+        try:
+            # Open the image using PIL
+            original_image = Image.open(image_path)
+            border_width = 10  # Adjust the border width as needed
+            border_color = "#cccdce"  # Set the border color (in RGB, here it's red)
+            bordered_image = ImageOps.expand(original_image, border=border_width, fill=border_color)
+
+            # Resize the image to the specified width and height using LANCZOS resampling
+            resized_image = bordered_image.resize((width, height), Image.LANCZOS)
+
+            #   Convert the resized PIL image to a Tkinter PhotoImage
+            photo = ImageTk.PhotoImage(resized_image)
+
+            # Set the PhotoImage as the image for the Label widget
+            self.image_best.config(image=photo)
+            self.image_best.image = photo  # Keep a reference to prevent garbage collection
+
+        except Exception as e:
+            print(f"Error loading and displaying image: {e}")
 
         WBTicketNo = row_values[1] if row_values else ''
         VehiclePoliceNO = row_values[2]if row_values else ''
@@ -583,189 +632,198 @@ class Frame3(tk.Frame):
         Bunches = row_values[7]if row_values else ''
         Ownership = row_values[8]if row_values else ''
         push_time = row_values[9]if row_values else ''
-        # pull_time = row_values[9]if row_values else ''
 
-        # Title for Frame3
-        title_label = tk.Label(self, text="Rekap Data Deteksi FFB Grading dengan AI ", font=("Helvetica", 16, "bold"))
-        title_label.grid(row=0, column=0, columnspan=4, pady=(20, 10))
+        title_label = tk.Label(self, text="Rekap Data Deteksi FFB Grading dengan AI ", font=("Helvetica", 19, "bold"))
+        title_label.grid(row=0, column=1, columnspan=5, pady=(100,0))
 
-        
-        subtitle1 = tk.Label(self, text="Informasi Truk : ",  font=("Helvetica", 13, "italic"))
-        subtitle1.grid(row=1, column=0,columnspan=4, sticky="w", pady=5)
+        subtitle1 = tk.Label(self, text="Informasi Truk : ",  font=("Helvetica", 13, "italic "))
+        subtitle1.grid(row=1, column=1,columnspan=4, sticky="w")
 
         separator = ttk.Separator(self, orient="horizontal")
-        separator.grid(row=2, column=0, columnspan=4, sticky="ew")
+        separator.grid(row=2, column=1, columnspan=4, sticky="ew")
         
         label1 = tk.Label(self, text="Nomor Tiket : ")
-        label1.grid(row=3, column=0, sticky="w", pady=5)
+        label1.grid(row=3, column=1, sticky="w")
 
         param_label1 = tk.Label(self, text=WBTicketNo)
-        param_label1.grid(row=3, column=1,sticky="w", pady=5)
+        param_label1.grid(row=3, column=2,sticky="w")
 
         label2 = tk.Label(self, text="Nomor Polisi : ")
-        label2.grid(row=3, column=2, sticky="w", pady=5)
+        label2.grid(row=3, column=3, sticky="w")
 
         param_label2 = tk.Label(self, text=VehiclePoliceNO)
-        param_label2.grid(row=3, column=3,sticky="w", pady=5)
+        param_label2.grid(row=3, column=4,sticky="w")
 
        
         label3 = tk.Label(self, text="Nama Driver : ")
-        label3.grid(row=4, column=0, sticky="w", pady=5)
+        label3.grid(row=4, column=1, sticky="w")
 
        
         param_label3 = tk.Label(self, text=DriverName)
-        param_label3.grid(row=4, column=1,sticky="w", pady=5)
+        param_label3.grid(row=4, column=2,sticky="w")
 
         label4 = tk.Label(self, text="Bisnis Unit : ")
-        label4.grid(row=4, column=2, sticky="w", pady=5)
+        label4.grid(row=4, column=3, sticky="w")
 
        
         param_label4 = tk.Label(self, text=BUnit)
-        param_label4.grid(row=4, column=3,sticky="w", pady=5)
+        param_label4.grid(row=4, column=4,sticky="w")
 
        
         label5 = tk.Label(self, text="Divisi : ")
-        label5.grid(row=5, column=0, sticky="w",  pady=5)
+        label5.grid(row=5, column=1, sticky="w")
 
         param_label5 = tk.Label(self, text=Divisi)
-        param_label5.grid(row=5, column=1,sticky="w",  pady=5)
+        param_label5.grid(row=5, column=2,sticky="w")
 
         label6 = tk.Label(self, text="Field : ")
-        label6.grid(row=5, column=2, sticky="w",  pady=5)
+        label6.grid(row=5, column=3, sticky="w")
 
         param_label6 = tk.Label(self, text=Field)
-        param_label6.grid(row=5, column=3, sticky="w", pady=5)
+        param_label6.grid(row=5, column=4, sticky="w")
 
         label7 = tk.Label(self, text="Bunches : ")
-        label7.grid(row=6, column=0, sticky="w",  pady=5)
+        label7.grid(row=6, column=1, sticky="w")
 
         param_label7 = tk.Label(self, text=Bunches)
-        param_label7.grid(row=6, column=1, sticky="w", pady=5)
+        param_label7.grid(row=6, column=2, sticky="w")
 
         label8 = tk.Label(self, text="Ownership : ")
-        label8.grid(row=6, column=2, sticky="w",  pady=5)
+        label8.grid(row=6, column=3, sticky="w")
 
         param_label8 = tk.Label(self, text=Ownership)
-        param_label8.grid(row=6, column=3,sticky="w",  pady=5)
+        param_label8.grid(row=6, column=4,sticky="w")
 
         label9 = tk.Label(self, text="Pull Time : ")
-        label9.grid(row=7, column=0, sticky="w",  pady=5)
+        label9.grid(row=7, column=1, sticky="w")
 
         param_label9 = tk.Label(self, text=push_time)
-        param_label9.grid(row=7, column=1,sticky="w",  pady=5)
+        param_label9.grid(row=7, column=2,sticky="w")
         
 
-        subtitle2 = tk.Label(self, text="Hasil Deteksi Per Kategori : ",  font=("Helvetica", 13, "italic"))
-        subtitle2.grid(row=8, column=0,columnspan=4, sticky="w",  pady=5)
+        subtitle2 = tk.Label(self, text="Hasil Deteksi Per Kategori : ",  font=("Helvetica", 13, "italic "))
+        subtitle2.grid(row=8, column=1,columnspan=4, sticky="w")
 
         separator = ttk.Separator(self, orient="horizontal")
-        separator.grid(row=9, column=0, columnspan=4, sticky="ew")
+        separator.grid(row=9, column=1, columnspan=4, sticky="ew")
         
         label9 = tk.Label(self, text="Total Janjang : ")
-        label9.grid(row=10, column=0, sticky="w",  pady=5)
+        label9.grid(row=10, column=1, sticky="w")
 
         param_label9 = tk.Label(self, text=str(totalJjg))
-        param_label9.grid(row=10, column=1, sticky="w",  pady=5)
+        param_label9.grid(row=10, column=2, sticky="w")
 
         label10 = tk.Label(self, text=f"{class_name[0]} :")
-        label10.grid(row=10, column=2, sticky="w",  pady=5)
+        label10.grid(row=10, column=3, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 0:
             param_label10 = tk.Label(self, text=counter_per_class[0])
         else:
             param_label10 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or None
-        param_label10.grid(row=10, column=3,  sticky="w", pady=5)
+        param_label10.grid(row=10, column=4,  sticky="w")
 
         label11 = tk.Label(self, text=f"{class_name[1]} :")
-        label11.grid(row=11, column=0, sticky="w",  pady=5)
+        label11.grid(row=11, column=1, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 1:
             param_label11 = tk.Label(self, text=counter_per_class[1])
         else:
             param_label11 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 2 elements
-        param_label11.grid(row=11, column=1, sticky="w",  pady=5)
+        param_label11.grid(row=11, column=2, sticky="w")
 
         label12 = tk.Label(self, text=f"{class_name[2]} :")
-        label12.grid(row=11, column=2, sticky="w",  pady=5)
+        label12.grid(row=11, column=3, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 2:
             param_label12 = tk.Label(self, text=counter_per_class[2])
         else:
             param_label12 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
-        param_label12.grid(row=11, column=3,  sticky="w", pady=5)
+        param_label12.grid(row=11, column=4,  sticky="w")
 
         label13 = tk.Label(self, text=f"{class_name[3]} :")
-        label13.grid(row=12, column=0, sticky="w",  pady=5)
+        label13.grid(row=12, column=1, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 2:
             param_label13 = tk.Label(self, text=counter_per_class[3])
         else:
             param_label13 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
-        param_label13.grid(row=12, column=1,  sticky="w", pady=5)
+        param_label13.grid(row=12, column=2,  sticky="w")
 
         label14 = tk.Label(self, text=f"{class_name[4]} :")
-        label14.grid(row=12, column=2, sticky="w",  pady=5)
+        label14.grid(row=12, column=3, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 2:
             param_label12 = tk.Label(self, text=counter_per_class[4])
         else:
             param_label12 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
-        param_label12.grid(row=12, column=3,  sticky="w", pady=5)
+        param_label12.grid(row=12, column=4,  sticky="w")
 
         label15 = tk.Label(self, text=f"{class_name[5]} :")
-        label15.grid(row=13, column=0, sticky="w",  pady=5)
+        label15.grid(row=13, column=1, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 2:
             param_label12 = tk.Label(self, text=counter_per_class[5])
         else:
             param_label12 = tk.Label(self, text="N/A")  # Provide a default value when counter_per_class is empty or has less than 3 elements
-        param_label12.grid(row=13, column=1,  sticky="w", pady=5)
+        param_label12.grid(row=13, column=2,  sticky="w")
 
         label16 = tk.Label(self, text=f"{class_name[6]} :")
-        label16.grid(row=13, column=2, sticky="w",  pady=5)
+        label16.grid(row=13, column=3, sticky="w")
 
         if counter_per_class and len(counter_per_class) > 2:
             param_label12 = tk.Label(self, text=counter_per_class[6])
         else:
             param_label12 = tk.Label(self, text="N/A")  # Provide a default value when count_per_class is empty or has less than 3 elements
-        param_label12.grid(row=13, column=3,  sticky="w", pady=5)
+        param_label12.grid(row=13, column=4,  sticky="w")
 
-        subtitle3 = tk.Label(self, text="Input Tambahan : ",  font=("Helvetica", 13, "italic"))
-        subtitle3.grid(row=14, column=0,columnspan=4, sticky="w",  pady=5)
+        subtitle3 = tk.Label(self, text="Input Tambahan : ",  font=("Helvetica", 13, "italic "))
+        subtitle3.grid(row=14, column=1,columnspan=4, sticky="w")
 
         separator = ttk.Separator(self, orient="horizontal")
-        separator.grid(row=15, column=0, columnspan=4, sticky="ew")
+        separator.grid(row=15, column=1, columnspan=4, sticky="ew")
 
         label17 = tk.Label(self, text="Brondolan : ")
-        label17.grid(row=16, column=0, sticky="w",  pady=5)
+        label17.grid(row=16, column=1, sticky="w")
 
         self.brondolanEntry = tk.Entry(self)
-        self.brondolanEntry.grid(row=16, column=1, sticky="w", pady=5)
+        self.brondolanEntry.grid(row=16, column=2, sticky="w")
 
         unit_label = tk.Label(self, text="kg")
-        unit_label.grid(row=16, column=2, sticky="w", pady=5)
+        unit_label.grid(row=16, column=3, sticky="w")
 
         label18 = tk.Label(self, text="Brondolan Busuk : ")
-        label18.grid(row=17, column=0, sticky="w",  pady=5)
+        label18.grid(row=17, column=1, sticky="w")
 
         self.brondoalBusukEntry = tk.Entry(self)
-        self.brondoalBusukEntry.grid(row=17, column=1, sticky="w", pady=5)
+        self.brondoalBusukEntry.grid(row=17, column=2, sticky="w")
 
         unit_label = tk.Label(self, text="kg")
-        unit_label.grid(row=17, column=2, sticky="w", pady=5)
+        unit_label.grid(row=17, column=3, sticky="w")
 
         label19 = tk.Label(self, text="Dirt/Kotoran : ")
-        label19.grid(row=18, column=0, sticky="w",  pady=5)
+        label19.grid(row=18, column=1, sticky="w")
 
         self.dirtEntry = tk.Entry(self)
-        self.dirtEntry.grid(row=18, column=1,  sticky="w",pady=5)
+        self.dirtEntry.grid(row=18, column=2,  sticky="w")
 
         unit_label = tk.Label(self, text="kg")
-        unit_label.grid(row=18, column=2, sticky="w", pady=5)
+        unit_label.grid(row=18, column=3, sticky="w")
 
-        submit_button = tk.Button(self, text="Submit", command=lambda: self.save_and_switch(count_per_class, row_values))
-        submit_button.grid(row=19, column=0, columnspan=4, sticky="w", pady=50)
+        submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values))
+        submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
+    def check_img(self, dir):
+        image = None
+        checkImgBest = os.path.isfile(str(dir) +'best.JPG')
+        checkImgWorst = os.path.isfile(str(dir) +'worst.JPG')
+        if checkImgBest:
+            image = dir+'best.JPG'
+        elif checkImgWorst:
+            image = dir +'worst.JPG'
+        else:
+            image = Path(os.getcwd() + '/default-img/no_image.png')
+
+        return image
 
     def save_and_switch(self, count_per_class, row_values):
         brondol = self.brondolanEntry.get()
