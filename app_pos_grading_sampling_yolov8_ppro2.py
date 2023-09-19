@@ -570,34 +570,28 @@ class Frame3(tk.Frame):
 
         if output_inference is not None:
             print(output_inference)
-            # Split the string by ']' to separate the three parts
-            # Find the first set of square brackets
-            start_index = output_inference.find("[")
-            end_index = output_inference.find("]")
+            parts = output_inference.split('$')
 
-            # Extract the content within the first set of brackets
-            content_within_brackets = output_inference[start_index + 1:end_index]
+            # Remove any leading or trailing spaces from each part.
+            parts = [part.strip() for part in parts]
 
-            # Split the content by comma and strip spaces
-            split_content = [x.strip() for x in content_within_brackets.split(',')]
+            # print(parts[0])
+            counter_per_class = eval(parts[0])
 
-            # Extract the other parts outside of the first set of brackets
-            part2_start = end_index + 1
-            part2_end = output_inference.find("[", part2_start)
-            part2_content = output_inference[part2_start:part2_end].strip(" '[],")
+            # print(counter_per_class)
 
-            part3_start = part2_end + 1
-            part3_content = output_inference[part3_start:].strip(" '[]")
-
-            # Print the split content and other parts
-            print("Part 1:", split_content)
-            print("Part 2:", part2_content)
-            print("Part 3:", part3_content)
+            # Convert the second part to a Python list.
+            class_name = eval(parts[1])
+            # print(class_name)
+            img_dir = parts[2]
 
             totalJjg = sum(counter_per_class)
-
-        image_path = self.check_img(img_dir)  #'/home/grading/yolov8ffb/hasil/2023-09-18/2023-09-18_14:43:10_KISWOYO_None_best.JPG'
-        print(counter_per_class)
+        
+        try:
+            image_path = self.check_img(img_dir)
+        except Exception as e:
+            print(f"Error loading and displaying image: {e}")
+        # print(image_path)
         self.image_best = tk.Label(self)
         self.image_best.grid(row=0, column=0, rowspan=27, padx=(0, 60), pady=(100,100))
 
@@ -814,12 +808,12 @@ class Frame3(tk.Frame):
 
     def check_img(self, dir):
         image = None
-        checkImgBest = os.path.isfile(str(dir) +'best.JPG')
-        checkImgWorst = os.path.isfile(str(dir) +'worst.JPG')
+        checkImgBest = os.path.exists(str(dir) +'best.JPG')
+        checkImgWorst = os.path.exists(str(dir) +'worst.JPG')
         if checkImgBest:
-            image = dir+'best.JPG'
+            image = str(dir)+'best.JPG'
         elif checkImgWorst:
-            image = dir +'worst.JPG'
+            image = str(dir) +'worst.JPG'
         else:
             image = Path(os.getcwd() + '/default-img/no_image.png')
 

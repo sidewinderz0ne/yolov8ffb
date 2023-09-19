@@ -82,8 +82,8 @@ def append_hasil(apStr):
                 file.write(line_to_append + '\n')
         except:
             print("error append!")   
-    else:
-        print("The source is not a video file.")
+    # else:
+    #     print("The source is not a video file.")
 
 # Load the YOLOv8 model
 model = YOLO(yolo_model_str)
@@ -220,7 +220,7 @@ def generate_report(content, path, prefix_pdf):
         ['Status',  str(status)]
     ]
 
-    colEachTable1 = [1.2*inch, 1.6*inch,  0.8*inch, 0.8*inch, 0.8*inch, 1.2*inch, 1.6*inch]
+    colEachTable1 = [1.1*inch, 1.4*inch,  0.6*inch, 0.6*inch, 0.6*inch, 1.1*inch, 2.5*inch]
 
     TabelBawah = [
         ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],
@@ -355,8 +355,8 @@ def save_img_inference_sampling(img, name):
         # If it doesn't exist, create the directory
         os.makedirs(directory_path)
         print(f"Directory '{directory_path}' created.")
-    else:
-        print(f"Directory '{directory_path}' already exists.")
+    # else:
+    #     print(f"Directory '{directory_path}' already exists.")
 
     # print(directory_path+name)
     imgP.save( directory_path+name, optimize=True, quality=25)
@@ -502,7 +502,7 @@ def close():
 
     names.append('kastrasi')
 
-    print(class_count, names, f"[{img_dir}]")
+    print(f"{class_count}", f"${names}", f"${img_dir}")
 
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
