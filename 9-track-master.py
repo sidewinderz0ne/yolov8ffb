@@ -35,9 +35,11 @@ parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetra
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
+parser.add_argument('--mode', type=str, default='sampling')
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
+mode = opt.mode
 imgsz = opt.imgsz
 conf_thres = opt.conf_thres
 iou_thres = opt.iou_thres
@@ -48,7 +50,7 @@ pull_data = opt.pull_data
 no_tiket = ""
 img_dir = None
 TotalJjg = 0
-
+timer = 25
 stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 
@@ -132,11 +134,18 @@ if not save_dir_txt.exists():
     log_folder = os.path.dirname(save_dir_txt)
     os.makedirs(log_folder, exist_ok=True)
     save_dir_txt.touch()
+grading_total_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/'+'grading_total_log.TXT')
+if not grading_total_dir.exists():
+    log_folder = os.path.dirname(grading_total_dir)
+    os.makedirs(log_folder, exist_ok=True)
+    grading_total_dir.touch()
+
 
 date_start = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
 date_end = None
 date_start_no_space = str(date_start).split(' ')
 bt = False
+timer_start = datetime.now(tz=tzInfo)
 def mouse_callback(event, x, y, flags, param):
     
     global bt  # Declare that you want to modify the global variable bt
@@ -480,12 +489,19 @@ def save_txt(result):
     except Exception as e:
         print(f"Error saving data to, {save_dir_txt}, : {str(e)}")
             
+def save_log(result, path, time):
+    try:
+        formatted_result = ';'.join(map(str, result))
+        formatted_entry = f"{formatted_result};{time}\n"
+        with open(path, 'a') as log_file:
+            log_file.write(formatted_entry)
+        print(f"Data saved successfully to {path}")
+    except Exception as e:
+        print(f"Error saving data to {path}: {str(e)}")
 
 def close():
     global img_dir
     class_count.append(kastrasi)
-    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
-
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
     qr = qrcode.QRCode(
@@ -494,14 +510,6 @@ def close():
                 box_size=10,
                 border=4,
             )
-    push_grading_quality()
-    change_push_time()
-    # content = ''
-    # with open(file_path, 'r') as z:
-    #     content = z.readlines()
-    #     content = content[no_line_log]
-    #     # content = content[0]
-
     urlPDF = "https://www.srs-ssms.com/pdf_grading/hasil/" + str(formatted_date) +'/' + str(prefix) + '.pdf'
     
     qr.add_data(urlPDF)
@@ -514,28 +522,37 @@ def close():
     names.append('kastrasi')
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-    generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
-    
-    data = f"{class_count}${names}${img_dir}"
-    save_txt(data)
+
+    if mode == 'sampling':
+        push_grading_quality()
+        change_push_time()
+        append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+        generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
+        data = f"{class_count}${names}${img_dir}"
+        save_txt(data)
 
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
     
 last_id = 0
 track_idsArr = []
+prefix = ''
+if mode == 'sampling':
+    raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
 
-raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
-try:
-    bisnis_unit = str(raw[3])
-except Exception as e:
-    print(f"An error occurred-bisnis_unit: {str(e)}")
-    bisnis_unit = "-"
-try:
-    divisi = str(raw[7])
-except Exception as e:
-    print(f"An error occurred-divisi: {str(e)}")
-    divisi = "-"
+    try:
+        bisnis_unit = str(raw[3])
+    except Exception as e:
+        print(f"An error occurred-bisnis_unit: {str(e)}")
+        bisnis_unit = "-"
+    try:
+        divisi = str(raw[7])
+    except Exception as e:
+        print(f"An error occurred-divisi: {str(e)}")
+        divisi = "-"
+
+    prefix = str(date_start_no_space[0]) +'_'+ str(date_start_no_space[1])+ '_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
+
 
 while cap.isOpened():
     # Read a frame from the video
@@ -656,9 +673,6 @@ while cap.isOpened():
         if countOnFrame > jum_tertinggi:
                     jum_tertinggi = countOnFrame
         
-        
-        prefix = str(date_start_no_space[0]) +'_'+ str(date_start_no_space[1])+ '_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
-        
         if  countOnFrame >= 2 and nilai > skor_tertinggi:
             skor_tertinggi = round(nilai,2)
             save_img_inference_sampling(annotated_frame, prefix + 'best.JPG')
@@ -676,6 +690,15 @@ while cap.isOpened():
             save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
             # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
 
+        elapsed_time = datetime.now(tz=tzInfo) - timer_start
+        
+        if elapsed_time.total_seconds() > timer and mode != 'sampling':
+            
+            current_state = list(class_count)
+            kastrasi_int = int(kastrasi)
+            current_state.append(kastrasi_int) 
+            timer_start = datetime.now(tz=tzInfo)
+            save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
 
         # Display the annotated frame
         width, height = 100, 100
