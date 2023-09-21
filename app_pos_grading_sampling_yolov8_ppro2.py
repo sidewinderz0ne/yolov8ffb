@@ -42,12 +42,11 @@ if not log_data_user.exists():
 log_inference = Path(os.getcwd() + '/hasil')
 
 log_inference.mkdir(parents=True, exist_ok=True)  # make dir
-log_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/'+ formatted_date+'_log.TXT')
-
-if not log_dir.exists():
-    log_folder = os.path.dirname(log_dir)
+save_dir_txt = Path(os.getcwd() + '/hasil/temp.TXT')
+if not save_dir_txt.exists():
+    log_folder = os.path.dirname(save_dir_txt)
     os.makedirs(log_folder, exist_ok=True)
-    log_dir.touch()
+    save_dir_txt.touch()
 
 def remove_non_numeric(input_str):
     return re.sub(r'[^0-9.]', '', input_str)
@@ -567,31 +566,29 @@ class Frame3(tk.Frame):
         totalJjg = 0
         counter_per_class = None
         img_dir = None
+        raw = None
 
+        with open(save_dir_txt, 'r') as file:
+            raw = file.readline()
+    
+        parts = raw.split('$')
+
+        parts = [part.strip() for part in parts]
+
+        counter_per_class = eval(parts[0])
+
+        class_name = eval(parts[1])
+        img_dir = parts[2]
+
+        totalJjg = sum(counter_per_class)
         if output_inference is not None:
             print(output_inference)
-            parts = output_inference.split('$')
-
-            # Remove any leading or trailing spaces from each part.
-            parts = [part.strip() for part in parts]
-
-            # print(parts[0])
-            counter_per_class = eval(parts[0])
-
-            # print(counter_per_class)
-
-            # Convert the second part to a Python list.
-            class_name = eval(parts[1])
-            # print(class_name)
-            img_dir = parts[2]
-
-            totalJjg = sum(counter_per_class)
         
         try:
             image_path = self.check_img(img_dir)
         except Exception as e:
             print(f"Error loading and displaying image: {e}")
-        # print(image_path)
+        
         self.image_best = tk.Label(self)
         self.image_best.grid(row=0, column=0, rowspan=27, padx=(0, 60), pady=(100,100))
 

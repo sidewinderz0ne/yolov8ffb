@@ -82,8 +82,8 @@ def append_hasil(apStr):
                 file.write(line_to_append + '\n')
         except:
             print("error append!")   
-    # else:
-    #     print("The source is not a video file.")
+    else:
+        print("The source is not a video file.")
 
 # Load the YOLOv8 model
 model = YOLO(yolo_model_str)
@@ -123,10 +123,15 @@ max_area = 22000
 font = 2
 fontRipeness = 1
 log_inference = Path(os.getcwd() + '/log_inference_sampling')
-log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 tzInfo = pytz.timezone('Asia/Bangkok')
 current_date = datetime.now()
 formatted_date = current_date.strftime('%Y-%m-%d')
+log_inference.mkdir(parents=True, exist_ok=True)  # make dir
+save_dir_txt = Path(os.getcwd() + '/hasil/temp.TXT')
+if not save_dir_txt.exists():
+    log_folder = os.path.dirname(save_dir_txt)
+    os.makedirs(log_folder, exist_ok=True)
+    save_dir_txt.touch()
 
 date_start = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
 date_end = None
@@ -355,8 +360,8 @@ def save_img_inference_sampling(img, name):
         # If it doesn't exist, create the directory
         os.makedirs(directory_path)
         print(f"Directory '{directory_path}' created.")
-    # else:
-    #     print(f"Directory '{directory_path}' already exists.")
+    else:
+        print(f"Directory '{directory_path}' already exists.")
 
     # print(directory_path+name)
     imgP.save( directory_path+name, optimize=True, quality=25)
@@ -465,6 +470,15 @@ def push_data(intCat,intVal):
     # Close the database connection
     conn.close()
 
+def save_txt(result):
+    try:
+        with open(save_dir_txt, 'w') as log_file:
+            log_file.write(str(result))  # Append the result to the log file with a newline character
+        print(f"Data saved successfully to {save_dir_txt}")
+    except Exception as e:
+        print(f"Error saving data to, {save_dir_txt}, : {str(e)}")
+            
+
 def close():
     global img_dir
     class_count.append(kastrasi)
@@ -495,14 +509,13 @@ def close():
 
     qr_image.save(Path(os.getcwd() + '/default-img/qr.png'))
 
-    # print(prefix)
+    names.append('kastrasi')
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
     generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
-
-    names.append('kastrasi')
-
-    print(f"{class_count}", f"${names}", f"${img_dir}")
+    
+    data = f"{class_count}${names}${img_dir}"
+    save_txt(data)
 
 cv2.namedWindow("Detect FFB Yolov8")
 cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
