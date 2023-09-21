@@ -376,9 +376,11 @@ def change_push_time():
             database='skmstagingdb'
         )
 
-        notiket = raw[0]
+        notiket = raw[1]
+        # print("no tiket:")
         # print(notiket)
-        # print(date_end)
+        # print("raw:")
+        # print(raw)
         cursor = conn.cursor()
 
         SQL_UPDATE = """

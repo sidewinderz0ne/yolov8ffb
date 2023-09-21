@@ -36,6 +36,8 @@ dir_user = Path(os.getcwd() + '/user')
 dir_user.mkdir(parents=True, exist_ok=True)  
 log_data_user = Path(str(dir_user) + '/data.txt')
 
+accent2 = "#d2d7fc"
+
 if not log_data_user.exists():
     log_data_user.touch()
 
@@ -317,8 +319,8 @@ class Frame1(tk.Frame):
 
         top_frame.grid_columnconfigure(0, weight=1)
         top_frame.grid_columnconfigure(1, weight=1)
-        top_frame.grid_columnconfigure(2, weight=50)
-        top_frame.grid_columnconfigure(3, weight=28)
+        top_frame.grid_columnconfigure(2, weight=200)
+        top_frame.grid_columnconfigure(3, weight=20)
 
 
         self.title_label = tk.Label(top_frame, text=f"TABEL LIST TRUK FFB GRADING PER TRUK {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
@@ -351,7 +353,7 @@ class Frame1(tk.Frame):
         self.tree.grid(row=1, column=0, columnspan=5, sticky="nsew")  # Use columnspan to span all columns
 
         self.footer_frame = tk.Frame(self)
-        self.footer_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=40)  # Use columnspan to span all columns
+        self.footer_frame.grid(row=2, column=0, columnspan=5, sticky="ew", pady=40)  # Use columnspan to span all columns
 
         footer_label = tk.Label(self.footer_frame, text="Copyright @ Digital Architect SRS 2023", font=("Helvetica", 14, "bold"))
         footer_label.pack()
@@ -388,14 +390,11 @@ class Frame1(tk.Frame):
             self.tree.set(item, "#1", str(i))
             if data[-1] == None:
                 self.tree.set(item, "#11", "READY")
+                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
             else:
+                self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
                 self.tree.set(item, "#11", "DONE")
-            self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))
-
-            # if "Selesai" in data:
-            #     self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
-            # else:
-            #     self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color      
+            self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))     
 
     def connect_to_database(self):
         return pymssql.connect(
@@ -537,7 +536,7 @@ class Frame1(tk.Frame):
         #print("column:" + str(column) + "|columns:"+ str(len(columns)))
         if row_id not in self.clicked_buttons and not self.running_script:
 
-            self.tree.tag_configure(row_id, background="#cccdce")  # Change row color
+            self.tree.tag_configure(row_id, background=accent2)  # Change row color
             self.clicked_buttons.append(row_id)
 
             if int(column) == len(columns):
