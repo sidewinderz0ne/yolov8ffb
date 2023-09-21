@@ -48,6 +48,13 @@ if not save_dir_txt.exists():
     os.makedirs(log_folder, exist_ok=True)
     save_dir_txt.touch()
 
+log_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/'+ formatted_date+'_log.TXT')
+
+if not log_dir.exists():
+    log_folder = os.path.dirname(log_dir)
+    os.makedirs(log_folder, exist_ok=True)
+    log_dir.touch()
+
 def remove_non_numeric(input_str):
     return re.sub(r'[^0-9.]', '', input_str)
 
