@@ -275,6 +275,16 @@ class RegisterFrame(tk.Frame):
 
             self.after(3000, self.clear_feedback)
 
+
+def connect_to_database():
+    return pymssql.connect(
+        server='192.168.1.254\DBSTAGING',
+        user='usertesting',
+        password='Qwerty@123',
+        database='skmstagingdb',
+        as_dict=True
+    )
+
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
 
@@ -396,17 +406,8 @@ class Frame1(tk.Frame):
                 self.tree.set(item, "#11", "DONE")
             self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))     
 
-    def connect_to_database(self):
-        return pymssql.connect(
-            server='192.168.1.254\DBSTAGING',
-            user='usertesting',
-            password='Qwerty@123',
-            database='skmstagingdb',
-            as_dict=True
-        )
-
     def pull_master(self, table, code, name, file_name):
-        connection = self.connect_to_database()
+        connection = connect_to_database()
         sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
         cursor = connection.cursor()
         cursor.execute(sql_query)
@@ -415,7 +416,7 @@ class Frame1(tk.Frame):
 
         if len(records) > 0 or not file_name.exists():
             sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)}"
-            connection = self.connect_to_database()  
+            connection = connect_to_database()  
             cursor = connection.cursor()
             cursor.execute(sql_query)
             records = cursor.fetchall()
@@ -426,7 +427,7 @@ class Frame1(tk.Frame):
             with open(file_name, 'w') as file:
                 for code, name in mapping.items():
                     file.write(f"{code}:{name}\n")
-            connection = self.connect_to_database()
+            connection = connect_to_database()
             update_query = f"UPDATE {str(table)} SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
             cursor = connection.cursor()
             try:
@@ -447,7 +448,7 @@ class Frame1(tk.Frame):
             return mapping
 
     def pull_data_ppro(self):
-        connection = self.connect_to_database()
+        connection = connect_to_database()
         #sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE AI_pull_time IS NULL"
         sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging" #TRIGGER
         cursor = connection.cursor()
@@ -573,17 +574,19 @@ class Frame1(tk.Frame):
             self.running_script = False
             self.button.config(state=tk.NORMAL)  # Enable the button
 
+WBTicketNo = None
+totalJjg = 0
 class Frame3(tk.Frame):
+    
     def __init__(self, master, output_inference, row_values):
         super().__init__(master)
 
-        
-        
-        totalJjg = 0
         counter_per_class = None
         img_dir = None
         raw = None
-
+        global WBTicketNo 
+        global totalJjg
+        
         with open(save_dir_txt, 'r') as file:
             raw = file.readline()
     
@@ -832,6 +835,37 @@ class Frame3(tk.Frame):
 
         return image
 
+    def push_data(self, intCat,intVal):
+        connection = connect_to_database()
+
+        global WBTicketNo 
+        global totalJjg
+
+        # Values for the new row
+        new_row = {
+            'AI_NoTicket': str(WBTicketNo),
+            'AI_Grading': str(intCat),
+            'AI_JanjangSample': str(totalJjg), 
+            'AI_TotalJanjang': str(totalJjg),
+            'AI_Janjang': str(intVal)
+        }
+
+        # Build the SQL INSERT statement
+        SQL_INSERT = """
+        INSERT INTO MOPQuality_Staging (AI_NoTicket, AI_Grading, AI_JanjangSample, AI_TotalJanjang, AI_push_time, AI_Janjang)
+        VALUES (%(AI_NoTicket)s, %(AI_Grading)s, %(AI_JanjangSample)s, %(AI_TotalJanjang)s, GETDATE(),%(AI_Janjang)s);
+        """
+
+        # Create a cursor and execute the INSERT statement
+        cursor = connection.cursor()
+        cursor.execute(SQL_INSERT, new_row)
+
+        # Commit the transaction to save the changes to the database
+        connection.commit()
+
+        # Close the database connection
+        connection.close()
+
     def save_and_switch(self, count_per_class, row_values):
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
@@ -856,9 +890,46 @@ class Frame3(tk.Frame):
         except Exception as e:
             print("Error saving data to", log_file_path, ":", str(e))
 
+        connection = connect_to_database()
+
+        sql_query = """
+        SELECT Ppro_GradeCode, Ppro_GradeDescription
+        FROM MasterGrading_Staging;
+        """
+
+        cursor = connection.cursor()
+        cursor.execute(sql_query)
+        
+        gradecodes = []
+        gradedescriptions = []
+
+        for row in cursor.fetchall():
+            gradecodes.append(row['Ppro_GradeCode'])
+            gradedescriptions.append(row['Ppro_GradeDescription'])
+
+        connection.close()
+
+        print("gradecodes:")
+        print(gradecodes)
+        print("gradedescriptions:")
+        print(gradedescriptions)
+
+        for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
+            print("cleaned des")
+            print(gradedescription)
+            if gradedescription == "Brondolan" and brondol != 0:
+                print("Brondolan")
+                self.push_data(gradecode, brondol)
+            elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
+                print("DIRT/KOTORAN")
+                self.push_data(gradecode, dirt)
+            elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
+                print("Brondolan Busuk")
+                self.push_data(gradecode, brondolBusuk)
+
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
 
-        # Switch back to Frame1
+        #Switch back to Frame1
         self.master.switch_frame(Frame1)
 
 class MainWindow(tk.Tk):
