@@ -293,7 +293,7 @@ class Frame1(tk.Frame):
         
 
         # Adjust column widths
-        self.tree.column("no", width=25)         
+        self.tree.column("no", width=50)         
         self.tree.column("notiket", width=250) 
         self.tree.column("nopol", width=100, anchor="center") 
         self.tree.column("driver") 
@@ -375,9 +375,14 @@ class Frame1(tk.Frame):
         custom_font = tkFont.Font(family="Helvetica", size=11)
         
         for i, data in enumerate(arrData, start=1):
+            # print('lazy')
+            # print(data[-1])
             item = self.tree.insert("", "end", values=data, tags=i)
-            self.tree.set(item, "#11", "READY")
-
+            self.tree.set(item, "#1", str(i))
+            if data[-1] == None:
+                self.tree.set(item, "#11", "READY")
+            else:
+                self.tree.set(item, "#11", "DONE")
             self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))
 
             # if "Selesai" in data:
@@ -477,7 +482,11 @@ class Frame1(tk.Frame):
             except Exception as e:
                 print(f"Error executing update query 2: {str(e)}")
                 output_datetime_str = str(data['Ppro_push_time'])
-
+            try:
+                ai_pull_time = data['AI_pull_time']
+            except Exception as e:
+                print(f"Error getting AI PULL TIME: {str(e)}")
+                ai_pull_time = "None"
             arr_data.append((
                 str(index+1),
                 data['WBTicketNo'],
@@ -488,7 +497,8 @@ class Frame1(tk.Frame):
                 ppro_block_name,
                 data['Bunches'],
                 data['Ownership'],
-                output_datetime_str
+                output_datetime_str,
+                ai_pull_time
             ))
 
         sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)

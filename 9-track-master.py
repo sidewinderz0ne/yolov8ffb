@@ -26,7 +26,7 @@ from reportlab.lib.pagesizes import letter
 import re
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/2023-09-06-10-13_yolov5su_1280/train/weights/best.pt', help='model.pt path')
+parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
 parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
