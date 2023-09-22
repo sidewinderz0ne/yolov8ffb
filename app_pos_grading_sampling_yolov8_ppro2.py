@@ -176,7 +176,7 @@ class LoginFrame(tk.Frame):
 
                     hashed_password = hashlib.sha256(password.encode()).hexdigest()
                     if hashed_password == stored_hashed_password:
-                        print("Login successful")
+                        # print("Login successful")
                         store_list_mill(log_mill, mill)
                         self.master.switch_frame(Frame1)
                     else:
@@ -267,7 +267,7 @@ class RegisterFrame(tk.Frame):
                 else:
                     with open(log_file_path, 'a') as log_file:
                         log_file.write(strUser + '\n')  # Append the result to the log file with a newline character
-                        print("Data saved successfully to", log_file_path)
+                        # print("Data saved successfully to", log_file_path)
                         self.feedback_label_success.config(text="User baru tersimpan", fg="green")
             else:    
                 print('Tidak dapat menyimpan User!')
@@ -525,7 +525,7 @@ class Frame1(tk.Frame):
         row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
 
         column = self.tree.identify_column(event.x)  # Identify the column clicked
-
+        status_row = self.tree.item(row_item, "values")[-1]
         # Extract the column name from the column identifier
         column = column.split("#")[-1]
         #print(self.clicked_buttons)
@@ -535,7 +535,7 @@ class Frame1(tk.Frame):
             self.clicked_buttons.remove(cb)
         
         #print("column:" + str(column) + "|columns:"+ str(len(columns)))
-        if row_id not in self.clicked_buttons and not self.running_script:
+        if status_row == "READY" and row_id not in self.clicked_buttons and not self.running_script:
 
             self.tree.tag_configure(row_id, background=accent2)  # Change row color
             self.clicked_buttons.append(row_id)
@@ -549,6 +549,21 @@ class Frame1(tk.Frame):
 
                 thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
                 thread.start()
+        else:
+            row_val = self.tree.item(row_item, "values")
+            
+            tiket = str(row_val[1].replace("/", "_"))
+            bunit = str(row_val[4]).replace(' ','')
+            div = str(row_val[5])
+            pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
+            
+            if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
+                try:
+                    subprocess.Popen(["xdg-open", pdf_path])
+                except Exception as e:
+                    print(f"Error opening PDF: {e}")
+            else:
+                messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
 
 
     def run_script(self, row_item, row_id, row_values):
@@ -600,8 +615,8 @@ class Frame3(tk.Frame):
         img_dir = parts[2]
 
         totalJjg = sum(counter_per_class)
-        if output_inference is not None:
-            print(output_inference)
+        # if output_inference is not None:
+            # print(output_inference)
         
         try:
             image_path = self.check_img(img_dir)
@@ -886,7 +901,7 @@ class Frame3(tk.Frame):
         try:
             with open(log_file_path, 'a') as log_file:
                 log_file.write(result + '\n')  # Append the result to the log file with a newline character
-                print("Data saved successfully to", log_file_path)
+                # print("Data saved successfully to", log_file_path)
         except Exception as e:
             print("Error saving data to", log_file_path, ":", str(e))
 
@@ -909,22 +924,22 @@ class Frame3(tk.Frame):
 
         connection.close()
 
-        print("gradecodes:")
-        print(gradecodes)
-        print("gradedescriptions:")
-        print(gradedescriptions)
+        # print("gradecodes:")
+        # print(gradecodes)
+        # print("gradedescriptions:")
+        # print(gradedescriptions)
 
         for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
-            print("cleaned des")
-            print(gradedescription)
+            # print("cleaned des")
+            # print(gradedescription)
             if gradedescription == "Brondolan" and brondol != 0:
-                print("Brondolan")
+                # print("Brondolan")
                 self.push_data(gradecode, brondol)
             elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
-                print("DIRT/KOTORAN")
+                # print("DIRT/KOTORAN")
                 self.push_data(gradecode, dirt)
             elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
-                print("Brondolan Busuk")
+                # print("Brondolan Busuk")
                 self.push_data(gradecode, brondolBusuk)
 
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message

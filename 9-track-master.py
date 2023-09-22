@@ -251,7 +251,7 @@ def generate_report(content, path, prefix_pdf):
 
     img_dir = str(path) + '/' + str(formatted_date)   + '/' + prefix_pdf 
 
-    # print(img_dir)
+    print(img_dir)
 
     checkImgBest = os.path.isfile(str(img_dir) +'best.JPG')
     if checkImgBest:
@@ -485,7 +485,7 @@ def save_txt(result):
     try:
         with open(save_dir_txt, 'w') as log_file:
             log_file.write(str(result))  # Append the result to the log file with a newline character
-        print(f"Data saved successfully to {save_dir_txt}")
+        # print(f"Data saved successfully to {save_dir_txt}")
     except Exception as e:
         print(f"Error saving data to, {save_dir_txt}, : {str(e)}")
             
@@ -495,12 +495,12 @@ def save_log(result, path, time):
         formatted_entry = f"{formatted_result};{time}\n"
         with open(path, 'a') as log_file:
             log_file.write(formatted_entry)
-        print(f"Data saved successfully to {path}")
+        # print(f"Data saved successfully to {path}")
     except Exception as e:
         print(f"Error saving data to {path}: {str(e)}")
 
 def close():
-    global img_dir
+    global img_dir, prefix
     class_count.append(kastrasi)
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
@@ -541,17 +541,22 @@ if mode == 'sampling':
     raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
 
     try:
-        bisnis_unit = str(raw[3])
+        tiket = str(raw[1].replace("/", "_"))
+    except Exception as e:
+        print(f"An error occurred-tiket: {str(e)}")
+        tiket = "-"
+    try:
+        bisnis_unit = str(raw[4])
     except Exception as e:
         print(f"An error occurred-bisnis_unit: {str(e)}")
         bisnis_unit = "-"
     try:
-        divisi = str(raw[7])
+        divisi = str(raw[5])
     except Exception as e:
         print(f"An error occurred-divisi: {str(e)}")
         divisi = "-"
 
-    prefix = str(date_start_no_space[0]) +'_'+ str(date_start_no_space[1])+ '_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
+    prefix = str(tiket) +'_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
 
 
 while cap.isOpened():
