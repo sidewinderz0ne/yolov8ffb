@@ -171,32 +171,32 @@ def generate_report(content, path, prefix_pdf):
     TotalRipeness = 0
 
     try:
-        no_tiket = str(raw[0])
+        no_tiket = str(raw[1])
     except Exception as e:
         print(f"An error occurred-no_tiket: {str(e)}")
         no_tiket = "000000"
     try:
-        no_plat = str(raw[1])
+        no_plat = str(raw[2])
     except Exception as e:
         print(f"An error occurred-no_plat: {str(e)}")
         no_plat = "KH 0000 ZZ"
     try:
-        nama_driver = str(raw[2])
+        nama_driver = str(raw[3])
     except Exception as e:
         print(f"An error occurred-nama_driver: {str(e)}")
         nama_driver = "FULAN"
     try:
-        bisnis_unit = str(raw[3])
+        bisnis_unit = str(raw[4])
     except Exception as e:
         print(f"An error occurred-bisnis_unit: {str(e)}")
         bisnis_unit = "SSE"
     try:
-        divisi = str(raw[4])
+        divisi = str(raw[5])
     except Exception as e:
         print(f"An error occurred-divisi: {str(e)}")
         divisi = "OZ"
     try:
-        blok = str(raw[5])
+        blok = str(raw[6])
     except Exception as e:
         print(f"An error occurred-blok: {str(e)}")
         blok = "Z9999"
@@ -234,7 +234,7 @@ def generate_report(content, path, prefix_pdf):
         ['Status',  str(status)]
     ]
 
-    colEachTable1 = [1.1*inch, 1.4*inch,  0.6*inch, 0.6*inch, 0.6*inch, 1.1*inch, 2.5*inch]
+    colEachTable1 = [1.0*inch, 2.4*inch,  0.6*inch, 0.6*inch, 0.6*inch, 1.2*inch, 1.6*inch]
 
     TabelBawah = [
         ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],

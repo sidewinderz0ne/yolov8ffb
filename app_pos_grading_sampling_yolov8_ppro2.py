@@ -25,7 +25,7 @@ current_date = datetime.datetime.now()
 
 # Format the date as yyyy-mm-dd
 formatted_date = current_date.strftime('%Y-%m-%d')
-
+offline_mode = False
 log_data = Path(os.getcwd() + '/data')
 data_bunit = Path(str(log_data) + '/bunit_mapping.txt')
 data_div = Path(str(log_data) + '/div_mapping.txt')
@@ -56,6 +56,13 @@ if not log_dir.exists():
     log_folder = os.path.dirname(log_dir)
     os.makedirs(log_folder, exist_ok=True)
     log_dir.touch()
+
+offline_log_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/offline_log.TXT')
+
+if not offline_log_dir.exists():
+    log_folder = os.path.dirname(offline_log_dir)
+    os.makedirs(log_folder, exist_ok=True)
+    offline_log_dir.touch()
 
 def remove_non_numeric(input_str):
     return re.sub(r'[^0-9.]', '', input_str)
@@ -277,13 +284,27 @@ class RegisterFrame(tk.Frame):
 
 
 def connect_to_database():
-    return pymssql.connect(
-        server='192.168.1.254\DBSTAGING',
-        user='usertesting',
-        password='Qwerty@123',
-        database='skmstagingdb',
-        as_dict=True
-    )
+
+    config = None
+    try:
+        with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+            config = json.load(file)
+
+        server = config["server"]
+        user = config["user"]
+        password = config["password"]
+        database = config["database"]
+
+        return pymssql.connect(
+            server=server,
+            user=user,
+            password=password,
+            database=database,
+            as_dict=True
+        )
+    except Exception as e:
+        print(f"Error connecting to the database: {str(e)}")
+        return None
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
@@ -291,6 +312,8 @@ class Frame1(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         global source
+
+        
         self.clicked_buttons = []
         self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
         self.style = ttk.Style(self)
@@ -310,7 +333,7 @@ class Frame1(tk.Frame):
         self.tree.heading("#10", text="PUSH TIME")
         self.tree.heading("#11", text="ACTION")
         
-
+        
         # Adjust column widths
         self.tree.column("no", width=50)         
         self.tree.column("notiket", width=250) 
@@ -331,6 +354,9 @@ class Frame1(tk.Frame):
         top_frame.grid_columnconfigure(1, weight=1)
         top_frame.grid_columnconfigure(2, weight=200)
         top_frame.grid_columnconfigure(3, weight=20)
+
+        self.refresh_data()
+        
 
 
         self.title_label = tk.Label(top_frame, text=f"TABEL LIST TRUK FFB GRADING PER TRUK {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
@@ -357,8 +383,12 @@ class Frame1(tk.Frame):
         
         self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
         self.button.grid(row=0, column=3)
+        
+        if offline_mode:
+            top_frame.grid_columnconfigure(4, weight=20)
+            self.button = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
+            self.button.grid(row=0, column=4)
 
-        self.refresh_data()
 
         self.tree.grid(row=1, column=0, columnspan=5, sticky="nsew")  # Use columnspan to span all columns
 
@@ -378,6 +408,7 @@ class Frame1(tk.Frame):
         self.columnconfigure(0, weight=1)
 
         self.running_script = False  # Flag to track if script is running
+        
 
     def on_combobox_focus_out(self, event):
         global source  # Declare 'source' as a global variable
@@ -390,7 +421,7 @@ class Frame1(tk.Frame):
 
 
     def populate_treeview(self, arrData):
-        #clearprint(arrData)
+        
         custom_font = tkFont.Font(family="Helvetica", size=11)
         
         for i, data in enumerate(arrData, start=1):
@@ -398,7 +429,7 @@ class Frame1(tk.Frame):
             # print(data[-1])
             item = self.tree.insert("", "end", values=data, tags=i)
             self.tree.set(item, "#1", str(i))
-            if data[-1] == None:
+            if data[-1] == None or data[-1] == 'None':
                 self.tree.set(item, "#11", "READY")
                 self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
             else:
@@ -408,55 +439,67 @@ class Frame1(tk.Frame):
 
     def pull_master(self, table, code, name, file_name):
         connection = connect_to_database()
-        sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
-        cursor = connection.cursor()
-        cursor.execute(sql_query)
-        records = cursor.fetchall()
-        connection.close()
 
-        if len(records) > 0 or not file_name.exists():
-            sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)}"
-            connection = connect_to_database()  
+        if connection == None:
+            mapping = None
+        else:
+            sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
             cursor = connection.cursor()
             cursor.execute(sql_query)
             records = cursor.fetchall()
             connection.close()
-            mapping = {r[str(code)]: r[str(name)] for r in records}
             
-            file_name.touch()
-            with open(file_name, 'w') as file:
-                for code, name in mapping.items():
-                    file.write(f"{code}:{name}\n")
-            connection = connect_to_database()
-            update_query = f"UPDATE {str(table)} SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
-            cursor = connection.cursor()
-            try:
-                cursor.execute(update_query)
-                connection.commit()  # Commit the transaction                
-            except Exception as e:
-                connection.rollback()  # Rollback the transaction in case of an error
-                print(f"Error executing update query: {str(e)}")
-            connection.close()
-            return mapping
-        else:
-            mapping = {}
-            with open(file_name, 'r') as file:
-                lines = file.readlines()
-                for line in lines:
-                    code, name = line.strip().split(':')
-                    mapping[int(code)] = name
-            return mapping
+            if len(records) > 0 or not file_name.exists():
+                sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)}"
+                connection = connect_to_database()  
+                cursor = connection.cursor()
+                cursor.execute(sql_query)
+                records = cursor.fetchall()
+                connection.close()
+                mapping = {r[str(code)]: r[str(name)] for r in records}
+                
+                file_name.touch()
+                with open(file_name, 'w') as file:
+                    for code, name in mapping.items():
+                        file.write(f"{code}:{name}\n")
+                connection = connect_to_database()
+                update_query = f"UPDATE {str(table)} SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(update_query)
+                    connection.commit()  # Commit the transaction                
+                except Exception as e:
+                    connection.rollback()  # Rollback the transaction in case of an error
+                    print(f"Error executing update query: {str(e)}")
+                connection.close()
+                return mapping
+            else:
+                mapping = {}
+                with open(file_name, 'r') as file:
+                    lines = file.readlines()
+                    for line in lines:
+                        code, name = line.strip().split(':')
+                        mapping[int(code)] = name
+                return mapping
 
     def pull_data_ppro(self):
+        start_date = datetime.datetime(2023, 8, 24, 7, 0, 0)
+        # current_date = datetime.datetime.now().date()
+        # start_time = datetime.time(7, 0, 0)
+        # start_date = datetime.datetime.combine(current_date, start_time)
+        # print(start_date)
+        end_date = start_date + datetime.timedelta(days=1)
+        # print(end_date)
         connection = connect_to_database()
-        #sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE AI_pull_time IS NULL"
-        sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging" #TRIGGER
-        cursor = connection.cursor()
-        cursor.execute(sql_query)
-        records = cursor.fetchall()
-        connection.close()
-        
-        return records
+        # print(connection)
+        if connection != None:
+            sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s"
+            cursor = connection.cursor()
+            cursor.execute(sql_query, (start_date, end_date))
+            records = cursor.fetchall()
+            connection.close()
+            
+            return records
 
     def process_data(self, record, master_bunit, master_div, master_block):
         arr_data = []
@@ -512,13 +555,35 @@ class Frame1(tk.Frame):
         
         return sorted_data
 
+    def process_data_offline(self, data):
+        arr_data  = []
+        index = 1
+        for line in data:
+            values = line.strip().split(';')
+            values.insert(0, index)
+            arr_data.append(tuple(values))
+            index += 1
+
+        sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)
+        
+        return sorted_data
+
     def refresh_data(self):
+        global offline_mode
         self.tree.delete(*self.tree.get_children())
         master_bunit = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
         master_div = self.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
         master_block = self.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
         record = self.pull_data_ppro() 
-        arr_data = self.process_data(record, master_bunit, master_div, master_block)
+        
+        if(master_bunit != None and master_div != None and master_block != None):
+            arr_data = self.process_data(record, master_bunit, master_div, master_block) 
+        else:
+            offline_mode = True
+            with open(offline_log_dir, 'r') as file:
+                data = file.readlines()
+                arr_data = self.process_data_offline(data)
+
         self.after(10, lambda: self.populate_treeview(arr_data))
     
     def update_row(self, row_item, event):
@@ -589,6 +654,9 @@ class Frame1(tk.Frame):
             self.running_script = False
             self.button.config(state=tk.NORMAL)  # Enable the button
 
+    def switch_frame2(self):
+        self.master.switch_frame(Frame2)
+
 WBTicketNo = None
 totalJjg = 0
 class Frame3(tk.Frame):
@@ -614,7 +682,7 @@ class Frame3(tk.Frame):
         class_name = eval(parts[1])
         img_dir = parts[2]
 
-        totalJjg = sum(counter_per_class)
+        totalJjg = sum(counter_per_class[0:4])
         # if output_inference is not None:
             # print(output_inference)
         
@@ -834,8 +902,19 @@ class Frame3(tk.Frame):
         unit_label = tk.Label(self, text="kg")
         unit_label.grid(row=18, column=3, sticky="w")
 
-        submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values))
+        if offline_mode:
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1]))
+        else:
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values))
+        
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
+
+    #     self.master.protocol("WM_DELETE_WINDOW", lambda: self.on_closing())
+    
+    # def on_closing(self):
+    #     messagebox.showinfo("Alert", "Submit Data terlebih dahulu !")  # Show success message
+        
+    #     pass
 
     def check_img(self, dir):
         image = None
@@ -945,6 +1024,144 @@ class Frame3(tk.Frame):
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
 
         #Switch back to Frame1
+        self.master.switch_frame(Frame1)
+
+    def save_offline_and_switch(self, count_per_class, row_values):
+        row_values_subset = ';'.join(map(str, row_values))
+        brondol = self.brondolanEntry.get()
+        brondolBusuk = self.brondoalBusukEntry.get()
+        dirt = self.dirtEntry.get()
+
+        brondol = remove_non_numeric(brondol)
+        brondolBusuk = remove_non_numeric(brondolBusuk)
+        dirt = remove_non_numeric(dirt)
+
+        strInputan = str(brondol or 0) + ';'
+        strInputan += str(brondolBusuk or 0) + ';'
+        strInputan += str(dirt or 0)
+        
+        count_class = ';'.join(map(str, count_per_class)) + ';'
+        with open(offline_log_dir, 'r') as log_file:
+            data = log_file.readlines()
+
+        for line_number, line in enumerate(data, start=1):
+            values = line.strip().split(';')
+            tuple_val = tuple(values[:-1]) 
+            #membandingkan row clicked dgn row didalam txt jika sama ubah status None jadi ready
+            if tuple_val == row_values:
+                data[line_number - 1] = row_values_subset + ';READY;' + count_class + strInputan  + '\n'
+                with open(offline_log_dir, 'w') as log_file:
+                    log_file.writelines(data)
+                break
+        
+        messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
+
+        #Switch back to Frame1
+        self.master.switch_frame(Frame1)
+
+        
+class Frame2(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
+        self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
+        logo_label = tk.Label(self, image=self.logo_image)
+        logo_label.grid(row=0, column=0, padx=40, pady=10, sticky="nw")
+
+        self.logo_image2 = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/LOGO-SRS(1).png'))
+        self.logo_image2 = self.logo_image2.subsample(2, 2)
+        logo_label2 = tk.Label(self, image=self.logo_image2)
+        logo_label2.grid(row=0, column=0, padx=190, pady=15, sticky="nw")  # Change column to 0 and sticky to "ne"
+
+        self.style = ttk.Style()
+        self.style.configure("back.TButton", padding=6, borderwidth=3, relief="groove", font=("Helvetica", 10))
+
+         # Create a styled button
+        self.button = ttk.Button(self, text="Kembali", command=self.switch_frame, style="back.TButton")
+        self.button.grid(row=0, column=0, padx=120, pady=30, sticky="ne")
+
+        label_font = ("Helvetica", 11)  # Define a larger font for labels
+        entry_font = ("Helvetica", 11)  # Define a larger font for entry fields
+
+        user_info_frame =tk.LabelFrame(self, text="Form Informasi Truk FFB Grading", font=("Helvetica", 16, "bold"))
+        user_info_frame.grid(row= 0, column=0, padx=700, pady=40, sticky="w")
+
+        label_padding = 10  # Adjust the padding value as needed
+
+        labels = [
+            ("No Tiket", 1, 0),
+            ("No Plat", 1, 1),
+            ("Nama Driver", 1, 2),
+            ("Bisnis Unit", 3, 0),
+            ("Divisi", 3, 1),
+            ("Blok", 3, 2),
+            ("Bunches", 5, 0),
+            ("Status", 5, 1)
+        ]
+
+        for label_text, row, col in labels:
+            label = tk.Label(user_info_frame, text=label_text, font=label_font)
+            label.grid(row=row, column=col, pady=(label_padding, 0))  # Add top margin
+
+        widget_width = 25  # Adjust the width as needed
+
+        no_tiket_entry = tk.Entry(user_info_frame, width=widget_width)
+        no_tiket_entry.grid(row=2, column=0, pady=(0, label_padding))  # Add bottom margin
+
+        no_plat_entry = tk.Entry(user_info_frame, width=widget_width)
+        no_plat_entry.grid(row=2, column=1, pady=(0, label_padding))  # Add bottom margin
+
+        driver_entry = tk.Entry(user_info_frame, width=widget_width)
+        driver_entry.grid(row=2, column=2, pady=(0, label_padding))  # Add bottom margin
+
+        unit_entry = tk.Entry(user_info_frame, width=widget_width)
+        unit_entry.grid(row=4, column=0, pady=(0, label_padding))  # Add bottom margin
+
+        divisi_entry = tk.Entry(user_info_frame, width=widget_width)
+        divisi_entry.grid(row=4, column=1, pady=(0, label_padding))  # Add bottom margin
+
+        blok_entry = tk.Entry(user_info_frame, width=widget_width)
+        blok_entry.grid(row=4, column=2, pady=(0, label_padding))  # Add bottom margin
+
+        bunches_entry = tk.Entry(user_info_frame, width=widget_width)
+        bunches_entry.grid(row=6, column=0, pady=(0, label_padding))  # Add bottom margin
+
+        status_entry = ttk.Combobox(user_info_frame, values=["Inti", "Pihak Ketiga"], font=entry_font, width=18)
+        status_entry.grid(row=6, column=1, pady=(0, label_padding))  # Span 3 columns and add bottom margin
+    
+        entry_fields = [no_tiket_entry, no_plat_entry, driver_entry, unit_entry, divisi_entry, blok_entry, bunches_entry, status_entry]
+
+        style = ttk.Style()
+        self.style.configure("Custom.TButton", padding=6, borderwidth=3, relief="groove", background="#2ecc71", font=("Helvetica", 10))
+
+        button = ttk.Button(user_info_frame, style="Custom.TButton", width=widget_width, text="Simpan Data", command=lambda:  self.save_offline_log(no_tiket_entry.get(), no_plat_entry.get(), driver_entry.get(), unit_entry.get(), divisi_entry.get(), blok_entry.get(), bunches_entry.get(), status_entry.get(), entry_fields))
+        button.grid(row=8, column=1, pady=(20, 30))
+
+    def switch_frame(self):
+        self.master.switch_frame(Frame1)
+
+    def save_offline_log(self, tiket,plat, driver, unit, divisi, blok, bunches,  status, entry_fields):
+
+        tiket = str(tiket).replace(' ', '')
+        plat = str(plat).replace(' ', '')
+        driver = str(driver).replace(' ', '')
+        unit = str(unit).replace(' ', '')
+        divisi = str(divisi).replace(' ', '')
+        blok = str(blok).replace(' ', '')
+        bunches = str(bunches).replace(' ', '')
+        status = str(status)
+
+        result = tiket + ';' + plat + ';'+ driver + ';'+ unit + ';'+ divisi  + ';'+ blok +';'+ bunches +';' + status + ';' + current_date.strftime('%Y-%m-%d %H:%M:%S') + ';None'
+
+        try:
+            with open(offline_log_dir, 'a') as file:
+                file.write(result + '\n')
+        except Exception as e:
+            print("Error saving data to", offline_log_dir, ":", str(e))
+                
+        messagebox.showinfo("Success", "Data Tiket " + tiket + " Sukses Tersimpan di Table Utama!")  
+        
         self.master.switch_frame(Frame1)
 
 class MainWindow(tk.Tk):
