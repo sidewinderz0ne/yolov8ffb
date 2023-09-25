@@ -112,7 +112,119 @@ def store_list_mill(dir_mill, mill):
     filtered_lines = [line for line in lines if line.strip().split(';')[0] == selected_mill]
 
     with open(dir_mill, 'w') as file:
-        file.writelines(filtered_lines) 
+        file.writelines(filtered_lines)
+
+class Frame4(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        register_label = tk.Label(self, text="Konfigurasi Server Database", font=("Times New Roman", 20, "bold"))
+        register_label.grid(row=0, column=0, columnspan=2, sticky='w', pady=(40, 0))
+
+        register_label = tk.Label(self, text="Silakan isi untuk mengganti konfigurasi server sistem!", font=("Times New Roman", 12, "italic"))
+        register_label.grid(row=1, column=0, columnspan=2, sticky='w', pady=10)
+
+        user_root = tk.Label(self, text="User Root:")
+        user_root.grid(row=2, column=0, sticky="w", pady=5)
+        self.useroot_entry = tk.Entry(self)
+        self.useroot_entry.grid(row=2, column=1, pady=5, sticky="ew")
+
+        server_label = tk.Label(self, text="Server")
+        server_label.grid(row=3, column=0, sticky="w", pady=5)
+        self.server_entry = tk.Entry(self)
+        self.server_entry.grid(row=3, column=1, pady=5, sticky="ew")
+
+        database_label = tk.Label(self, text="Database")
+        database_label.grid(row=4, column=0, sticky="w", pady=5)
+        self.database_entry = tk.Entry(self) 
+        self.database_entry.grid(row=4, column=1, sticky="ew")
+
+        user_label = tk.Label(self, text="User")
+        user_label.grid(row=5, column=0, sticky="w", pady=5)
+        self.user_entry = tk.Entry(self) 
+        self.user_entry.grid(row=5, column=1, sticky="ew")
+        
+        password_label = tk.Label(self, text="Password")
+        password_label.grid(row=6, column=0, sticky="w", pady=5)
+        self.password_entry = tk.Entry(self, show="*") 
+        self.password_entry.grid(row=6, column=1, sticky="ew")
+
+        # toggle_button = tk.Button(self, text="", command=self.toggle_password_visibility)
+        # toggle_button.grid(row=6, column=2, columnspan=2, pady=5)
+        
+        submit_button = tk.Button(self, text="Submit", command=self.change_config)
+        submit_button.grid(row=7, column=0,sticky="w",   pady=(40, 0))
+        
+        back_button = tk.Button(self, text="Kembali ke Login", command=self.backToLogin)
+        back_button.grid(row=7, column=1,sticky="w",   pady=(40, 0))
+
+        self.feedback_label = tk.Label(self, text="", fg="red")
+        self.feedback_label.grid(row=8, column=0, columnspan=2, pady=(30, 10))
+
+        self.feedback_label_success = tk.Label(self, text="", fg="green")
+        self.feedback_label_success.grid(row=8, column=0, columnspan=2, pady=(30, 10))
+
+    def change_config(self):
+        server = self.server_entry.get()
+        userRoot = self.useroot_entry.get()
+        user = self.user_entry.get()
+        password = self.password_entry.get()
+        database = self.database_entry.get()
+        if not server or not user or not userRoot or not password or not database:
+                self.feedback_label.config(text="Semua kolom harus diisi", fg="red")
+                self.after(3000, self.clear_feedback)
+                return  # Stop further execution
+        # Define the default configuration
+        default_config = {
+            "server": "192.168.1.254\\DBSTAGING",
+            "user": "usertesting",
+            "password": "Qwerty@123",
+            "database": "skmstagingdb"
+        }
+
+        if userRoot == 'grading':
+            # Check if the configuration file exists
+            config_file_path = Path(os.getcwd() + '/data/server.txt')  # Change this to your desired file path
+            if os.path.isfile(config_file_path):
+                # If the file exists, load the existing configuration
+                with open(config_file_path, "r") as config_file:
+                    existing_config = json.load(config_file)
+            else:
+                existing_config = default_config
+
+            # Update the configuration with the values from Entry widgets
+            print('nais')
+            existing_config["server"] = server
+            existing_config["user"] = user
+            existing_config["password"] = password
+            existing_config["database"] = database
+
+            # Save the updated configuration back to the file
+            with open(config_file_path, "w") as config_file:
+                json.dump(existing_config, config_file, indent=4)
+
+            # Provide feedback to the user
+            self.feedback_label_success.config(text="Configuration saved successfully!")
+
+    def clear_feedback(self):
+        if self.feedback_label.winfo_exists():
+            self.feedback_label.config(text="")
+
+        elif self.feedback_label_success.winfo_exists():
+            self.feedback_label_success.config(text="")
+
+    def toggle_password_visibility(self, event=None):
+        current_show_value = self.password_entry.cget("show")
+        if current_show_value == "":
+            # Currently showing password, so hide it
+            self.password_entry.config(show="*")
+        else:
+            # Currently hiding password, so show it
+            self.password_entry.config(show="")
+
+    def backToLogin(self):
+        self.master.switch_frame(LoginFrame)
+
 
 class LoginFrame(tk.Frame):
     def __init__(self, master):
@@ -155,6 +267,9 @@ class LoginFrame(tk.Frame):
         login_button = tk.Button(self, text="Login", command=self.login)
         login_button.grid(row=7, column=0, columnspan=2, sticky="w", pady=(40, 0))
 
+        login_button = tk.Button(self, text="Config Server", command=self.config_server)
+        login_button.grid(row=7, column=1, columnspan=2, sticky="w", pady=(40, 0))
+
         self.password_entry.bind("<Return>", lambda event: self.login())
 
     def clear_feedback(self):
@@ -163,6 +278,9 @@ class LoginFrame(tk.Frame):
 
     def register_clicked(self, event):
         self.master.switch_frame(RegisterFrame)
+
+    def config_server(self):
+        self.master.switch_frame(Frame4)
 
     def login(self):
         user = self.username_entry.get()
@@ -202,11 +320,11 @@ class RegisterFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         
-        login_label = tk.Label(self, text="Register New User", font=("Times New Roman", 20, "bold"))
-        login_label.grid(row=0, column=0, columnspan=2, sticky='w', pady=(40, 0))
+        register_label = tk.Label(self, text="Register New User", font=("Times New Roman", 20, "bold"))
+        register_label.grid(row=0, column=0, columnspan=2, sticky='w', pady=(40, 0))
 
-        login_label = tk.Label(self, text="Silakan isi untuk menambahkan user ke sistem!", font=("Times New Roman", 12, "italic"))
-        login_label.grid(row=1, column=0, columnspan=2, sticky='w', pady=10)
+        register_label = tk.Label(self, text="Silakan isi untuk menambahkan user ke sistem!", font=("Times New Roman", 12, "italic"))
+        register_label.grid(row=1, column=0, columnspan=2, sticky='w', pady=10)
 
         user_root = tk.Label(self, text="User Root:")
         user_root.grid(row=2, column=0, sticky="w", pady=5)
@@ -223,11 +341,11 @@ class RegisterFrame(tk.Frame):
         self.password_entry = tk.Entry(self, show="*") 
         self.password_entry.grid(row=4, column=1, sticky="ew")
         
-        login_button = tk.Button(self, text="Submit", command=self.register)
-        login_button.grid(row=5, column=0,sticky="w",   pady=(40, 0))
+        register_button = tk.Button(self, text="Submit", command=self.register)
+        register_button.grid(row=5, column=0,sticky="w",   pady=(40, 0))
         
-        login_button = tk.Button(self, text="Kembali ke Login", command=self.backToLogin)
-        login_button.grid(row=5, column=1,sticky="w",   pady=(40, 0))
+        register_button = tk.Button(self, text="Kembali ke Login", command=self.backToLogin)
+        register_button.grid(row=5, column=1,sticky="w",   pady=(40, 0))
 
         self.feedback_label = tk.Label(self, text="", fg="green")
         self.feedback_label.grid(row=6, column=0, columnspan=2, pady=(30, 10))
@@ -1209,6 +1327,9 @@ class MainWindow(tk.Tk):
             window_width = 500
             window_height = 500
         elif isinstance(self.current_frame, RegisterFrame):
+            window_width = 500
+            window_height = 500
+        elif isinstance(self.current_frame, Frame4):
             window_width = 500
             window_height = 500
         else:
