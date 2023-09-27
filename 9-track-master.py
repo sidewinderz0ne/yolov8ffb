@@ -206,8 +206,10 @@ def change_push_time():
         cursor.execute(SQL_UPDATE, (notiket))
         conn.commit()
         conn.close()
+        return "Push time changed successfully."
     except Exception as e:
-        print(f"An error occurred-change_push_time: {str(e)}")
+        return f"An error occurred-change_push_time: {str(e)}"
+
 
 def push_grading_quality():
     try:
@@ -346,7 +348,7 @@ def close():
 
     if mode == 'sampling':
         push_grading_quality()
-        change_push_time()
+        print(change_push_time())
         append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
         img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"

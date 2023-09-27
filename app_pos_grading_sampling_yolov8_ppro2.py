@@ -725,6 +725,7 @@ class Frame1(tk.Frame):
         top_frame.grid_columnconfigure(1, weight=1)
         top_frame.grid_columnconfigure(2, weight=200)
         top_frame.grid_columnconfigure(3, weight=20)
+        top_frame.grid_columnconfigure(4, weight=20)
 
         self.refresh_data()
         
@@ -748,20 +749,27 @@ class Frame1(tk.Frame):
         self.cctv_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=cctv_choices)
         self.mill_var.set(cctv_choices[0])
         source = self.mill_var.get()
-        self.cctv_combobox.grid(row=0, column=4)
+        self.cctv_combobox.grid(row=0, column=5)
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
-        
+
+
         self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
-        self.button.grid(row=0, column=3)
+        self.button.grid(row=0, column=4)
         
         if offline_mode:
-            top_frame.grid_columnconfigure(4, weight=20)
+            self.title_label = tk.Label(top_frame, text="Offline Mode", foreground="red")
+            self.title_label.grid(row=0, column=3)
+
+            top_frame.grid_columnconfigure(5, weight=20)
             self.button = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
-            self.button.grid(row=0, column=4)
+            self.button.grid(row=0, column=5)
+        else:
+            self.title_label = tk.Label(top_frame, text="Online Mode", foreground="green")
+            self.title_label.grid(row=0, column=3)
 
 
-        self.tree.grid(row=1, column=0, columnspan=5, sticky="nsew")  # Use columnspan to span all columns
+        self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
 
         self.footer_frame = tk.Frame(self)
         self.footer_frame.grid(row=2, column=0, columnspan=5, sticky="ew", pady=40)  # Use columnspan to span all columns
@@ -1054,8 +1062,8 @@ class Frame3(tk.Frame):
         img_dir = parts[2]
 
         totalJjg = sum(counter_per_class[0:4])
-        # if output_inference is not None:
-        #     print(output_inference)
+        if output_inference is not None:
+            print(output_inference)
         
         try:
             image_path = self.check_img(img_dir)
@@ -1364,41 +1372,41 @@ class Frame3(tk.Frame):
 
         #convert data dari string ke array
         result = result.split(";")
-        connection = connect_to_database()
-
-        sql_query = """
-        SELECT Ppro_GradeCode, Ppro_GradeDescription
-        FROM MasterGrading_Staging;
-        """
-
-        cursor = connection.cursor()
-        cursor.execute(sql_query)
         
-        gradecodes = []
-        gradedescriptions = []
+        try:
+            connection = connect_to_database()
 
-        for row in cursor.fetchall():
-            gradecodes.append(row['Ppro_GradeCode'])
-            gradedescriptions.append(row['Ppro_GradeDescription'])
+            sql_query = """
+            SELECT Ppro_GradeCode, Ppro_GradeDescription
+            FROM MasterGrading_Staging;
+            """
 
-        connection.close()
+            cursor = connection.cursor()
+            cursor.execute(sql_query)
+            
+            gradecodes = []
+            gradedescriptions = []
 
-        # print("gradecodes:")
-        # print(gradecodes)
-        # print("gradedescriptions:")
-        # print(gradedescriptions)
-        for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
-            # print("cleaned des")
-            # print(gradedescription)
-            if gradedescription == "Brondolan" and brondol != 0:
-                # print("Brondolan")
-                self.push_data(gradecode, brondol)
-            elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
-                # print("DIRT/KOTORAN")
-                self.push_data(gradecode, dirt)
-            elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
-                # print("Brondolan Busuk")
-                self.push_data(gradecode, brondolBusuk)
+            for row in cursor.fetchall():
+                gradecodes.append(row['Ppro_GradeCode'])
+                gradedescriptions.append(row['Ppro_GradeDescription'])
+
+            for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
+                if gradedescription == "Brondolan" and brondol != 0:
+                    self.push_data(gradecode, brondol)
+                elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
+                    self.push_data(gradecode, dirt)
+                elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
+                    self.push_data(gradecode, brondolBusuk)
+
+        except Exception as e:
+            print(f"Error: {e}")
+        finally:
+            try:
+                connection.close()
+            except Exception as e:
+                # Handle any closing connection exceptions here
+                print(f"Error closing connection: {e}")
 
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
 
