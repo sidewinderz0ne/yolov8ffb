@@ -653,6 +653,11 @@ class RegisterFrame(tk.Frame):
 
             self.after(3000, self.clear_feedback)
 
+def send_pdf():
+    try:
+        subprocess.run(['python', str(Path(os.getcwd())) +'/send_pdf_inference.py'], check=True)
+    except subprocess.CalledProcessError as e:
+        print("Error running other_script.py:", str(e))
 
 def connect_to_database():
 
@@ -1065,8 +1070,8 @@ class Frame3(tk.Frame):
         img_dir = parts[2]
 
         totalJjg = sum(counter_per_class[0:4])
-        if output_inference is not None:
-            print(output_inference)
+        # if output_inference is not None:
+        #     print(output_inference)
         
         try:
             image_path = self.check_img(img_dir)
@@ -1414,6 +1419,9 @@ class Frame3(tk.Frame):
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
 
         generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
+
+        send_pdf()
+
         self.master.switch_frame(Frame1)
 
     def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir, totalJjg):
@@ -1456,7 +1464,8 @@ class Frame3(tk.Frame):
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
         generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
 
-        #Switch back to Frame1
+        send_pdf()
+
         self.master.switch_frame(Frame1)
         
 class Frame2(tk.Frame):
