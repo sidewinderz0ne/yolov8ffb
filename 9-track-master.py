@@ -24,6 +24,7 @@ from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 import re
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
@@ -48,7 +49,6 @@ roi = opt.roi
 show = opt.show
 pull_data = opt.pull_data
 no_tiket = ""
-img_dir = None
 TotalJjg = 0
 timer = 25
 stream = None
@@ -155,205 +155,7 @@ def mouse_callback(event, x, y, flags, param):
         if x > 1720 and y < 200:
             bt = True
 
-def generate_report(content, path, prefix_pdf):
 
-    global img_dir
-    
-    # arrData = content.split(';')
-
-    prctgUnripe = 0
-    prctgRipe = 0
-    prctgEmptyBunch = 0
-    prctgOverripe = 0
-    prctgAbnormal = 0
-    prctgKastrasi = 0
-    prctgLongStalk = 0
-    TotalRipeness = 0
-
-    try:
-        no_tiket = str(raw[1])
-    except Exception as e:
-        print(f"An error occurred-no_tiket: {str(e)}")
-        no_tiket = "000000"
-    try:
-        no_plat = str(raw[2])
-    except Exception as e:
-        print(f"An error occurred-no_plat: {str(e)}")
-        no_plat = "KH 0000 ZZ"
-    try:
-        nama_driver = str(raw[3])
-    except Exception as e:
-        print(f"An error occurred-nama_driver: {str(e)}")
-        nama_driver = "FULAN"
-    try:
-        bisnis_unit = str(raw[4])
-    except Exception as e:
-        print(f"An error occurred-bisnis_unit: {str(e)}")
-        bisnis_unit = "SSE"
-    try:
-        divisi = str(raw[5])
-    except Exception as e:
-        print(f"An error occurred-divisi: {str(e)}")
-        divisi = "OZ"
-    try:
-        blok = str(raw[6])
-    except Exception as e:
-        print(f"An error occurred-blok: {str(e)}")
-        blok = "Z9999"
-    try:
-        status = str(raw[7])
-    except Exception as e:
-        print(f"An error occurred-status: {str(e)}")
-        status = "-"
-
-    dateStart = date_start
-    dateEnd = date_end
-        
-    # print("Total janjang : " + str(TotalJjg))
-    detectBuah = False
-    max_widthQr = 200
-    if int(TotalJjg) != 0:
-        detectBuah = True
-        max_widthQr = 140
-        prctgUnripe = round((int(class_count[0]) / int(TotalJjg)) * 100,2)
-        prctgRipe =  round((int(class_count[1]) / int(TotalJjg)) * 100,2)
-        prctgEmptyBunch =  round((int(class_count[2]) / int(TotalJjg)) * 100,2)
-        prctgOverripe =  round((int(class_count[3]) / int(TotalJjg)) * 100,2)
-        prctgAbnormal =  round((int(class_count[4]) / int(TotalJjg)) * 100,2)
-        prctgKastrasi = round((int(kastrasi) / int(TotalJjg)) * 100,2)
-        prctgLongStalk =  round((int(class_count[5]) / int(TotalJjg)) * 100,2)
-        
-        TotalRipeness = round((int(class_count[1]) / int(TotalJjg)) * 100,2)
-
-
-    TabelAtas = [
-        ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
-        ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
-        ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
-        ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
-        ['Status',  str(status)]
-    ]
-
-    colEachTable1 = [1.0*inch, 2.4*inch,  0.6*inch, 0.6*inch, 0.6*inch, 1.2*inch, 1.6*inch]
-
-    TabelBawah = [
-        ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],
-        [TotalJjg, int(class_count[1]) , int(class_count[2]) , int(class_count[0]) ,int(class_count[3]) , int(class_count[4]) , kastrasi ,int(class_count[5]) , str(TotalRipeness) + ' % '],
-        ['',  str(prctgRipe) + ' %', str(prctgOverripe)+ ' %', str(prctgUnripe) +' %', str(prctgEmptyBunch) +  ' %',  str(prctgAbnormal)+ ' %',  str(prctgKastrasi)+ ' %',str(prctgLongStalk)+ ' %','']
-    ]   
-
-
-    colEachTable2 = [0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch]
-
-    spacer = Spacer(1, 0.25*inch)
-    
-    # print(prefix_pdf)
-
-    img_dir = str(path) + '/' + str(formatted_date)   + '/' + prefix_pdf 
-
-    print(img_dir)
-
-    checkImgBest = os.path.isfile(str(img_dir) +'best.JPG')
-    if checkImgBest:
-        image = ImgRl(str(img_dir) + 'best.JPG')
-    else:
-        image = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
-
-    checkImgWorst = os.path.isfile(str(img_dir) +'worst.JPG')  
-    if checkImgWorst:
-        image2 = ImgRl(str(img_dir) + 'worst.JPG')
-    else:
-        image2 = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
-    
-    logoCbi = ImgRl(Path(os.getcwd() + '/default-img/Logo CBI.png'))
-    imageQr = ImgRl(Path(os.getcwd() + '/default-img/qr.png'))
-    max_width = 285  # The maximum allowed width of the image
-    max_widthLogo = 70  # The maximum allowed width of the image
-    widthLogo = min(logoCbi.drawWidth, max_widthLogo)  # The desired width of the image
-    width1 = min(image.drawWidth, max_width)  # The desired width of the image
-    width2 = min(image2.drawWidth, max_width)  # The desired width of the image
-    widthQr = min(imageQr.drawWidth, max_widthQr)  # The desired width of the image
-    image._restrictSize(width1, image.drawHeight)
-    image2._restrictSize(width2, image2.drawHeight)
-    logoCbi._restrictSize(widthLogo, logoCbi.drawHeight)
-    imageQr._restrictSize(widthQr, imageQr.drawHeight)
-
-    styleTitle = ParagraphStyle(name='Normal', fontName='Helvetica-Bold',fontSize=12,fontWeight='bold')
-    t1 = Paragraph('CROP RIPENESS CHECK REPORT' )
-    title_section = [[logoCbi, 'CROP RIPENESS CHECK REPORT', '']]
-
-    
-    titleImg = Table(title_section, colWidths=[100,375,100])
-    titleImg.setStyle(TableStyle([
-         ('GRID', (0, 0), (-1, -1), 1,  colorPdf.black),
-        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (1, 0), (1, 0), 15),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-    ]))
-
-    dataImg = [[image, image2],['Kondisi Paling Baik', 'Kondisi Paling Buruk']]
-    tblImg = Table(dataImg, [4.0*inch,4.0*inch])
-    tblImg.setStyle(TableStyle([
-    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
-       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-    ]))
-
-    dataP1 = [['KONDISI TBS : ']]
-    tblP1 = Table(dataP1,[8*inch])
-    tblP1.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-    ]))
-
-    
-    name_pdf = str(path) +'/' + str(formatted_date) + '/'+ str(prefix_pdf) + '.pdf'
-    # print(name_pdf)
-    doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
-    
-    table1 = Table(TabelAtas,colWidths=colEachTable1)
-    table1.setStyle(TableStyle([
-        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
-        ('GRID', (0, 0), (1, 4), 1, colorPdf.black),
-        ('GRID', (5, 0), (8, 3), 1, colorPdf.black)
-    ]))
-    table2 = Table(TabelBawah, colWidths=colEachTable2)
-    table2.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (8, 0), 'CENTER'),
-        ('ALIGN', (0, 1), (8, 1), 'LEFT'),
-        ('VALIGN', (0, 0), (8, 0), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 1, colorPdf.black),
-        ('SPAN', (0, 1), (0, 2)),
-        ('SPAN', (8, 1), (8, 2)),
-        ('ALIGN', (8, 1), (8, 2), 'CENTER'), 
-        ('VALIGN', (8, 1), (8, 2), 'MIDDLE'), 
-        ('ALIGN', (0, 1), (0, 2), 'CENTER'),  
-        ('VALIGN', (0, 1), (0, 2), 'MIDDLE'), 
-    ]))
-
-    qr_data = [[imageQr]]
-
-    tblQr = Table(qr_data, [4.0*inch])
-    tblQr.setStyle(TableStyle([
-    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
-       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-    ]))
-
-    elements = []
-    elements.append(titleImg)
-    elements.append(spacer)
-    elements.append(table1)
-    elements.append(spacer)
-    elements.append(tblP1)
-    
-    elements.append(tblImg)
-    elements.append(spacer)
-    elements.append(table2)
-    elements.append(tblQr)
-    doc.build(elements)
 
 def save_img_inference_sampling(img, name):
     dt = date.today()
@@ -377,19 +179,22 @@ def save_img_inference_sampling(img, name):
 
 def change_push_time():
     try:
+        with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+            config = json.load(file)
+
+        server = config["server"]
+        user = config["user"]
+        password = config["password"]
+        database = config["database"]
         # Database connection
         conn = pymssql.connect(
-            server='192.168.1.254\DBSTAGING',
-            user='usertesting',
-            password='Qwerty@123',
-            database='skmstagingdb'
+            server=server,
+            user=user,
+            password=password,
+            database=database
         )
 
         notiket = raw[1]
-        # print("no tiket:")
-        # print(notiket)
-        # print("raw:")
-        # print(raw)
         cursor = conn.cursor()
 
         SQL_UPDATE = """
@@ -406,11 +211,20 @@ def change_push_time():
 
 def push_grading_quality():
     try:
+
+        with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+            config = json.load(file)
+
+        server = config["server"]
+        user = config["user"]
+        password = config["password"]
+        database = config["database"]
+        
         conn = pymssql.connect(
-            server='192.168.1.254\DBSTAGING',
-            user='usertesting',
-            password='Qwerty@123',
-            database='skmstagingdb',
+            server=server,
+            user=user,
+            password=password,
+            database=database,
             as_dict=True
         )
 
@@ -448,11 +262,18 @@ def push_grading_quality():
 
 
 def push_data(intCat,intVal):
+    with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+        config = json.load(file)
+
+        server = config["server"]
+        user = config["user"]
+        password = config["password"]
+        database = config["database"]
     conn = pymssql.connect(
-        server='192.168.1.254\DBSTAGING',
-        user='usertesting',
-        password='Qwerty@123',
-        database='skmstagingdb',
+         server=server,
+            user=user,
+            password=password,
+            database=database,
         as_dict=True
     )
 
@@ -500,7 +321,7 @@ def save_log(result, path, time):
         print(f"Error saving data to {path}: {str(e)}")
 
 def close():
-    global img_dir, prefix
+    global prefix
     class_count.append(kastrasi)
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
@@ -527,7 +348,7 @@ def close():
         push_grading_quality()
         change_push_time()
         append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
-        generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
+        img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"
         save_txt(data)
 

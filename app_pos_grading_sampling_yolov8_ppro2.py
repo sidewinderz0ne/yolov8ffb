@@ -16,6 +16,14 @@ from urllib.request import urlopen
 import json
 import hashlib
 from PIL import Image, ImageTk, ImageOps
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors as colorPdf
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Image as ImgRl,  PageBreak
+from reportlab.platypus import Table, TableStyle, Paragraph
+from reportlab.platypus import Spacer
+from reportlab.lib.units import inch
+from reportlab.lib.pagesizes import letter
 
 url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
 
@@ -66,6 +74,251 @@ if not offline_log_dir.exists():
 
 def remove_non_numeric(input_str):
     return re.sub(r'[^0-9.]', '', input_str)
+
+date_end = None
+def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, dirt):
+
+    prctgUnripe = 0
+    prctgRipe = 0
+    prctgEmptyBunch = 0
+    prctgOverripe = 0
+    prctgAbnormal = 0
+    prctgKastrasi = 0
+    prctgLongStalk = 0
+    TotalRipeness = 0
+
+    try:
+        no_tiket = str(raw[1])
+    except Exception as e:
+        print(f"An error occurred-no_tiket: {str(e)}")
+        no_tiket = "000000"
+    try:
+        no_plat = str(raw[2])
+    except Exception as e:
+        print(f"An error occurred-no_plat: {str(e)}")
+        no_plat = "KH 0000 ZZ"
+    try:
+        nama_driver = str(raw[3])
+    except Exception as e:
+        print(f"An error occurred-nama_driver: {str(e)}")
+        nama_driver = "FULAN"
+    try:
+        bisnis_unit = str(raw[4])
+    except Exception as e:
+        print(f"An error occurred-bisnis_unit: {str(e)}")
+        bisnis_unit = "SSE"
+    try:
+        divisi = str(raw[5])
+    except Exception as e:
+        print(f"An error occurred-divisi: {str(e)}")
+        divisi = "OZ"
+    try:
+        blok = str(raw[6])
+    except Exception as e:
+        print(f"An error occurred-blok: {str(e)}")
+        blok = "Z9999"
+    try:
+        status = str(raw[7])
+    except Exception as e:
+        print(f"An error occurred-status: {str(e)}")
+        status = "-"
+
+    dateStart = str(raw[9])
+    dateEnd = date_end
+    
+    max_widthQr = 140
+    if int(totalJjg) != 0:
+        max_widthQr =150
+        prctgUnripe = round((int(class_count[0]) / int(totalJjg)) * 100,2)
+        prctgRipe =  round((int(class_count[1]) / int(totalJjg)) * 100,2)
+        prctgEmptyBunch =  round((int(class_count[2]) / int(totalJjg)) * 100,2)
+        prctgOverripe =  round((int(class_count[3]) / int(totalJjg)) * 100,2)
+        prctgAbnormal =  round((int(class_count[4]) / int(totalJjg)) * 100,2)
+        prctgLongStalk =  round((int(class_count[5]) / int(totalJjg)) * 100,2)
+        prctgKastrasi = round((int(class_count[6]) / int(totalJjg)) * 100,2)
+        
+        TotalRipeness = round((int(class_count[1]) / int(totalJjg)) * 100,2)
+
+
+    TabelAtas = [
+        ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
+        ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
+        ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
+        ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
+        ['Status',  str(status)]
+    ]
+
+    colEachTable1 = [1.0*inch, 2.4*inch,  0.6*inch, 0.6*inch, 0.6*inch, 1.2*inch, 1.6*inch]
+    page_width_points, page_height_points = letter
+
+    # Convert the page width from points to inches
+    page_width_inches = page_width_points / inch
+
+    # print(f"Page width in inches: {page_width_inches:.2f} inches")
+    TabelBawah = [
+        ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],
+        [totalJjg, int(class_count[1]) , int(class_count[2]) , int(class_count[0]) ,int(class_count[3]) , int(class_count[4]) , int(class_count[6]) ,int(class_count[5]) , str(TotalRipeness) + ' % '],
+        ['',  str(prctgRipe) + ' %', str(prctgOverripe)+ ' %', str(prctgUnripe) +' %', str(prctgEmptyBunch) +  ' %',  str(prctgAbnormal)+ ' %',  str(prctgKastrasi)+ ' %',str(prctgLongStalk)+ ' %','']
+    ]
+
+   
+
+    colEachTableInput = [1.3*inch, 1.3*inch, 1.3*inch]
+
+
+    colEachTable2 = [0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch]
+
+    spacer = Spacer(1, 0.25*inch)
+
+    checkImgBest = os.path.isfile(str(img_dir) +'best.JPG')
+    if checkImgBest:
+        image = ImgRl(str(img_dir) + 'best.JPG')
+    else:
+        image = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
+
+    checkImgWorst = os.path.isfile(str(img_dir) +'worst.JPG')  
+    if checkImgWorst:
+        image2 = ImgRl(str(img_dir) + 'worst.JPG')
+    else:
+        image2 = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
+    
+    logoCbi = ImgRl(Path(os.getcwd() + '/default-img/Logo CBI.png'))
+    imageQr = ImgRl(Path(os.getcwd() + '/default-img/qr.png'))
+    max_width = 240  # The maximum allowed width of the image
+    max_widthLogo = 70  # The maximum allowed width of the image
+    widthLogo = min(logoCbi.drawWidth, max_widthLogo)  # The desired width of the image
+    width1 = min(image.drawWidth, max_width)  # The desired width of the image
+    width2 = min(image2.drawWidth, max_width)  # The desired width of the image
+    widthQr = min(imageQr.drawWidth, max_widthQr)  # The desired width of the image
+    image._restrictSize(width1, image.drawHeight)
+    image2._restrictSize(width2, image2.drawHeight)
+    logoCbi._restrictSize(widthLogo, logoCbi.drawHeight)
+    imageQr._restrictSize(widthQr, imageQr.drawHeight)
+
+    styleTitle = ParagraphStyle(name='Normal', fontName='Helvetica-Bold',fontSize=12,fontWeight='bold')
+    t1 = Paragraph('CROP RIPENESS CHECK REPORT' )
+    title_section = [[logoCbi, 'CROP RIPENESS CHECK REPORT', '']]
+
+    qr_data = [[imageQr]]
+
+    tblQr = Table(qr_data, [4.0*inch])
+    tblQr.setStyle(TableStyle([
+    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
+       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+    ]))
+
+    TabelInputTambahan = [
+        ['Brondolan\n(kg)', 'Brondolan Busuk\n(kg)', 'Dirt/Kotoran\n(kg)'],
+        [brondol,brondolBusuk,dirt],
+        ['','',''],
+        ['','',''],
+        ['','',''],
+        ['','',''],
+        ['','','']
+    ]
+
+    
+    titleImg = Table(title_section, colWidths=[100,375,100])
+    titleImg.setStyle(TableStyle([
+         ('GRID', (0, 0), (-1, -1), 1,  colorPdf.black),
+        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (1, 0), (1, 0), 15),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+    ]))
+
+    dataImg = [[image, image2],['Kondisi Paling Baik', 'Kondisi Paling Buruk']]
+    tblImg = Table(dataImg, [4.0*inch,4.0*inch])
+    tblImg.setStyle(TableStyle([
+    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
+       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
+    ]))
+
+    dataP1 = [['1. KONDISI TBS : ']]
+    tblP1 = Table(dataP1,[8*inch])
+    tblP1.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTITALIC', (0, 0), (-1, -1), 1),
+    ]))
+
+    
+    name_pdf = str(img_dir) +  '.pdf'
+    # print(name_pdf)
+    doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
+    
+    table1 = Table(TabelAtas,colWidths=colEachTable1)
+    table1.setStyle(TableStyle([
+        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
+        ('GRID', (0, 0), (1, 4), 1, colorPdf.black),
+        ('GRID', (5, 0), (8, 3), 1, colorPdf.black)
+    ]))
+    
+    table2 = Table(TabelBawah, colWidths=colEachTable2)
+    table2.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (8, 0), 'CENTER'),
+        ('ALIGN', (0, 1), (8, 1), 'LEFT'),
+        ('VALIGN', (0, 0), (8, 0), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, -1), 1, colorPdf.black),
+        ('SPAN', (0, 1), (0, 2)),
+        ('SPAN', (8, 1), (8, 2)),
+        ('ALIGN', (8, 1), (8, 2), 'CENTER'), 
+        ('VALIGN', (8, 1), (8, 2), 'MIDDLE'), 
+        ('ALIGN', (0, 1), (0, 2), 'CENTER'),  
+        ('VALIGN', (0, 1), (0, 2), 'MIDDLE'), 
+    ]))
+
+    HasilParagraph = [['2. Hasil Deteksi AI : ']]
+    hasilGrid = Table(HasilParagraph,[8*inch])
+    hasilGrid.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTITALIC', (0, 0), (-1, -1), 1),
+    ]))
+
+    
+
+    inputTambahan = [['3. Input Tambahan : ']]
+    inputGrid = Table(inputTambahan,[8*inch])
+    inputGrid.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTITALIC', (0, 0), (-1, -1), 1),
+    ]))
+
+    tableInput = Table(TabelInputTambahan, colWidths=colEachTableInput)
+    tableInput.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (3, 0), 'MIDDLE'),
+        ('ALIGN', (0, 0), (3, 0), 'CENTER'),
+        ('GRID', (0, 0), (2, 1), 1, colorPdf.black),
+    ]))
+
+    side_by_side_tables = Table([[tableInput, tblQr]], colWidths=[4 * inch, 4.3 * inch])
+
+    elements = []
+    elements.append(titleImg)
+    elements.append(spacer)
+    elements.append(table1)
+    elements.append(spacer)
+    elements.append(tblP1)
+    
+    elements.append(tblImg)
+    elements.append(spacer)
+    elements.append(hasilGrid)
+    elements.append(spacer)
+    elements.append(table2)
+    elements.append(spacer)
+    elements.append(inputGrid)
+    elements.append(side_by_side_tables)
+    elements.append(PageBreak())
+    
+    doc.build(elements)
 
 def get_list_mill(dir_mill, flag):
 
@@ -802,7 +1055,7 @@ class Frame3(tk.Frame):
 
         totalJjg = sum(counter_per_class[0:4])
         # if output_inference is not None:
-            # print(output_inference)
+        #     print(output_inference)
         
         try:
             image_path = self.check_img(img_dir)
@@ -1021,9 +1274,9 @@ class Frame3(tk.Frame):
         unit_label.grid(row=18, column=3, sticky="w")
 
         if offline_mode:
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1]))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1], row_values, img_dir, totalJjg))
         else:
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values, img_dir, totalJjg))
         
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
@@ -1078,7 +1331,7 @@ class Frame3(tk.Frame):
         # Close the database connection
         connection.close()
 
-    def save_and_switch(self, count_per_class, row_values):
+    def save_and_switch(self, count_per_class, row_values, img_dir, totalJjg):
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
         dirt = self.dirtEntry.get()
@@ -1087,12 +1340,19 @@ class Frame3(tk.Frame):
         brondolBusuk = remove_non_numeric(brondolBusuk)
         dirt = remove_non_numeric(dirt)
 
+        if not brondol:
+            brondol = 0
+        if not brondolBusuk:
+            brondolBusuk = 0
+        if not dirt:
+            dirt = 0
+
         result = ';'.join(map(str, row_values)) + ';'
         result += ';'.join(map(str, count_per_class)) + ';'
-        result += str(brondol or 0) + ';'
-        result += str(brondolBusuk or 0) + ';'
-        result += str(dirt or 0)
-
+        result += str(brondol) + ';'
+        result += str(brondolBusuk ) + ';'
+        result += str(dirt)
+        
         log_file_path = log_dir  
 
         try:
@@ -1102,6 +1362,8 @@ class Frame3(tk.Frame):
         except Exception as e:
             print("Error saving data to", log_file_path, ":", str(e))
 
+        #convert data dari string ke array
+        result = result.split(";")
         connection = connect_to_database()
 
         sql_query = """
@@ -1125,7 +1387,6 @@ class Frame3(tk.Frame):
         # print(gradecodes)
         # print("gradedescriptions:")
         # print(gradedescriptions)
-
         for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
             # print("cleaned des")
             # print(gradedescription)
@@ -1141,10 +1402,10 @@ class Frame3(tk.Frame):
 
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
 
-        #Switch back to Frame1
+        generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
         self.master.switch_frame(Frame1)
 
-    def save_offline_and_switch(self, count_per_class, row_values):
+    def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir, totalJjg):
         row_values_subset = ';'.join(map(str, row_values))
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
@@ -1154,9 +1415,18 @@ class Frame3(tk.Frame):
         brondolBusuk = remove_non_numeric(brondolBusuk)
         dirt = remove_non_numeric(dirt)
 
-        strInputan = str(brondol or 0) + ';'
-        strInputan += str(brondolBusuk or 0) + ';'
-        strInputan += str(dirt or 0)
+        result = list(row_values_full)
+
+        if not brondol:
+            brondol = 0
+        if not brondolBusuk:
+            brondolBusuk = 0
+        if not dirt:
+            dirt = 0
+
+        strInputan = str(brondol) + ';'
+        strInputan += str(brondolBusuk) + ';'
+        strInputan += str(dirt)
         
         count_class = ';'.join(map(str, count_per_class)) + ';'
         with open(offline_log_dir, 'r') as log_file:
@@ -1173,10 +1443,10 @@ class Frame3(tk.Frame):
                 break
         
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
+        generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
 
         #Switch back to Frame1
         self.master.switch_frame(Frame1)
-
         
 class Frame2(tk.Frame):
     def __init__(self, master):
