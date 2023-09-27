@@ -753,21 +753,16 @@ class Frame1(tk.Frame):
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
 
+        self.mode_label = tk.Label(top_frame, text="", font=("Helvetica", 16, "bold"))
+        self.mode_label.grid(row=0, column=3)
 
         self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
         self.button.grid(row=0, column=4)
         
         if offline_mode:
-            self.title_label = tk.Label(top_frame, text="Offline Mode", foreground="red")
-            self.title_label.grid(row=0, column=3)
-
             top_frame.grid_columnconfigure(5, weight=20)
             self.button = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
             self.button.grid(row=0, column=5)
-        else:
-            self.title_label = tk.Label(top_frame, text="Online Mode", foreground="green")
-            self.title_label.grid(row=0, column=3)
-
 
         self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
 
@@ -788,6 +783,12 @@ class Frame1(tk.Frame):
 
         self.running_script = False  # Flag to track if script is running
         
+    def update_mode_label(self):
+        print(offline_mode)
+        if offline_mode:
+            self.mode_label.config(text="Offline Mode", foreground="red")
+        else:
+            self.mode_label.config(text="Online Mode", foreground="green")
 
     def on_combobox_focus_out(self, event):
         global source  # Declare 'source' as a global variable
@@ -964,6 +965,8 @@ class Frame1(tk.Frame):
                 arr_data = self.process_data_offline(data)
 
         self.after(10, lambda: self.populate_treeview(arr_data))
+
+        # self.update_mode_label()
     
     def update_row(self, row_item, event):
         row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
