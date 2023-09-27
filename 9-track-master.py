@@ -281,7 +281,7 @@ def push_data(intCat,intVal):
 
     # Values for the new row
     new_row = {
-        'AI_NoTicket': str(raw[0]) if raw else "000000",
+        'AI_NoTicket': str(raw[1]) if raw else "000000",
         'AI_Grading': str(intCat),
         'AI_JanjangSample': str(TotalJjg), 
         'AI_TotalJanjang': str(TotalJjg),

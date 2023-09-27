@@ -772,7 +772,7 @@ class Frame1(tk.Frame):
         self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
 
         self.footer_frame = tk.Frame(self)
-        self.footer_frame.grid(row=2, column=0, columnspan=5, sticky="ew", pady=40)  # Use columnspan to span all columns
+        self.footer_frame.grid(row=2, column=0, columnspan=6, sticky="ew", pady=40)  # Use columnspan to span all columns
 
         footer_label = tk.Label(self.footer_frame, text="Copyright @ Digital Architect SRS 2023", font=("Helvetica", 14, "bold"))
         footer_label.pack()
@@ -816,11 +816,11 @@ class Frame1(tk.Frame):
             self.tree.set(item, "#1", str(i))
             if data[-1] == None or data[-1] == 'None':
                 self.tree.set(item, "#11", "READY")
-                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
+                self.tree.tag_confiTgure(i, background="#FFFFFF", font=custom_font)  # Change row color 
             else:
                 self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
                 self.tree.set(item, "#11", "DONE")
-            self.tree.tag_bind(i, "<ButtonRelease-1>", lambda event, row_item=item: self.update_row(row_item, event))     
+            self.tree.tag_bind(i, "<Double-Button-1>", lambda event, row_item=item: self.update_row(row_item, event))     
 
     def pull_master(self, table, code, name, file_name):
         connection = connect_to_database()
