@@ -54,12 +54,26 @@ timer = 25
 stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 
+def is_video_file(file_path):
+    # Define a list of common video file extensions
+    video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v']
+
+    # Get the file extension from the path
+    file_extension = os.path.splitext(file_path)[1].lower()
+
+    # Check if the file extension is in the list of video extensions
+    if file_extension in video_extensions:
+        return True
+    else:
+        return False
 # Use regular expression to find the IP address in the source string
 ip_match = re.search(ip_pattern, source)
 
 if ip_match:
     extracted_ip = ip_match.group(1)
     stream = f'rtsp://admin:gr4d!ngs@{extracted_ip}/video'
+elif is_video_file(source):
+    stream = source
 else:
     stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
     
@@ -75,7 +89,6 @@ def append_hasil(apStr):
             # Replace the extension with ".txt"
             output_path = os.path.join(folder_path, file_name + ".txt")
 
-            # Open the file in append mode
             with open(output_path, 'a') as file:
                 # Text to append
                 line_to_append = apStr
@@ -345,11 +358,11 @@ def close():
     names.append('kastrasi')
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-
+    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
     if mode == 'sampling':
         push_grading_quality()
         print(change_push_time())
-        append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+        
         img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"
         save_txt(data)
