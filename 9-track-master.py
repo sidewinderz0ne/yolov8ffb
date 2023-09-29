@@ -25,6 +25,8 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 import re
 import json
+from time import time
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
@@ -32,7 +34,7 @@ parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
-parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
+parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
@@ -400,10 +402,18 @@ while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
     if success:
-        
+        # Start the timer
+        start_time = time()
+
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
         results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False)
         
+        # Stop the timer
+        end_time = time()
+
+        # Calculate the FPS
+        fps = 1 / (end_time - start_time)
+
         # Get the boxes and track IDs
         boxes = results[0].boxes.xywh.cpu()
             
@@ -510,6 +520,7 @@ while cap.isOpened():
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
         cv2.putText(annotated_frame, str(last_id), (850, 80), font, 1.5, (0, 0, 255), 2)
+        cv2.putText(annotated_frame, "FPS: " + str(int(fps)), (1750, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
 
         if countOnFrame > jum_tertinggi:
