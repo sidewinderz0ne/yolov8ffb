@@ -54,25 +54,26 @@ timer = 25
 stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 
-def is_video_file(file_path):
-    # Define a list of common video file extensions
-    video_extensions = ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv', '.webm', '.m4v']
+def contains_video_keywords(file_path):
+    # Define a list of keywords that are commonly found in video file names
+    video_keywords = ['video', 'movie', 'film', 'clip', 'avi', 'mp4', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v']
 
-    # Get the file extension from the path
-    file_extension = os.path.splitext(file_path)[1].lower()
+    # Convert the file path to lowercase for case-insensitive matching
+    file_path_lower = file_path.lower()
 
-    # Check if the file extension is in the list of video extensions
-    if file_extension in video_extensions:
-        return True
-    else:
-        return False
+    # Check if any of the video keywords are present in the file path
+    for keyword in video_keywords:
+        if keyword in file_path_lower:
+            return True
+
+    return False
 # Use regular expression to find the IP address in the source string
 ip_match = re.search(ip_pattern, source)
 
 if ip_match:
     extracted_ip = ip_match.group(1)
     stream = f'rtsp://admin:gr4d!ngs@{extracted_ip}/video'
-elif is_video_file(source):
+elif contains_video_keywords(source):
     stream = source
 else:
     stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
