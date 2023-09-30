@@ -34,7 +34,7 @@ parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
-parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
+parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
@@ -116,6 +116,7 @@ track_history = defaultdict(lambda: [])
 # Initialize variables for counting
 countOnFrame = 0
 kastrasi = 0
+kas_reset = 0
 skor_tertinggi = 0
 jum_tertinggi = 0
 skor_terendah = 1000
@@ -124,6 +125,7 @@ object_ids_not_passed = set()
 baseScore = [0,3,2,0,2,1]
 names = list(model.names.values())
 class_count = [0] * len(names)
+class_count_reset = [0] * len(names)
 
 hexs = ['FF3838', 'FF9D97', 'FF701F', 'FFB21D', 'CFD231', '48F90A', '92CC17', '3DDB86', '1A9334', '00D4BB',
                 '2C99A8', '00C2FF', '344593', '6473FF', '0018EC', '8438FF', '520085', 'CB38FF', 'FF95C8', 'FF37C7']
@@ -150,7 +152,7 @@ if not save_dir_txt.exists():
     log_folder = os.path.dirname(save_dir_txt)
     os.makedirs(log_folder, exist_ok=True)
     save_dir_txt.touch()
-grading_total_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/'+'grading_total_log.TXT')
+grading_total_dir = Path(os.getcwd() + '/hasil/grading_total_log.TXT')
 if not grading_total_dir.exists():
     log_folder = os.path.dirname(grading_total_dir)
     os.makedirs(log_folder, exist_ok=True)
@@ -491,7 +493,9 @@ while cap.isOpened():
                     if int(cl) != len(class_count)-1:
                         if wideArea < max_area:
                             kastrasi += 1
+                            kas_reset += 1
                     class_count[int(cl)] += 1 
+                    class_count_reset[int(cl)] += 1 
             
                     if wideArea < max_area:
                         skorTotal += baseScore[-1]
@@ -548,13 +552,16 @@ while cap.isOpened():
 
         elapsed_time = datetime.now(tz=tzInfo) - timer_start
         
-        if elapsed_time.total_seconds() > timer and mode != 'sampling':
+        if elapsed_time.total_seconds() > timer and mode != 'sampling' and mode != 'testing':
             
-            current_state = list(class_count)
-            kastrasi_int = int(kastrasi)
+            current_state = list(class_count_reset)
+            kastrasi_int = int(kas_reset)
             current_state.append(kastrasi_int) 
             timer_start = datetime.now(tz=tzInfo)
             save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
+
+            kas_reset = 0
+            class_count_reset = [0] * len(names)
 
         # Display the annotated frame
         width, height = 100, 100
