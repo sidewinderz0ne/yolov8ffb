@@ -519,8 +519,11 @@ while cap.isOpened():
                 
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
-        cv2.putText(annotated_frame, str(last_id), (850, 80), font, 1.5, (0, 0, 255), 2)
-        cv2.putText(annotated_frame, "FPS: " + str(int(fps)), (1750, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        last_id_str = "IDs: " + str(last_id)
+        cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 4)
+        cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+        cv2.putText(annotated_frame, "FPS: " + str(int(fps)), (1750, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
 
         if countOnFrame > jum_tertinggi:
@@ -565,8 +568,13 @@ while cap.isOpened():
 
         # Create the white border
         cv2.circle(annotated_frame, (1820,100), radius, (255, 255, 255), 5)
+        window = "Yolov8 "+str(imgsz) + " CONF-" + str(conf_thres) + " IOU-" +  str(iou_thres) + " SRC-" + source + " MODEL-" + yolo_model_str
+        cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+        cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
+        cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+
         # Display the annotated frame
-        cv2.imshow("Detect FFB Yolov8", annotated_frame)
+        cv2.imshow(window, annotated_frame)
 
         
         # Break the loop if 'q' is pressed
