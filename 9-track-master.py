@@ -120,8 +120,8 @@ kas_reset = 0
 skor_tertinggi = 0
 jum_tertinggi = 0
 skor_terendah = 1000
-object_ids_passed = set()
-object_ids_not_passed = set()
+object_ids_passed = []
+object_ids_not_passed = []
 baseScore = [0,3,2,0,2,1]
 names = list(model.names.values())
 class_count = [0] * len(names)
@@ -473,10 +473,10 @@ while cap.isOpened():
 
             # Check if the object's center point has crossed the line
             if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
-                object_ids_not_passed.add(track_id)
+                object_ids_not_passed.append(track_id)
 
             if len(object_ids_not_passed) > 50:
-                del object_ids_not_passed[0]
+                del object_ids_not_passed.pop(0)
 
             if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
                 tid = True
@@ -487,7 +487,7 @@ while cap.isOpened():
                         tid = False
                         # print(tid)
                 if tid:
-                    object_ids_passed.add(track_id)
+                    object_ids_passed.append(track_id)
                     try:
                         object_ids_not_passed.remove(track_id)
                     except Exception as e:
