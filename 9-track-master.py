@@ -488,7 +488,10 @@ while cap.isOpened():
                         # print(tid)
                 if tid:
                     object_ids_passed.add(track_id)
-                    object_ids_not_passed.remove(track_id)
+                    try:
+                        object_ids_not_passed.remove(track_id)
+                    except Exception as e:
+                        print("error cannot remove track_id:" + str(e))
                     last_id = track_id
                     if int(cl) != len(class_count)-1:
                         if wideArea < max_area:
