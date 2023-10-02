@@ -476,7 +476,7 @@ while cap.isOpened():
                 object_ids_not_passed.append(track_id)
 
             if len(object_ids_not_passed) > 50:
-                del object_ids_not_passed.pop(0)
+                object_ids_not_passed.pop(0)
 
             if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
                 tid = True
