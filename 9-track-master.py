@@ -34,7 +34,7 @@ parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
-parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
+parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
@@ -58,7 +58,7 @@ ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 
 def contains_video_keywords(file_path):
     # Define a list of keywords that are commonly found in video file names
-    video_keywords = ['video', 'movie', 'film', 'clip', 'avi', 'mp4', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v']
+    video_keywords = ['avi', 'mp4', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v']
 
     # Convert the file path to lowercase for case-insensitive matching
     file_path_lower = file_path.lower()
@@ -169,7 +169,7 @@ def mouse_callback(event, x, y, flags, param):
     global bt  # Declare that you want to modify the global variable bt
     
     if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click event
-        # print(f"Mouse clicked at ({x}, {y})")
+        #print(f"Mouse clicked at ({x}, {y})")
         if x > 1720 and y < 200:
             bt = True
 
@@ -197,7 +197,7 @@ def save_img_inference_sampling(img, name):
 
 def change_push_time():
     try:
-        with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+        with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
             config = json.load(file)
 
         server = config["server"]
@@ -232,7 +232,7 @@ def change_push_time():
 def push_grading_quality():
     try:
 
-        with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+        with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
             config = json.load(file)
 
         server = config["server"]
@@ -282,7 +282,7 @@ def push_grading_quality():
 
 
 def push_data(intCat,intVal):
-    with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+    with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
         config = json.load(file)
 
         server = config["server"]
@@ -371,9 +371,6 @@ def close():
         img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"
         save_txt(data)
-
-cv2.namedWindow("Detect FFB Yolov8")
-cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
     
 last_id = 0
 track_idsArr = []
@@ -399,6 +396,10 @@ if mode == 'sampling':
 
     prefix = str(tiket) +'_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
 
+window = "Yolov8 "+str(imgsz) + " CONF-" + str(conf_thres) + " IOU-" +  str(iou_thres) + " SRC-" + source + " MODEL-" + yolo_model_str
+cv2.namedWindow(window)
+cv2.setMouseCallback(window, mouse_callback)
+cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
 
 while cap.isOpened():
     # Read a frame from the video
@@ -578,15 +579,12 @@ while cap.isOpened():
 
         # Create the white border
         cv2.circle(annotated_frame, (1820,100), radius, (255, 255, 255), 5)
-        window = "Yolov8 "+str(imgsz) + " CONF-" + str(conf_thres) + " IOU-" +  str(iou_thres) + " SRC-" + source + " MODEL-" + yolo_model_str
-        cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
         cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
         cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
         # Display the annotated frame
         cv2.imshow(window, annotated_frame)
 
-        
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord("q") or bt:
             close()

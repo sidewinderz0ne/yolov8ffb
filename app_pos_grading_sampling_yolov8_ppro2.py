@@ -33,7 +33,7 @@ current_date = datetime.datetime.now()
 
 # Format the date as yyyy-mm-dd
 formatted_date = current_date.strftime('%Y-%m-%d')
-offline_mode = False
+status_mode = None
 log_data = Path(os.getcwd() + '/data')
 data_bunit = Path(str(log_data) + '/bunit_mapping.txt')
 data_div = Path(str(log_data) + '/div_mapping.txt')
@@ -437,7 +437,7 @@ class Frame4(tk.Frame):
 
         if userRoot == 'grading':
             # Check if the configuration file exists
-            config_file_path = Path(os.getcwd() + '/data/server.txt')  # Change this to your desired file path
+            config_file_path = Path(os.getcwd() + '/config/server.txt')  # Change this to your desired file path
             if os.path.isfile(config_file_path):
                 # If the file exists, load the existing configuration
                 with open(config_file_path, "r") as config_file:
@@ -446,7 +446,7 @@ class Frame4(tk.Frame):
                 existing_config = default_config
 
             # Update the configuration with the values from Entry widgets
-            print('nais')
+            
             existing_config["server"] = server
             existing_config["user"] = user
             existing_config["password"] = password
@@ -659,18 +659,30 @@ def send_pdf():
     except subprocess.CalledProcessError as e:
         print("Error running other_script.py:", str(e))
 
-def connect_to_database():
+def process_data_offline( data):
+        arr_data  = []
+        index = 1
+        for line in data:
+            values = line.strip().split(';')
+            values.insert(0, index)
+            arr_data.append(tuple(values))
+            index += 1
 
-    config = None
+        sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)
+        return sorted_data
+
+def connect_to_database():
+    global status_mode
+    
     try:
-        with open(Path(os.getcwd() + '/data/server.txt'), "r") as file:
+        with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
             config = json.load(file)
 
         server = config["server"]
         user = config["user"]
         password = config["password"]
         database = config["database"]
-
+        status_mode = 'online'
         return pymssql.connect(
             server=server,
             user=user,
@@ -679,8 +691,12 @@ def connect_to_database():
             as_dict=True
         )
     except Exception as e:
-        print(f"Error connecting to the database: {str(e)}")
-        return None
+        status_mode = 'offline'
+        with open(offline_log_dir, 'r') as file:
+                data = file.readlines()
+                return process_data_offline(data)
+
+    
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
@@ -688,8 +704,6 @@ class Frame1(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
         global source
-
-        
         self.clicked_buttons = []
         self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
         self.style = ttk.Style(self)
@@ -731,11 +745,9 @@ class Frame1(tk.Frame):
         top_frame.grid_columnconfigure(2, weight=200)
         top_frame.grid_columnconfigure(3, weight=20)
         top_frame.grid_columnconfigure(4, weight=20)
-
+        self.top_frame = top_frame
         self.refresh_data()
         
-
-
         self.title_label = tk.Label(top_frame, text=f"TABEL LIST TRUK FFB GRADING PER TRUK {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
         self.title_label.grid(row=0, column=2)
         self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
@@ -762,12 +774,16 @@ class Frame1(tk.Frame):
         self.mode_label.grid(row=0, column=3)
 
         self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
-        self.button.grid(row=0, column=4)
+        self.button.grid(row=0, column=5)
         
-        if offline_mode:
-            top_frame.grid_columnconfigure(5, weight=20)
-            self.button = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
-            self.button.grid(row=0, column=5)
+        
+        top_frame.grid_columnconfigure(5, weight=20)
+
+        
+        # self.button_input = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
+        # self.button_input.grid(row=0, column=5)
+          
+        
 
         self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
 
@@ -788,12 +804,7 @@ class Frame1(tk.Frame):
 
         self.running_script = False  # Flag to track if script is running
         
-    def update_mode_label(self):
-        print(offline_mode)
-        if offline_mode:
-            self.mode_label.config(text="Offline Mode", foreground="red")
-        else:
-            self.mode_label.config(text="Online Mode", foreground="green")
+    
 
     def on_combobox_focus_out(self, event):
         global source  # Declare 'source' as a global variable
@@ -816,7 +827,7 @@ class Frame1(tk.Frame):
             self.tree.set(item, "#1", str(i))
             if data[-1] == None or data[-1] == 'None':
                 self.tree.set(item, "#11", "READY")
-                self.tree.tag_confiTgure(i, background="#FFFFFF", font=custom_font)  # Change row color 
+                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
             else:
                 self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
                 self.tree.set(item, "#11", "DONE")
@@ -825,9 +836,7 @@ class Frame1(tk.Frame):
     def pull_master(self, table, code, name, file_name):
         connection = connect_to_database()
 
-        if connection == None:
-            mapping = None
-        else:
+        if isinstance(connection, pymssql.Connection):
             sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
             cursor = connection.cursor()
             cursor.execute(sql_query)
@@ -867,6 +876,9 @@ class Frame1(tk.Frame):
                         mapping[int(code)] = name
                 return mapping
 
+        else:
+            return connection
+
     def pull_data_ppro(self):
         start_date = datetime.datetime(2023, 8, 24, 7, 0, 0)
         # current_date = datetime.datetime.now().date()
@@ -876,15 +888,16 @@ class Frame1(tk.Frame):
         end_date = start_date + datetime.timedelta(days=1)
         # print(end_date)
         connection = connect_to_database()
-        # print(connection)
-        if connection != None:
+        
+        if isinstance(connection, pymssql.Connection):
             sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s"
             cursor = connection.cursor()
             cursor.execute(sql_query, (start_date, end_date))
             records = cursor.fetchall()
             connection.close()
-            
             return records
+        else:
+            return connection
 
     def process_data(self, record, master_bunit, master_div, master_block):
         arr_data = []
@@ -940,38 +953,32 @@ class Frame1(tk.Frame):
         
         return sorted_data
 
-    def process_data_offline(self, data):
-        arr_data  = []
-        index = 1
-        for line in data:
-            values = line.strip().split(';')
-            values.insert(0, index)
-            arr_data.append(tuple(values))
-            index += 1
+    def remove_input_button(self):
+        if hasattr(self, 'button_input'):
+            self.button_input.grid_remove()
 
-        sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)
-        
-        return sorted_data
+    def create_and_grid_input_button(self):
+        if hasattr(self, 'button_input'):
+            self.button_input.grid_remove()  # Remove the button if it already exists
+
+        self.button_input = ttk.Button(self.top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
+        self.button_input.grid(row=0, column=4)
 
     def refresh_data(self):
-        global offline_mode
         self.tree.delete(*self.tree.get_children())
         master_bunit = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
         master_div = self.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
         master_block = self.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
-        record = self.pull_data_ppro() 
-        
-        if(master_bunit != None and master_div != None and master_block != None):
-            arr_data = self.process_data(record, master_bunit, master_div, master_block) 
+        record = self.pull_data_ppro()
+        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
+        if status_mode == 'online':
+            arr_data = self.process_data(record, master_bunit, master_div, master_block)
+            self.remove_input_button()
         else:
-            offline_mode = True
-            with open(offline_log_dir, 'r') as file:
-                data = file.readlines()
-                arr_data = self.process_data_offline(data)
-
+            arr_data = record
+            self.create_and_grid_input_button()
+            
         self.after(10, lambda: self.populate_treeview(arr_data))
-
-        # self.update_mode_label()
     
     def update_row(self, row_item, event):
         row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
@@ -1002,20 +1009,21 @@ class Frame1(tk.Frame):
                 thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
                 thread.start()
         else:
-            row_val = self.tree.item(row_item, "values")
-            
-            tiket = str(row_val[1].replace("/", "_"))
-            bunit = str(row_val[4]).replace(' ','')
-            div = str(row_val[5])
-            pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
-            
-            if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
-                try:
-                    subprocess.Popen(["xdg-open", pdf_path])
-                except Exception as e:
-                    print(f"Error opening PDF: {e}")
-            else:
-                messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
+            if int(column) == len(columns):
+                row_val = self.tree.item(row_item, "values")
+                
+                tiket = str(row_val[1].replace("/", "_"))
+                bunit = str(row_val[4]).replace(' ','')
+                div = str(row_val[5])
+                pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
+                
+                if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
+                    try:
+                        subprocess.Popen(["xdg-open", pdf_path])
+                    except Exception as e:
+                        print(f"Error opening PDF: {e}")
+                else:
+                    messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
 
 
     def run_script(self, row_item, row_id, row_values):
@@ -1288,11 +1296,11 @@ class Frame3(tk.Frame):
 
         unit_label = tk.Label(self, text="kg")
         unit_label.grid(row=18, column=3, sticky="w")
-
-        if offline_mode:
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1], row_values, img_dir, totalJjg))
-        else:
+        
+        if status_mode == 'online':
             submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values, img_dir, totalJjg))
+        else:
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1], row_values, img_dir, totalJjg))
         
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
@@ -1384,6 +1392,8 @@ class Frame3(tk.Frame):
         try:
             connection = connect_to_database()
 
+            print(connection)
+
             sql_query = """
             SELECT Ppro_GradeCode, Ppro_GradeDescription
             FROM MasterGrading_Staging;
@@ -1420,7 +1430,7 @@ class Frame3(tk.Frame):
 
         generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
 
-        send_pdf()
+        # send_pdf()
 
         self.master.switch_frame(Frame1)
 
@@ -1464,7 +1474,7 @@ class Frame3(tk.Frame):
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
         generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
 
-        send_pdf()
+        # send_pdf()
 
         self.master.switch_frame(Frame1)
         
@@ -1537,6 +1547,9 @@ class Frame2(tk.Frame):
 
         status_entry = ttk.Combobox(user_info_frame, values=["Inti", "Pihak Ketiga"], font=entry_font, width=18)
         status_entry.grid(row=6, column=1, pady=(0, label_padding))  # Span 3 columns and add bottom margin
+
+        if not status_entry.get():
+            status_entry.set("Inti")
     
         entry_fields = [no_tiket_entry, no_plat_entry, driver_entry, unit_entry, divisi_entry, blok_entry, bunches_entry, status_entry]
 

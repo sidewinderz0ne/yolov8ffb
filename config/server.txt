@@ -1,0 +1,6 @@
+{
+    "server": "192.168.1.254\\DBSTAGING",
+    "user": "usertesting",
+    "password": "Qwerty@123",
+    "database": "skmstagingdb"
+}
