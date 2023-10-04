@@ -25,8 +25,8 @@ from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='/home/grading/yolov8/2023-09-04-20-28_yolov8n_640/train/weights/best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='/home/grading/sampel_video/scm/sampel_agustus/ch01_00000000229000000.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
+parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
@@ -35,6 +35,7 @@ parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--bisnis_unit', type=str, default='-')
 parser.add_argument('--divisi', type=str, default='-')
+parser.add_argument('--no_line', type=int, default='0')
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
@@ -46,6 +47,7 @@ roi = opt.roi
 show = opt.show
 bisnis_unit = opt.bisnis_unit
 divisi = opt.divisi
+no_line_log = opt.no_line
 
 TotalJjg = 0
 
@@ -345,54 +347,28 @@ def save_inference_data(count_per_classes,date_start, date_end, path):
         str_result += str(count) + ';'
 
     str_result += date_start + ';'
-    str_result += str(current_date.strftime('%Y-%m-%d %H:%M:%S'))
+    str_result += date_end
 
     path_inference_truk = path +'/' +formatted_date + '_log.TXT'
-
-    with open(path_inference_truk, 'r') as x:
-        content = x.readlines()
-        
-        count = 0
-        # LOGGER.info('63')
-        for line in content:
-            if 'Sedang Berjalan' in line:
-                # LOGGER.info('65')
-                targetLine = content[count]
-                wr = open(path_inference_truk, "w")
-                content[count] = targetLine.replace(";Sedang Berjalan","")
-                wr.writelines(content)
-                wr.close()
-
-                strData = content[count].split(';')
-                no_plat = strData[1]
-
-                path_no_plat = path + '/' + no_plat + '.TXT'
-                
-                path_plat = strData[1]
-                no_line_log = count
-               
-                if not os.path.exists(path_no_plat):
-                    
-                    f = open(path_no_plat, "a")
-                    f.write("")
-                    f.close()
     
-                with open(path_no_plat, 'r') as z:
-                    content = z.readlines()
-                    wr = open(path_no_plat, "w")
-                    try:
-                        # LOGGER.info('68')
-                        if len(content[0].strip()) == 0 | content[0] in ['\n', '\r\n']:
-                            wr.write(str_result)
-                            # LOGGER.info('69')
-                        else:
-                            wr.write(str_result)
-                    except:
-                        # LOGGER.info('70')
-                        wr.write(str_result)
-                    wr.close()
+    with open(path_inference_truk, 'r') as x:
+        data = x.readlines()
+        target = data[no_line_log]
+        print(target)
+        wr = open(path_inference_truk, "w")
+        data[no_line_log] = target.replace("Mulai","Selesai")
+        wr.writelines(data)
+        wr.close()
 
-            count += 1          
+        
+        strData = data[no_line_log].split(';')
+        no_plat = strData[1]
+        path_plat = strData[1]
+
+        path_no_plat = path + '/' + no_plat + '.TXT'
+
+        with open(path_no_plat, 'w') as file:
+            file.write(f"{str_result}\n")
 
 
 def append_inference_data(count_per_classes,date_start, date_end, path, no_line):
@@ -429,7 +405,7 @@ def delete_inference_file(path_plat):
 
 def close():
     class_count.append(kastrasi)
-    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+    # append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
     # print(log_inference)
     save_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference))
     append_inference_data(class_count, str(date_start),str(datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")), str(log_inference), no_line_log)
@@ -458,8 +434,6 @@ def close():
     qr_image = qr.make_image(fill_color="black", back_color="white")
 
     qr_image.save(Path(os.getcwd() + '/default-img/qr.png'))
-
-    print(prefix)
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
     generate_report(content,  Path(os.getcwd() + '/hasil/') ,prefix)

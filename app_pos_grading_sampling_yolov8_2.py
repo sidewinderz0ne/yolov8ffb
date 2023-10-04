@@ -327,10 +327,10 @@ class Frame1(tk.Frame):
                         bisnis_unit = targetLine.split(';')[3]
                         divisi = targetLine.split(';')[4]
                         
-                        wr = open(log_dir, "w")
-                        content[line_txt]  = targetLine.replace("Mulai", "Selesai;Sedang Berjalan")
-                        wr.writelines(content)
-                        wr.close()
+                        # wr = open(log_dir, "w")
+                        # content[line_txt]  = targetLine.replace("Mulai", "Selesai;Sedang Berjalan")
+                        # wr.writelines(content)
+                        # wr.close()
 
             thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values, line_txt, bisnis_unit, divisi))
             thread.start()
@@ -338,16 +338,23 @@ class Frame1(tk.Frame):
     def run_script(self, row_item, row_id, row_values, line_txt, bisnis_unit, divisi):
         
         plat_est = row_values[0]
-        
+        output_inference = None
         try:
 
-            subprocess.run(['python', str(Path(os.getcwd())) + '/8-track-batas_2.py', '--bisnis_unit', bisnis_unit, '--divisi', divisi], check=True)
-            # script_output = os.popen(shell_command).read()
+            result = subprocess.run(['python', str(Path(os.getcwd())) + '/8-track-batas_2_offline.py', '--bisnis_unit', bisnis_unit, '--divisi', divisi, '--no_line',str(line_txt)], 
+            capture_output=True, 
+                            text=True, 
+                            check=True)
+
+            output_inference = result.stdout
+
+
             self.running_script = False
             self.button.config(state=tk.NORMAL)
-
+            
         except subprocess.CalledProcessError as e:
             print("Error running other_script.py:", str(e))
+
         finally:
        
             
@@ -356,16 +363,16 @@ class Frame1(tk.Frame):
             except subprocess.CalledProcessError as e:
                 print("Error running other_script.py:", str(e))
             
-            if os.path.exists(log_dir):
-                    with open(log_dir, 'r') as z:
-                        content = z.readlines()   
-                        targetLine = content[line_txt]
+            # if os.path.exists(log_dir):
+            #         with open(log_dir, 'r') as z:
+            #             content = z.readlines()   
+            #             targetLine = content[line_txt]
                         
-                        # print(targetLine)
-                        wr = open(log_dir, "w")
-                        content[line_txt]  = targetLine.replace("Mulai", "Selesai")
-                        wr.writelines(content)
-                        wr.close()
+            #             # print(targetLine)
+            #             wr = open(log_dir, "w")
+            #             content[line_txt]  = targetLine.replace("Mulai", "Selesai")
+            #             wr.writelines(content)
+            #             wr.close()
 
             self.tree.tag_configure(row_id, background="#94c281")
             self.running_script = False  # Reset the flag
