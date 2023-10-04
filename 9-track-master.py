@@ -34,7 +34,7 @@ parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
-parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
+parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
@@ -164,6 +164,7 @@ date_end = None
 date_start_no_space = str(date_start).split(' ')
 bt = False
 timer_start = datetime.now(tz=tzInfo)
+
 def mouse_callback(event, x, y, flags, param):
     
     global bt  # Declare that you want to modify the global variable bt
@@ -172,8 +173,6 @@ def mouse_callback(event, x, y, flags, param):
         # print(f"Mouse clicked at ({x}, {y})")
         if x > 1720 and y < 200:
             bt = True
-
-
 
 def save_img_inference_sampling(img, name):
     dt = date.today()
@@ -472,11 +471,17 @@ while cap.isOpened():
             cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
             # Check if the object's center point has crossed the line
-            if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
-                object_ids_not_passed.append(track_id)
+            try:
+                if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
+                    object_ids_not_passed.append(track_id)
+            except Exception as e:
+                print("error append track_id:" + str(e))
 
-            if len(object_ids_not_passed) > 50:
-                object_ids_not_passed.pop(0)
+            try:
+                if len(object_ids_not_passed) > 50:
+                    object_ids_not_passed.pop(0)
+            except Exception as e:
+                print("error pop object_ids_not_passed:" + str(e))
 
             if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
                 tid = True
@@ -487,7 +492,10 @@ while cap.isOpened():
                         tid = False
                         # print(tid)
                 if tid:
-                    object_ids_passed.append(track_id)
+                    try:
+                        object_ids_passed.append(track_id)
+                    except Exception as e:
+                        print("error pop object_ids_not_passed:" + str(e))
                     try:
                         object_ids_not_passed.remove(track_id)
                     except Exception as e:
@@ -507,7 +515,11 @@ while cap.isOpened():
                     countOnFrame += 1    
 
             if len(track_idsArr) > 10:
-                del track_idsArr[0]
+                try:
+                    track_idsArr.pop(0)
+                except Exception as e:
+                    print("error cannot remove track_idsArr:" + str(e))
+                
 
         try:
             nilai = skorTotal / countOnFrame / 3 * 100

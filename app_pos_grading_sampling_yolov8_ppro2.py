@@ -678,9 +678,11 @@ def connect_to_database():
             database=database,
             as_dict=True
         )
+
     except Exception as e:
         print(f"Error connecting to the database: {str(e)}")
         return None
+    
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
@@ -816,7 +818,7 @@ class Frame1(tk.Frame):
             self.tree.set(item, "#1", str(i))
             if data[-1] == None or data[-1] == 'None':
                 self.tree.set(item, "#11", "READY")
-                self.tree.tag_confiTgure(i, background="#FFFFFF", font=custom_font)  # Change row color 
+                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
             else:
                 self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
                 self.tree.set(item, "#11", "DONE")
@@ -955,7 +957,7 @@ class Frame1(tk.Frame):
 
     def refresh_data(self):
         global offline_mode
-        self.tree.delete(*self.tree.get_children())
+        self.tree.delete()
         master_bunit = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
         master_div = self.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
         master_block = self.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
