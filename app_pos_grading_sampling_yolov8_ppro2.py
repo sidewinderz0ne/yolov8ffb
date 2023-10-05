@@ -43,6 +43,8 @@ log_mill = Path(str(log_data) + '/mill_mapping.txt')
 dir_user = Path(os.getcwd() + '/user')
 dir_user.mkdir(parents=True, exist_ok=True)  
 log_data_user = Path(str(dir_user) + '/data.txt')
+date_start_conveyor = None
+date_end_conveyor = None
 
 accent2 = "#d2d7fc"
 
@@ -75,7 +77,6 @@ if not offline_log_dir.exists():
 def remove_non_numeric(input_str):
     return re.sub(r'[^0-9.]', '', input_str)
 
-date_end = None
 def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, dirt):
 
     prctgUnripe = 0
@@ -123,8 +124,8 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
         print(f"An error occurred-status: {str(e)}")
         status = "-"
 
-    dateStart = str(raw[9])
-    dateEnd = date_end
+    dateStart = date_start_conveyor
+    dateEnd = date_end_conveyor
     
     max_widthQr = 140
     if int(totalJjg) != 0:
@@ -160,8 +161,6 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
         [totalJjg, int(class_count[1]) , int(class_count[2]) , int(class_count[0]) ,int(class_count[3]) , int(class_count[4]) , int(class_count[6]) ,int(class_count[5]) , str(TotalRipeness) + ' % '],
         ['',  str(prctgRipe) + ' %', str(prctgOverripe)+ ' %', str(prctgUnripe) +' %', str(prctgEmptyBunch) +  ' %',  str(prctgAbnormal)+ ' %',  str(prctgKastrasi)+ ' %',str(prctgLongStalk)+ ' %','']
     ]
-
-   
 
     colEachTableInput = [1.3*inch, 1.3*inch, 1.3*inch]
 
@@ -1028,8 +1027,8 @@ class Frame1(tk.Frame):
 
     def run_script(self, row_item, row_id, row_values):
 
-        global source
-
+        global source, date_start_conveyor
+        date_start_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         output_inference = None
         try:
             
@@ -1059,6 +1058,10 @@ class Frame3(tk.Frame):
     def __init__(self, master, output_inference, row_values):
         super().__init__(master)
 
+        checkConnection = connect_to_database()
+        print(checkConnection)
+
+        
         counter_per_class = None
         img_dir = None
         raw = None
@@ -1356,6 +1359,8 @@ class Frame3(tk.Frame):
         connection.close()
 
     def save_and_switch(self, count_per_class, row_values, img_dir, totalJjg):
+        global date_end_conveyor
+        date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
         dirt = self.dirtEntry.get()

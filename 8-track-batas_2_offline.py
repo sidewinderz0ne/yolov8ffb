@@ -404,6 +404,7 @@ def delete_inference_file(path_plat):
     os.remove(path_plat)
 
 def close():
+    global date_end
     class_count.append(kastrasi)
     # append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
     # print(log_inference)
