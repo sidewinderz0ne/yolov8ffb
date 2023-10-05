@@ -15,6 +15,7 @@ import re
 from urllib.request import urlopen
 import json
 import hashlib
+import asyncio
 from PIL import Image, ImageTk, ImageOps
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors as colorPdf
@@ -652,12 +653,6 @@ class RegisterFrame(tk.Frame):
 
             self.after(3000, self.clear_feedback)
 
-def send_pdf():
-    try:
-        subprocess.run(['python', str(Path(os.getcwd())) +'/send_pdf_inference.py'], check=True)
-    except subprocess.CalledProcessError as e:
-        print("Error running other_script.py:", str(e))
-
 def process_data_offline( data):
         arr_data  = []
         index = 1
@@ -1058,10 +1053,8 @@ class Frame3(tk.Frame):
     def __init__(self, master, output_inference, row_values):
         super().__init__(master)
 
-        checkConnection = connect_to_database()
-        print(checkConnection)
+        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
 
-        
         counter_per_class = None
         img_dir = None
         raw = None
@@ -1435,9 +1428,34 @@ class Frame3(tk.Frame):
 
         generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
 
-        # send_pdf()
+        threading.Thread(target=self.run_send_pdf_in_background).start()
 
         self.master.switch_frame(Frame1)
+
+    async def send_pdf_async(self):
+        try:
+            process = await asyncio.create_subprocess_exec(
+                'python', str(Path(os.getcwd())) + '/send_pdf_inference.py',
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await process.communicate()
+
+            if process.returncode == 0:
+                print("send_pdf_inference.py completed successfully")
+            else:
+                print(f"send_pdf_inference.py failed with return code {process.returncode}")
+                print(f"stdout: {stdout.decode()}")
+                print(f"stderr: {stderr.decode()}")
+        except Exception as e:
+            print("Error running send_pdf_inference.py:", str(e))
+
+    def run_send_pdf_in_background(self):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(self.send_pdf_async())
+        loop.close()
 
     def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir, totalJjg):
         row_values_subset = ';'.join(map(str, row_values))
@@ -1479,13 +1497,19 @@ class Frame3(tk.Frame):
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
         generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
 
-        # send_pdf()
+        threading.Thread(target=self.run_send_pdf_in_background).start()
 
         self.master.switch_frame(Frame1)
         
 class Frame2(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
+
+        connection = connect_to_database()
+
+        if isinstance(connection, pymssql.Connection):
+            self.master.switch_frame(Frame1)
+        
 
         self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
         self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
