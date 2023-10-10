@@ -25,6 +25,7 @@ from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 import re
+import subprocess
 import json
 from time import time
 
@@ -40,6 +41,7 @@ parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
 parser.add_argument('--mode', type=str, default='sampling')
+parser.add_argument('--save_vid', type=bool, default=False)
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
@@ -51,6 +53,7 @@ tracker = opt.tracker
 roi = opt.roi
 show = opt.show
 pull_data = opt.pull_data
+save_vid = opt.save_vid
 no_tiket = ""
 TotalJjg = 0
 timer = 25
@@ -432,6 +435,15 @@ cv2.namedWindow(window)
 cv2.setMouseCallback(window, mouse_callback)
 cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
 
+if cap.isOpened() and save_vid == True:
+    output_file = 'output_video.mp4'
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec (choose the appropriate one for your system)
+    fpsVideoCap = 30.0  # Frames per second
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_file, fourcc, fpsVideoCap, (frame_width, frame_height))
+
+
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
@@ -613,6 +625,8 @@ while cap.isOpened():
         cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
         cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
+        if save_vid == True:
+            out.write(annotated_frame)
         # Display the annotated frame
         cv2.imshow(window, annotated_frame)
 
@@ -631,7 +645,28 @@ while cap.isOpened():
 
 # Release the video capture object and close the display window
 cap.release()
+
+if save_vid == True:
+    out.release()
+    cmd = [
+        'ffmpeg',
+        '-i', str(output_file),
+        '-c:v', 'libx265',
+        '-crf', '23',  
+        '-pix_fmt', 'yuv420p',
+        '-r', str(fpsVideoCap),
+        '-s', f'{frame_width}x{frame_height}',
+        str("output_file.mp4")
+    ]
+
 cv2.destroyAllWindows()
+
+if save_vid == True :
+    subprocess.run(cmd)
+
+    if os.path.exists(output_file):
+        os.remove(output_file)
+
 
 
    
