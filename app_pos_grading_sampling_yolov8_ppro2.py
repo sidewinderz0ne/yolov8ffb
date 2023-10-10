@@ -12,6 +12,7 @@ import tkinter.font as tkFont
 import subprocess
 import pymssql
 import re
+import socket
 from urllib.request import urlopen
 import json
 import hashlib
@@ -46,7 +47,7 @@ dir_user.mkdir(parents=True, exist_ok=True)
 log_data_user = Path(str(dir_user) + '/data.txt')
 date_start_conveyor = None
 date_end_conveyor = None
-
+connection = None    
 accent2 = "#d2d7fc"
 
 if not log_data_user.exists():
@@ -676,21 +677,42 @@ def connect_to_database():
         user = config["user"]
         password = config["password"]
         database = config["database"]
-        status_mode = 'online'
-        return pymssql.connect(
-            server=server,
-            user=user,
-            password=password,
-            database=database,
-            as_dict=True
-        )
+
+        timeout = 0.5
+        
+        def try_connect():
+            global connection
+            try:
+                connection = pymssql.connect(
+                    server=server,
+                    user=user,
+                    password=password,
+                    database=database,
+                    as_dict=True
+                )
+
+            except Exception as e:
+                print(f"Error connecting to the database: {str(e)}")
+                 
+        connection_thread = threading.Thread(target=try_connect)
+        connection_thread.start()
+
+        connection_thread.join(timeout)
+        
+        if isinstance(connection, pymssql.Connection):
+            status_mode = 'online'
+            return  connection
+        else:
+            status_mode = 'offline'
+            with open(offline_log_dir, 'r') as file:
+                    data = file.readlines()
+                    return process_data_offline(data)
+
     except Exception as e:
         status_mode = 'offline'
         with open(offline_log_dir, 'r') as file:
                 data = file.readlines()
                 return process_data_offline(data)
-
-    
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
@@ -874,7 +896,7 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self):
-        start_date = datetime.datetime(2023, 8, 24, 7, 0, 0)
+        start_date = datetime.datetime(2023, 10, 9, 7, 0, 0)
         # current_date = datetime.datetime.now().date()
         # start_time = datetime.time(7, 0, 0)
         # start_date = datetime.datetime.combine(current_date, start_time)
