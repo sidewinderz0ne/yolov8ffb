@@ -1001,45 +1001,46 @@ class Frame1(tk.Frame):
 
         column = self.tree.identify_column(event.x)  # Identify the column clicked
         status_row = self.tree.item(row_item, "values")[-1]
-        # Extract the column name from the column identifier
+        row_values = self.tree.item(row_item, "values")  # Get values of the row
         column = column.split("#")[-1]
-        #print(self.clicked_buttons)
+        
         for cb in self.clicked_buttons:
             
             self.tree.tag_configure(cb, background="#ffffff")  # Change row color
             self.clicked_buttons.remove(cb)
-        
-        #print("column:" + str(column) + "|columns:"+ str(len(columns)))
+
+    
         if status_row == "READY" and row_id not in self.clicked_buttons and not self.running_script:
-
-            self.tree.tag_configure(row_id, background=accent2)  # Change row color
-            self.clicked_buttons.append(row_id)
-
-            if int(column) == len(columns):
             
-                row_values = self.tree.item(row_item, "values")  # Get values of the row
-                                
-                self.running_script = True  # Set flag to indicate script is running
-                self.button.config(state=tk.DISABLED)  # Disable the button
+                self.tree.tag_configure(row_id, background=accent2)  # Change row color
+                self.clicked_buttons.append(row_id)
 
-                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
-                thread.start()
+                if int(column) == len(columns):
+
+                    confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan ?")
+                    if confirmation:
+                                    
+                        self.running_script = True  # Set flag to indicate script is running
+                        self.button.config(state=tk.DISABLED)  # Disable the button
+
+                        thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
+                        thread.start()
         else:
-            if int(column) == len(columns):
-                row_val = self.tree.item(row_item, "values")
-                
-                tiket = str(row_val[1].replace("/", "_"))
-                bunit = str(row_val[4]).replace(' ','')
-                div = str(row_val[5])
-                pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
-                
-                if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
-                    try:
-                        subprocess.Popen(["xdg-open", pdf_path])
-                    except Exception as e:
-                        print(f"Error opening PDF: {e}")
-                else:
-                    messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
+                if int(column) == len(columns):
+                        row_val = self.tree.item(row_item, "values")
+                        
+                        tiket = str(row_val[1].replace("/", "_"))
+                        bunit = str(row_val[4]).replace(' ','')
+                        div = str(row_val[5])
+                        pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
+                        
+                        if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
+                            try:
+                                subprocess.Popen(["xdg-open", pdf_path])
+                            except Exception as e:
+                                print(f"Error opening PDF: {e}")
+                        else:
+                            messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
 
 
     def run_script(self, row_item, row_id, row_values):
@@ -1096,8 +1097,8 @@ class Frame3(tk.Frame):
         img_dir = parts[2]
 
         totalJjg = sum(counter_per_class[0:4])
-        # if output_inference is not None:
-        #     print(output_inference)
+        if output_inference is not None:
+            print(output_inference)
         
         try:
             image_path = self.check_img(img_dir)

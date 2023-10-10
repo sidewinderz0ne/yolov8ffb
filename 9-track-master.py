@@ -7,6 +7,7 @@ import argparse
 from ultralytics import YOLO
 import datetime
 import os
+import threading
 from datetime import datetime
 from datetime import date
 import pytz
@@ -55,6 +56,7 @@ TotalJjg = 0
 timer = 25
 stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
+connection = None
 
 def contains_video_keywords(file_path):
     # Define a list of keywords that are commonly found in video file names
@@ -204,34 +206,49 @@ def change_push_time():
         user = config["user"]
         password = config["password"]
         database = config["database"]
-        # Database connection
-        conn = pymssql.connect(
-            server=server,
-            user=user,
-            password=password,
-            database=database
-        )
 
-        notiket = raw[1]
-        cursor = conn.cursor()
+        timeout = 0.5
+        
+        def try_connect():
+            global connection
+            try:
+                connection = pymssql.connect(
+                    server=server,
+                    user=user,
+                    password=password,
+                    database=database,
+                    as_dict=True
+                )
+            except Exception as e:
+                print(f"Error connecting to the database: {str(e)}")
+                 
+        connection_thread = threading.Thread(target=try_connect)
+        connection_thread.start()
 
-        SQL_UPDATE = """
-        UPDATE MOPweighbridgeTicket_Staging
-        SET AI_pull_time = GETDATE()
-        WHERE WBTicketNo = %s;
-        """
+        connection_thread.join(timeout)
 
-        cursor.execute(SQL_UPDATE, (notiket))
-        conn.commit()
-        conn.close()
-        return "Push time changed successfully."
+        if isinstance(connection, pymssql.Connection):    
+            notiket = raw[1]
+            cursor = connection.cursor()
+
+            SQL_UPDATE = """
+            UPDATE MOPweighbridgeTicket_Staging
+            SET AI_pull_time = GETDATE()
+            WHERE WBTicketNo = %s;
+            """
+
+            cursor.execute(SQL_UPDATE, (notiket))
+            connection.commit()
+            connection.close()
+            return "Push time changed successfully."
+        else:
+            return "Failed to changed time"
     except Exception as e:
         return f"An error occurred-change_push_time: {str(e)}"
 
-
 def push_grading_quality():
-    try:
 
+    try:
         with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
             config = json.load(file)
 
@@ -239,47 +256,61 @@ def push_grading_quality():
         user = config["user"]
         password = config["password"]
         database = config["database"]
+
+        timeout = 0.5
         
-        conn = pymssql.connect(
-            server=server,
-            user=user,
-            password=password,
-            database=database,
-            as_dict=True
-        )
+        def try_connect():
+            global connection
+            try:
+                connection = pymssql.connect(
+                    server=server,
+                    user=user,
+                    password=password,
+                    database=database,
+                    as_dict=True
+                )
 
-        SQL_QUERY = """
-        SELECT Ppro_GradeCode, Ppro_GradeDescription
-        FROM MasterGrading_Staging;
-        """
+            except Exception as e:
+                print(f"Error connecting to the database: {str(e)}")
+                 
+        connection_thread = threading.Thread(target=try_connect)
+        connection_thread.start()
 
-        cursor = conn.cursor()
-        cursor.execute(SQL_QUERY)
+        connection_thread.join(timeout)
+        
+        if isinstance(connection, pymssql.Connection):
+            SQL_QUERY = """
+                SELECT Ppro_GradeCode, Ppro_GradeDescription
+                FROM MasterGrading_Staging;
+                """
+            cursor = connection.cursor()
+            cursor.execute(SQL_QUERY)
 
-        gradecodes = []
-        gradedescriptions = []
+            gradecodes = []
+            gradedescriptions = []
 
-        for row in cursor.fetchall():
-            gradecodes.append(row['Ppro_GradeCode'])
-            gradedescriptions.append(row['Ppro_GradeDescription'])
+            for row in cursor.fetchall():
+                gradecodes.append(row['Ppro_GradeCode'])
+                gradedescriptions.append(row['Ppro_GradeDescription'])
 
-        conn.close()
+            connection.close()
 
-        for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
-            for index, name in enumerate(names):
-                # Convert gradedescription to lowercase and replace spaces with underscores
-                cleaned_description = gradedescription.lower().replace(" ", "_")
-                
-                if cleaned_description == name and int(class_count[index]) != 0:
-                    if cleaned_description == "abnormal":  # Check if cleaned_description is "abnormal"
-                        push_data(gradecode, int(class_count[index]) + int(kastrasi))
-                    else:
+            for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
+                for index, name in enumerate(names):
+                    # Convert gradedescription to lowercase and replace spaces with underscores
+                    cleaned_description = gradedescription.lower().replace(" ", "_")
+                    
+                    if cleaned_description == name and int(class_count[index]) != 0:
+                        if cleaned_description == "abnormal":  # Check if cleaned_description is "abnormal"
+                            push_data(gradecode, int(class_count[index]) + int(kastrasi))
+                        else:
+                            push_data(gradecode, class_count[index])
+                    elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(class_count[index]) != 0:
                         push_data(gradecode, class_count[index])
-                elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(class_count[index]) != 0:
-                    push_data(gradecode, class_count[index])
+        else:
+            return
     except Exception as e:
-        print(f"An error occurred-push_grading_quality: {str(e)}")
-
+        return
 
 def push_data(intCat,intVal):
     with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
@@ -366,7 +397,7 @@ def close():
     append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(iou_thres) +"," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
     if mode == 'sampling':
         push_grading_quality()
-        print(change_push_time())
+        change_push_time()
         
         img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"
