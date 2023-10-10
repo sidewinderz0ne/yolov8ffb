@@ -121,7 +121,7 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
         print(f"An error occurred-blok: {str(e)}")
         blok = "Z9999"
     try:
-        status = str(raw[7])
+        status = str(raw[8])
     except Exception as e:
         print(f"An error occurred-status: {str(e)}")
         status = "-"
@@ -1017,7 +1017,7 @@ class Frame1(tk.Frame):
 
                 if int(column) == len(columns):
 
-                    confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan ?")
+                    confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini siap untuk dijalankan ?")
                     if confirmation:
                                     
                         self.running_script = True  # Set flag to indicate script is running
@@ -1095,10 +1095,13 @@ class Frame3(tk.Frame):
 
         class_name = eval(parts[1])
         img_dir = parts[2]
+        
+        filtered_list = [counter_per_class[i] for i in range(len(counter_per_class)) if i != 5]
 
-        totalJjg = sum(counter_per_class[0:4])
-        if output_inference is not None:
-            print(output_inference)
+        totalJjg = sum(filtered_list)
+
+        # if output_inference is not None:
+        #     print(output_inference)
         
         try:
             image_path = self.check_img(img_dir)
