@@ -28,11 +28,6 @@ from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--mode_app', type=str, default='sampling',help='2 mode, sampling dan sampling_offline')
-opt = parser.parse_args()
-mode_app = opt.mode_app
-
 url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
 
 columns = ('no', 'notiket', 'nopol', 'driver', 'b_unit','divisi', 'field', 'bunches', 'ownership', 'pushtime', 'action')
@@ -127,7 +122,7 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
         print(f"An error occurred-blok: {str(e)}")
         blok = "Z9999"
     try:
-        status = str(raw[7])
+        status = str(raw[8])
     except Exception as e:
         print(f"An error occurred-status: {str(e)}")
         status = "-"
@@ -1073,7 +1068,7 @@ class Frame1(tk.Frame):
         output_inference = None
         try:
             
-            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source), '--mode_app', str(mode_app)], 
+            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)], 
                             capture_output=True, 
                             text=True, 
                             check=True)
@@ -1119,7 +1114,9 @@ class Frame3(tk.Frame):
         class_name = eval(parts[1])
         img_dir = parts[2]
 
-        totalJjg = sum(counter_per_class[0:4])
+        filtered_list = [counter_per_class[i] for i in range(len(counter_per_class)) if i != 5]
+
+        totalJjg = sum(filtered_list)
         # if output_inference is not None:
         #     print(output_inference)
         
@@ -1340,9 +1337,9 @@ class Frame3(tk.Frame):
         unit_label.grid(row=18, column=3, sticky="w")
         
         if status_mode == 'online':
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(counter_per_class, row_values, img_dir, totalJjg))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(class_name, counter_per_class, row_values, img_dir))
         else:
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1], row_values, img_dir, totalJjg))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1], row_values, img_dir))
         
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
@@ -1397,13 +1394,13 @@ class Frame3(tk.Frame):
         # Close the database connection
         connection.close()
 
-    def save_and_switch(self, count_per_class, row_values, img_dir, totalJjg):
+    def save_and_switch(self, class_name, count_per_class, row_values, img_dir):
         global date_end_conveyor
         date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
         dirt = self.dirtEntry.get()
-
+        
         brondol = remove_non_numeric(brondol)
         brondolBusuk = remove_non_numeric(brondolBusuk)
         dirt = remove_non_numeric(dirt)
@@ -1436,8 +1433,6 @@ class Frame3(tk.Frame):
         try:
             connection = connect_to_database()
 
-            print(connection)
-
             sql_query = """
             SELECT Ppro_GradeCode, Ppro_GradeDescription
             FROM MasterGrading_Staging;
@@ -1454,12 +1449,25 @@ class Frame3(tk.Frame):
                 gradedescriptions.append(row['Ppro_GradeDescription'])
 
             for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
+                for index, name in enumerate(class_name):
+                    cleaned_description = gradedescription.lower().replace(" ", "_")
+                    
+                    if cleaned_description == name and int(count_per_class[index]) != 0:
+                        if cleaned_description == "abnormal":
+                            self.push_data(gradecode, int(count_per_class[index]))
+                        else:
+                            self.push_data(gradecode, count_per_class[index])
+                    elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(count_per_class[index]) != 0:
+                        self.push_data(gradecode, count_per_class[index])
+
                 if gradedescription == "Brondolan" and brondol != 0:
                     self.push_data(gradecode, brondol)
                 elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
                     self.push_data(gradecode, dirt)
                 elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
                     self.push_data(gradecode, brondolBusuk)
+
+            self.change_push_time(row_values)
 
         except Exception as e:
             print(f"Error: {e}")
@@ -1477,6 +1485,26 @@ class Frame3(tk.Frame):
         threading.Thread(target=self.run_send_pdf_in_background).start()
 
         self.master.switch_frame(Frame1)
+
+    def change_push_time(self, raw):
+        connection = connect_to_database()
+
+        if isinstance(connection, pymssql.Connection):    
+            notiket = raw[1]
+            cursor = connection.cursor()
+
+            SQL_UPDATE = """
+            UPDATE MOPweighbridgeTicket_Staging
+            SET AI_pull_time = GETDATE()
+            WHERE WBTicketNo = %s;
+            """
+
+            cursor.execute(SQL_UPDATE, (notiket))
+            connection.commit()
+            connection.close()
+            return "Push time changed successfully."
+        else:
+            return "Failed to changed time"
 
     async def send_pdf_async(self):
         try:
@@ -1503,7 +1531,7 @@ class Frame3(tk.Frame):
         loop.run_until_complete(self.send_pdf_async())
         loop.close()
 
-    def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir, totalJjg):
+    def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir):
         row_values_subset = ';'.join(map(str, row_values))
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
