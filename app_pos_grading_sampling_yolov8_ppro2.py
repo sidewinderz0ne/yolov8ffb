@@ -12,6 +12,8 @@ import tkinter.font as tkFont
 import subprocess
 import pymssql
 import re
+import argparse
+import socket
 from urllib.request import urlopen
 import json
 import hashlib
@@ -25,6 +27,11 @@ from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode_app', type=str, default='sampling',help='2 mode, sampling dan sampling_offline')
+opt = parser.parse_args()
+mode_app = opt.mode_app
 
 url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
 
@@ -46,7 +53,7 @@ dir_user.mkdir(parents=True, exist_ok=True)
 log_data_user = Path(str(dir_user) + '/data.txt')
 date_start_conveyor = None
 date_end_conveyor = None
-
+connection = None 
 accent2 = "#d2d7fc"
 
 if not log_data_user.exists():
@@ -676,14 +683,37 @@ def connect_to_database():
         user = config["user"]
         password = config["password"]
         database = config["database"]
-        status_mode = 'online'
-        return pymssql.connect(
-            server=server,
-            user=user,
-            password=password,
-            database=database,
-            as_dict=True
-        )
+
+        timeout = 0.5
+        
+        def try_connect():
+            global connection
+            try:
+                connection = pymssql.connect(
+                    server=server,
+                    user=user,
+                    password=password,
+                    database=database,
+                    as_dict=True
+                )
+
+            except Exception as e:
+                print(f"Error connecting to the database: {str(e)}")
+                 
+        connection_thread = threading.Thread(target=try_connect)
+        connection_thread.start()
+
+        connection_thread.join(timeout)
+        
+        if isinstance(connection, pymssql.Connection):
+            status_mode = 'online'
+            return  connection
+        else:
+            status_mode = 'offline'
+            with open(offline_log_dir, 'r') as file:
+                    data = file.readlines()
+                    return process_data_offline(data)
+
     except Exception as e:
         status_mode = 'offline'
         with open(offline_log_dir, 'r') as file:
@@ -994,6 +1024,7 @@ class Frame1(tk.Frame):
 
         column = self.tree.identify_column(event.x)  # Identify the column clicked
         status_row = self.tree.item(row_item, "values")[-1]
+        row_values = self.tree.item(row_item, "values")  # Get values of the row
         # Extract the column name from the column identifier
         column = column.split("#")[-1]
         #print(self.clicked_buttons)
@@ -1009,13 +1040,14 @@ class Frame1(tk.Frame):
             self.clicked_buttons.append(row_id)
 
             if int(column) == len(columns):
-            
-                row_values = self.tree.item(row_item, "values")  # Get values of the row
-                                
-                self.running_script = True  # Set flag to indicate script is running
 
-                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
-                thread.start()
+                confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan ?")
+                if confirmation:
+                                
+                    self.running_script = True  # Set flag to indicate script is running
+
+                    thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
+                    thread.start()
         else:
             if int(column) == len(columns):
                 row_val = self.tree.item(row_item, "values")
@@ -1041,7 +1073,7 @@ class Frame1(tk.Frame):
         output_inference = None
         try:
             
-            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)], 
+            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source), '--mode_app', str(mode_app)], 
                             capture_output=True, 
                             text=True, 
                             check=True)

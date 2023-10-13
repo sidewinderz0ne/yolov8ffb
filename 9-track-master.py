@@ -443,7 +443,6 @@ if cap.isOpened() and save_vid == True:
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(output_file, fourcc, fpsVideoCap, (frame_width, frame_height))
 
-
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
@@ -625,11 +624,11 @@ while cap.isOpened():
         cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
         cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
-        if save_vid == True:
-            out.write(annotated_frame)
         # Display the annotated frame
         cv2.imshow(window, annotated_frame)
 
+        if save_vid == True:
+            out.write(annotated_frame)
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord("q") or bt:
             close()
@@ -645,7 +644,6 @@ while cap.isOpened():
 
 # Release the video capture object and close the display window
 cap.release()
-
 if save_vid == True:
     out.release()
     cmd = [
@@ -658,15 +656,12 @@ if save_vid == True:
         '-s', f'{frame_width}x{frame_height}',
         str("output_file.mp4")
     ]
-
 cv2.destroyAllWindows()
-
 if save_vid == True :
     subprocess.run(cmd)
 
     if os.path.exists(output_file):
         os.remove(output_file)
-
 
 
    
