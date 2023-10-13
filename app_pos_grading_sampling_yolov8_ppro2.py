@@ -12,7 +12,6 @@ import tkinter.font as tkFont
 import subprocess
 import pymssql
 import re
-import socket
 from urllib.request import urlopen
 import json
 import hashlib
@@ -47,7 +46,7 @@ dir_user.mkdir(parents=True, exist_ok=True)
 log_data_user = Path(str(dir_user) + '/data.txt')
 date_start_conveyor = None
 date_end_conveyor = None
-connection = None    
+
 accent2 = "#d2d7fc"
 
 if not log_data_user.exists():
@@ -121,7 +120,7 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
         print(f"An error occurred-blok: {str(e)}")
         blok = "Z9999"
     try:
-        status = str(raw[8])
+        status = str(raw[7])
     except Exception as e:
         print(f"An error occurred-status: {str(e)}")
         status = "-"
@@ -677,37 +676,14 @@ def connect_to_database():
         user = config["user"]
         password = config["password"]
         database = config["database"]
-
-        timeout = 0.5
-        
-        def try_connect():
-            global connection
-            try:
-                connection = pymssql.connect(
-                    server=server,
-                    user=user,
-                    password=password,
-                    database=database,
-                    as_dict=True
-                )
-
-            except Exception as e:
-                print(f"Error connecting to the database: {str(e)}")
-                 
-        connection_thread = threading.Thread(target=try_connect)
-        connection_thread.start()
-
-        connection_thread.join(timeout)
-        
-        if isinstance(connection, pymssql.Connection):
-            status_mode = 'online'
-            return  connection
-        else:
-            status_mode = 'offline'
-            with open(offline_log_dir, 'r') as file:
-                    data = file.readlines()
-                    return process_data_offline(data)
-
+        status_mode = 'online'
+        return pymssql.connect(
+            server=server,
+            user=user,
+            password=password,
+            database=database,
+            as_dict=True
+        )
     except Exception as e:
         status_mode = 'offline'
         with open(offline_log_dir, 'r') as file:
@@ -716,7 +692,7 @@ def connect_to_database():
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
-
+    
     def __init__(self, master):
         super().__init__(master)
         global source
@@ -788,10 +764,9 @@ class Frame1(tk.Frame):
 
         self.mode_label = tk.Label(top_frame, text="", font=("Helvetica", 16, "bold"))
         self.mode_label.grid(row=0, column=3)
-
-        self.button = ttk.Button(top_frame, text="REFRESH", style="Accent.TButton", command=self.refresh_data)
-        self.button.grid(row=0, column=5)
         
+        self.refresh_button = ttk.Checkbutton(top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
+        self.refresh_button.grid(row=0, column=5)       
         
         top_frame.grid_columnconfigure(5, weight=20)
 
@@ -896,10 +871,10 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self):
-        start_date = datetime.datetime(2023, 10, 9, 7, 0, 0)
-        # current_date = datetime.datetime.now().date()
-        # start_time = datetime.time(7, 0, 0)
-        # start_date = datetime.datetime.combine(current_date, start_time)
+        start_date = datetime.datetime(2023, 8, 24, 7, 0, 0)
+        current_date = datetime.datetime.now().date()
+        start_time = datetime.time(7, 0, 0)
+        #start_date = datetime.datetime.combine(current_date, start_time)
         # print(start_date)
         end_date = start_date + datetime.timedelta(days=1)
         # print(end_date)
@@ -951,19 +926,35 @@ class Frame1(tk.Frame):
             except Exception as e:
                 print(f"Error getting AI PULL TIME: {str(e)}")
                 ai_pull_time = "None"
-            arr_data.append((
-                str(index+1),
-                data['WBTicketNo'],
-                data['VehiclePoliceNO'],
-                data['DriverName'],
-                ppro_bunit_name,
-                ppro_div_name,
-                ppro_block_name,
-                data['Bunches'],
-                data['Ownership'],
-                output_datetime_str,
-                ai_pull_time
-            ))
+
+            found = False
+            idx = 0
+
+            for idk, item in enumerate(arr_data):
+                if data['WBTicketNo'] in item:
+                    found = True
+                    idx = idk
+                    break
+
+            if not found:
+                arr_data.append([
+                    str(index+1),
+                    data['WBTicketNo'],
+                    data['VehiclePoliceNO'],
+                    data['DriverName'],
+                    ppro_bunit_name,
+                    ppro_div_name,
+                    ppro_block_name,
+                    data['Bunches'],
+                    data['Ownership'],
+                    output_datetime_str,
+                    ai_pull_time
+                ])
+            else:
+                arr_data[idx][6] = str(arr_data[idx][6]) + "\n" + str(ppro_block_name)
+                arr_data[idx][7] = int(arr_data[idx][7]) + int(data['Bunches'])   
+
+        
 
         sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)
         
@@ -989,58 +980,58 @@ class Frame1(tk.Frame):
         self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
         if status_mode == 'online':
             arr_data = self.process_data(record, master_bunit, master_div, master_block)
+            self.refresh_button = ttk.Checkbutton(self.top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
+            self.refresh_button.grid(row=0, column=5)
+
             self.remove_input_button()
         else:
             arr_data = record
             self.create_and_grid_input_button()
-            
-        self.after(10, lambda: self.populate_treeview(arr_data))
+        self.populate_treeview(arr_data)
     
     def update_row(self, row_item, event):
         row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
 
         column = self.tree.identify_column(event.x)  # Identify the column clicked
         status_row = self.tree.item(row_item, "values")[-1]
-        row_values = self.tree.item(row_item, "values")  # Get values of the row
+        # Extract the column name from the column identifier
         column = column.split("#")[-1]
-        
+        #print(self.clicked_buttons)
         for cb in self.clicked_buttons:
             
             self.tree.tag_configure(cb, background="#ffffff")  # Change row color
             self.clicked_buttons.remove(cb)
-
-    
+        
+        #print("column:" + str(column) + "|columns:"+ str(len(columns)))
         if status_row == "READY" and row_id not in self.clicked_buttons and not self.running_script:
+
+            self.tree.tag_configure(row_id, background=accent2)  # Change row color
+            self.clicked_buttons.append(row_id)
+
+            if int(column) == len(columns):
             
-                self.tree.tag_configure(row_id, background=accent2)  # Change row color
-                self.clicked_buttons.append(row_id)
+                row_values = self.tree.item(row_item, "values")  # Get values of the row
+                                
+                self.running_script = True  # Set flag to indicate script is running
 
-                if int(column) == len(columns):
-
-                    confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini siap untuk dijalankan ?")
-                    if confirmation:
-                                    
-                        self.running_script = True  # Set flag to indicate script is running
-                        self.button.config(state=tk.DISABLED)  # Disable the button
-
-                        thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
-                        thread.start()
+                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values))
+                thread.start()
         else:
-                if int(column) == len(columns):
-                        row_val = self.tree.item(row_item, "values")
-                        
-                        tiket = str(row_val[1].replace("/", "_"))
-                        bunit = str(row_val[4]).replace(' ','')
-                        div = str(row_val[5])
-                        pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
-                        
-                        if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
-                            try:
-                                subprocess.Popen(["xdg-open", pdf_path])
-                            except Exception as e:
-                                print(f"Error opening PDF: {e}")
-                        else:
-                            messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
+            if int(column) == len(columns):
+                row_val = self.tree.item(row_item, "values")
+                
+                tiket = str(row_val[1].replace("/", "_"))
+                bunit = str(row_val[4]).replace(' ','')
+                div = str(row_val[5])
+                pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
+                
+                if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
+                    try:
+                        subprocess.Popen(["xdg-open", pdf_path])
+                    except Exception as e:
+                        print(f"Error opening PDF: {e}")
+                else:
+                    messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
 
 
     def run_script(self, row_item, row_id, row_values):
@@ -1064,7 +1055,7 @@ class Frame1(tk.Frame):
             self.master.switch_frame(Frame3, output_inference, row_values)
         else:
             self.running_script = False
-            self.button.config(state=tk.NORMAL)  # Enable the button
+            self.refresh_button.config(state=tk.NORMAL)  # Enable the button
 
     def switch_frame2(self):
         self.master.switch_frame(Frame2)
@@ -1095,11 +1086,8 @@ class Frame3(tk.Frame):
 
         class_name = eval(parts[1])
         img_dir = parts[2]
-        
-        filtered_list = [counter_per_class[i] for i in range(len(counter_per_class)) if i != 5]
 
-        totalJjg = sum(filtered_list)
-
+        totalJjg = sum(counter_per_class[0:4])
         # if output_inference is not None:
         #     print(output_inference)
         
