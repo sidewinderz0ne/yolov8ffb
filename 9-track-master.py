@@ -7,6 +7,7 @@ import argparse
 from ultralytics import YOLO
 import datetime
 import os
+import threading
 from datetime import datetime
 from datetime import date
 import pytz
@@ -23,20 +24,28 @@ from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
+import re
+import subprocess
+import json
+from time import time
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='./sampel_scm/sampel_scm.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help='source')  # file/folder, 0 for webcam
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
-parser.add_argument('--tracker', type=str, default='botsort.yaml', help='bytetrack.yaml or botsort.yaml')
+parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
 parser.add_argument('--roi', type=float, default=0.43, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
+parser.add_argument('--mode', type=str, default='sampling')
+parser.add_argument('--save_vid', type=bool, default=False)
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
+mode = opt.mode
 imgsz = opt.imgsz
 conf_thres = opt.conf_thres
 iou_thres = opt.iou_thres
@@ -44,10 +53,38 @@ tracker = opt.tracker
 roi = opt.roi
 show = opt.show
 pull_data = opt.pull_data
+save_vid = opt.save_vid
 no_tiket = ""
-
 TotalJjg = 0
+timer = 25
+stream = None
+ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
+connection = None
 
+def contains_video_keywords(file_path):
+    # Define a list of keywords that are commonly found in video file names
+    video_keywords = ['avi', 'mp4', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v']
+
+    # Convert the file path to lowercase for case-insensitive matching
+    file_path_lower = file_path.lower()
+
+    # Check if any of the video keywords are present in the file path
+    for keyword in video_keywords:
+        if keyword in file_path_lower:
+            return True
+
+    return False
+# Use regular expression to find the IP address in the source string
+ip_match = re.search(ip_pattern, source)
+
+if ip_match:
+    extracted_ip = ip_match.group(1)
+    stream = f'rtsp://admin:gr4d!ngs@{extracted_ip}/video'
+elif contains_video_keywords(source):
+    stream = source
+else:
+    stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
+    
 def append_hasil(apStr):
     video_path = source
     file_extension = os.path.splitext(video_path)[1]
@@ -60,7 +97,6 @@ def append_hasil(apStr):
             # Replace the extension with ".txt"
             output_path = os.path.join(folder_path, file_name + ".txt")
 
-            # Open the file in append mode
             with open(output_path, 'a') as file:
                 # Text to append
                 line_to_append = apStr
@@ -76,7 +112,7 @@ def append_hasil(apStr):
 model = YOLO(yolo_model_str)
 
 # Open the video filfe
-video_path = source
+video_path = stream
 cap = cv2.VideoCapture(video_path)
 
 # Store the track history
@@ -85,14 +121,16 @@ track_history = defaultdict(lambda: [])
 # Initialize variables for counting
 countOnFrame = 0
 kastrasi = 0
+kas_reset = 0
 skor_tertinggi = 0
 jum_tertinggi = 0
 skor_terendah = 1000
-object_ids_passed = set()
-object_ids_not_passed = set()
+object_ids_passed = []
+object_ids_not_passed = []
 baseScore = [0,3,2,0,2,1]
 names = list(model.names.values())
 class_count = [0] * len(names)
+class_count_reset = [0] * len(names)
 
 hexs = ['FF3838', 'FF9D97', 'FF701F', 'FFB21D', 'CFD231', '48F90A', '92CC17', '3DDB86', '1A9334', '00D4BB',
                 '2C99A8', '00C2FF', '344593', '6473FF', '0018EC', '8438FF', '520085', 'CB38FF', 'FF95C8', 'FF37C7']
@@ -110,221 +148,37 @@ max_area = 22000
 font = 2
 fontRipeness = 1
 log_inference = Path(os.getcwd() + '/log_inference_sampling')
-log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 tzInfo = pytz.timezone('Asia/Bangkok')
 current_date = datetime.now()
 formatted_date = current_date.strftime('%Y-%m-%d')
+log_inference.mkdir(parents=True, exist_ok=True)  # make dir
+save_dir_txt = Path(os.getcwd() + '/hasil/temp.TXT')
+if not save_dir_txt.exists():
+    log_folder = os.path.dirname(save_dir_txt)
+    os.makedirs(log_folder, exist_ok=True)
+    save_dir_txt.touch()
+grading_total_dir = Path(os.getcwd() + '/hasil/grading_total_log.TXT')
+if not grading_total_dir.exists():
+    log_folder = os.path.dirname(grading_total_dir)
+    os.makedirs(log_folder, exist_ok=True)
+    grading_total_dir.touch()
+
 
 date_start = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
 date_end = None
 date_start_no_space = str(date_start).split(' ')
 bt = False
+timer_start = datetime.now(tz=tzInfo)
 def mouse_callback(event, x, y, flags, param):
     
     global bt  # Declare that you want to modify the global variable bt
     
     if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click event
-        # print(f"Mouse clicked at ({x}, {y})")
+        #print(f"Mouse clicked at ({x}, {y})")
         if x > 1720 and y < 200:
             bt = True
 
-def generate_report(content, path, prefix_pdf):
-    
-    # arrData = content.split(';')
 
-    prctgUnripe = 0
-    prctgRipe = 0
-    prctgEmptyBunch = 0
-    prctgOverripe = 0
-    prctgAbnormal = 0
-    prctgKastrasi = 0
-    prctgLongStalk = 0
-    TotalRipeness = 0
-
-    try:
-        no_tiket = str(raw[0])
-    except Exception as e:
-        print(f"An error occurred-no_tiket: {str(e)}")
-        no_tiket = "000000"
-    try:
-        no_plat = str(raw[1])
-    except Exception as e:
-        print(f"An error occurred-no_plat: {str(e)}")
-        no_plat = "KH 0000 ZZ"
-    try:
-        nama_driver = str(raw[2])
-    except Exception as e:
-        print(f"An error occurred-nama_driver: {str(e)}")
-        nama_driver = "FULAN"
-    try:
-        bisnis_unit = str(raw[3])
-    except Exception as e:
-        print(f"An error occurred-bisnis_unit: {str(e)}")
-        bisnis_unit = "SSE"
-    try:
-        divisi = str(raw[4])
-    except Exception as e:
-        print(f"An error occurred-divisi: {str(e)}")
-        divisi = "OZ"
-    try:
-        blok = str(raw[5])
-    except Exception as e:
-        print(f"An error occurred-blok: {str(e)}")
-        blok = "Z9999"
-    try:
-        status = str(raw[7])
-    except Exception as e:
-        print(f"An error occurred-status: {str(e)}")
-        status = "-"
-
-    dateStart = date_start
-    dateEnd = date_end
-        
-    # print("Total janjang : " + str(TotalJjg))
-    detectBuah = False
-    max_widthQr = 200
-    if int(TotalJjg) != 0:
-        detectBuah = True
-        max_widthQr = 140
-        prctgUnripe = round((int(class_count[0]) / int(TotalJjg)) * 100,2)
-        prctgRipe =  round((int(class_count[1]) / int(TotalJjg)) * 100,2)
-        prctgEmptyBunch =  round((int(class_count[2]) / int(TotalJjg)) * 100,2)
-        prctgOverripe =  round((int(class_count[3]) / int(TotalJjg)) * 100,2)
-        prctgAbnormal =  round((int(class_count[4]) / int(TotalJjg)) * 100,2)
-        prctgKastrasi = round((int(kastrasi) / int(TotalJjg)) * 100,2)
-        prctgLongStalk =  round((int(class_count[5]) / int(TotalJjg)) * 100,2)
-        
-        TotalRipeness = round((int(class_count[1]) / int(TotalJjg)) * 100,2)
-
-
-    TabelAtas = [
-        ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
-        ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
-        ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
-        ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
-        ['Status',  str(status)]
-    ]
-
-    colEachTable1 = [1.2*inch, 1.6*inch,  0.8*inch, 0.8*inch, 0.8*inch, 1.2*inch, 1.6*inch]
-
-    TabelBawah = [
-        ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],
-        [TotalJjg, int(class_count[1]) , int(class_count[2]) , int(class_count[0]) ,int(class_count[3]) , int(class_count[4]) , kastrasi ,int(class_count[5]) , str(TotalRipeness) + ' % '],
-        ['',  str(prctgRipe) + ' %', str(prctgOverripe)+ ' %', str(prctgUnripe) +' %', str(prctgEmptyBunch) +  ' %',  str(prctgAbnormal)+ ' %',  str(prctgKastrasi)+ ' %',str(prctgLongStalk)+ ' %','']
-    ]   
-
-
-    colEachTable2 = [0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch, 0.9*inch]
-
-    spacer = Spacer(1, 0.25*inch)
-    
-    # print(prefix_pdf)
-
-    img_dir = str(path) + '/' + str(formatted_date)   + '/' + prefix_pdf 
-
-    # print(img_dir)
-
-    checkImgBest = os.path.isfile(str(img_dir) +'best.JPG')
-    if checkImgBest:
-        image = ImgRl(str(img_dir) + 'best.JPG')
-    else:
-        image = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
-
-    checkImgWorst = os.path.isfile(str(img_dir) +'worst.JPG')  
-    if checkImgWorst:
-        image2 = ImgRl(str(img_dir) + 'worst.JPG')
-    else:
-        image2 = ImgRl(Path(os.getcwd() + '/default-img/no_image.png'))
-    
-    logoCbi = ImgRl(Path(os.getcwd() + '/default-img/Logo CBI.png'))
-    imageQr = ImgRl(Path(os.getcwd() + '/default-img/qr.png'))
-    max_width = 285  # The maximum allowed width of the image
-    max_widthLogo = 70  # The maximum allowed width of the image
-    widthLogo = min(logoCbi.drawWidth, max_widthLogo)  # The desired width of the image
-    width1 = min(image.drawWidth, max_width)  # The desired width of the image
-    width2 = min(image2.drawWidth, max_width)  # The desired width of the image
-    widthQr = min(imageQr.drawWidth, max_widthQr)  # The desired width of the image
-    image._restrictSize(width1, image.drawHeight)
-    image2._restrictSize(width2, image2.drawHeight)
-    logoCbi._restrictSize(widthLogo, logoCbi.drawHeight)
-    imageQr._restrictSize(widthQr, imageQr.drawHeight)
-
-    styleTitle = ParagraphStyle(name='Normal', fontName='Helvetica-Bold',fontSize=12,fontWeight='bold')
-    t1 = Paragraph('CROP RIPENESS CHECK REPORT' )
-    title_section = [[logoCbi, 'CROP RIPENESS CHECK REPORT', '']]
-
-    
-    titleImg = Table(title_section, colWidths=[100,375,100])
-    titleImg.setStyle(TableStyle([
-         ('GRID', (0, 0), (-1, -1), 1,  colorPdf.black),
-        ('FONTNAME', (1, 0), (1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (1, 0), (1, 0), 15),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-    ]))
-
-    dataImg = [[image, image2],['Kondisi Paling Baik', 'Kondisi Paling Buruk']]
-    tblImg = Table(dataImg, [4.0*inch,4.0*inch])
-    tblImg.setStyle(TableStyle([
-    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
-       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-    ]))
-
-    dataP1 = [['KONDISI TBS : ']]
-    tblP1 = Table(dataP1,[8*inch])
-    tblP1.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-    ]))
-
-    
-    name_pdf = str(path) +'/' + str(formatted_date) + '/'+ str(prefix_pdf) + '.pdf'
-    # print(name_pdf)
-    doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
-    
-    table1 = Table(TabelAtas,colWidths=colEachTable1)
-    table1.setStyle(TableStyle([
-        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),
-        ('GRID', (0, 0), (1, 4), 1, colorPdf.black),
-        ('GRID', (5, 0), (8, 3), 1, colorPdf.black)
-    ]))
-    table2 = Table(TabelBawah, colWidths=colEachTable2)
-    table2.setStyle(TableStyle([
-        ('ALIGN', (0, 0), (8, 0), 'CENTER'),
-        ('ALIGN', (0, 1), (8, 1), 'LEFT'),
-        ('VALIGN', (0, 0), (8, 0), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 1, colorPdf.black),
-        ('SPAN', (0, 1), (0, 2)),
-        ('SPAN', (8, 1), (8, 2)),
-        ('ALIGN', (8, 1), (8, 2), 'CENTER'), 
-        ('VALIGN', (8, 1), (8, 2), 'MIDDLE'), 
-        ('ALIGN', (0, 1), (0, 2), 'CENTER'),  
-        ('VALIGN', (0, 1), (0, 2), 'MIDDLE'), 
-    ]))
-
-    qr_data = [[imageQr]]
-
-    tblQr = Table(qr_data, [4.0*inch])
-    tblQr.setStyle(TableStyle([
-    #    ('GRID', (0, 0), (-1, -1), 1, colorPdf.black), 
-       ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-       ('VALIGN', (0, 0), (-1, -1), 'MIDDLE')
-    ]))
-
-    elements = []
-    elements.append(titleImg)
-    elements.append(spacer)
-    elements.append(table1)
-    elements.append(spacer)
-    elements.append(tblP1)
-    
-    elements.append(tblImg)
-    elements.append(spacer)
-    elements.append(table2)
-    elements.append(tblQr)
-    doc.build(elements)
 
 def save_img_inference_sampling(img, name):
     dt = date.today()
@@ -346,114 +200,27 @@ def save_img_inference_sampling(img, name):
     # print(directory_path+name)
     imgP.save( directory_path+name, optimize=True, quality=25)
 
-def change_push_time():
+def save_txt(result):
     try:
-        # Database connection
-        conn = pymssql.connect(
-            server='192.168.1.254\DBSTAGING',
-            user='usertesting',
-            password='Qwerty@123',
-            database='skmstagingdb'
-        )
-
-        notiket = raw[0]
-        # print(notiket)
-        # print(date_end)
-        cursor = conn.cursor()
-
-        SQL_UPDATE = """
-        UPDATE MOPweighbridgeTicket_Staging
-        SET AI_pull_time = GETDATE()
-        WHERE WBTicketNo = %s;
-        """
-
-        cursor.execute(SQL_UPDATE, (notiket))
-        conn.commit()
-        conn.close()
+        with open(save_dir_txt, 'w') as log_file:
+            log_file.write(str(result))  # Append the result to the log file with a newline character
+        # print(f"Data saved successfully to {save_dir_txt}")
     except Exception as e:
-        print(f"An error occurred-change_push_time: {str(e)}")
-
-def push_grading_quality():
+        print(f"Error saving data to, {save_dir_txt}, : {str(e)}")
+            
+def save_log(result, path, time):
     try:
-        conn = pymssql.connect(
-            server='192.168.1.254\DBSTAGING',
-            user='usertesting',
-            password='Qwerty@123',
-            database='skmstagingdb',
-            as_dict=True
-        )
-
-        SQL_QUERY = """
-        SELECT Ppro_GradeCode, Ppro_GradeDescription
-        FROM MasterGrading_Staging;
-        """
-
-        cursor = conn.cursor()
-        cursor.execute(SQL_QUERY)
-
-        gradecodes = []
-        gradedescriptions = []
-
-        for row in cursor.fetchall():
-            gradecodes.append(row['Ppro_GradeCode'])
-            gradedescriptions.append(row['Ppro_GradeDescription'])
-
-        conn.close()
-
-        for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
-            for index, name in enumerate(names):
-                # Convert gradedescription to lowercase and replace spaces with underscores
-                cleaned_description = gradedescription.lower().replace(" ", "_")
-                
-                if cleaned_description == name and int(class_count[index]) != 0:
-                    if cleaned_description == "abnormal":  # Check if cleaned_description is "abnormal"
-                        push_data(gradecode, int(class_count[index]) + int(kastrasi))
-                    else:
-                        push_data(gradecode, class_count[index])
-                elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(class_count[index]) != 0:
-                    push_data(gradecode, class_count[index])
+        formatted_result = ';'.join(map(str, result))
+        formatted_entry = f"{formatted_result};{time}\n"
+        with open(path, 'a') as log_file:
+            log_file.write(formatted_entry)
+        # print(f"Data saved successfully to {path}")
     except Exception as e:
-        print(f"An error occurred-push_grading_quality: {str(e)}")
-
-
-def push_data(intCat,intVal):
-    conn = pymssql.connect(
-        server='192.168.1.254\DBSTAGING',
-        user='usertesting',
-        password='Qwerty@123',
-        database='skmstagingdb',
-        as_dict=True
-    )
-
-    # Values for the new row
-    new_row = {
-        'AI_NoTicket': str(raw[0]) if raw else "000000",
-        'AI_Grading': str(intCat),
-        'AI_JanjangSample': str(TotalJjg), 
-        'AI_TotalJanjang': str(TotalJjg),
-        'AI_Janjang': str(intVal)
-    }
-
-    # Build the SQL INSERT statement
-    SQL_INSERT = """
-    INSERT INTO MOPQuality_Staging (AI_NoTicket, AI_Grading, AI_JanjangSample, AI_TotalJanjang, AI_push_time, AI_Janjang)
-    VALUES (%(AI_NoTicket)s, %(AI_Grading)s, %(AI_JanjangSample)s, %(AI_TotalJanjang)s, GETDATE(),%(AI_Janjang)s);
-    """
-
-    # Create a cursor and execute the INSERT statement
-    cursor = conn.cursor()
-    cursor.execute(SQL_INSERT, new_row)
-
-    # Commit the transaction to save the changes to the database
-    conn.commit()
-
-    # Close the database connection
-    conn.close()
+        print(f"Error saving data to {path}: {str(e)}")
 
 def close():
+    global prefix
     class_count.append(kastrasi)
-    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
-
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
     qr = qrcode.QRCode(
@@ -462,14 +229,6 @@ def close():
                 box_size=10,
                 border=4,
             )
-    push_grading_quality()
-    change_push_time()
-    # content = ''
-    # with open(file_path, 'r') as z:
-    #     content = z.readlines()
-    #     content = content[no_line_log]
-    #     # content = content[0]
-
     urlPDF = "https://www.srs-ssms.com/pdf_grading/hasil/" + str(formatted_date) +'/' + str(prefix) + '.pdf'
     
     qr.add_data(urlPDF)
@@ -479,41 +238,68 @@ def close():
 
     qr_image.save(Path(os.getcwd() + '/default-img/qr.png'))
 
-    # print(prefix)
-
-    date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-    generate_report(raw,  Path(os.getcwd() + '/hasil/') ,prefix)
-
     names.append('kastrasi')
 
-    print(class_count, names)
-
-cv2.namedWindow("Detect FFB Yolov8")
-cv2.setMouseCallback("Detect FFB Yolov8", mouse_callback)
+    date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
+    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(iou_thres) +"," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+    if mode == 'sampling':
+        img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
+        data = f"{class_count}${names}${img_dir}"
+        save_txt(data)
     
 last_id = 0
 track_idsArr = []
+prefix = ''
+if mode == 'sampling':
+    raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
 
-raw = pull_data[1:-2].replace("'","").replace(" ","").split(",")
-try:
-    bisnis_unit = str(raw[3])
-except Exception as e:
-    print(f"An error occurred-bisnis_unit: {str(e)}")
-    bisnis_unit = "-"
-try:
-    divisi = str(raw[7])
-except Exception as e:
-    print(f"An error occurred-divisi: {str(e)}")
-    divisi = "-"
+    try:
+        tiket = str(raw[1].replace("/", "_"))
+    except Exception as e:
+        print(f"An error occurred-tiket: {str(e)}")
+        tiket = "-"
+    try:
+        bisnis_unit = str(raw[4])
+    except Exception as e:
+        print(f"An error occurred-bisnis_unit: {str(e)}")
+        bisnis_unit = "-"
+    try:
+        divisi = str(raw[5])
+    except Exception as e:
+        print(f"An error occurred-divisi: {str(e)}")
+        divisi = "-"
+
+    prefix = str(tiket) +'_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
+
+window = "Yolov8 "+str(imgsz) + " CONF-" + str(conf_thres) + " IOU-" +  str(iou_thres) + " SRC-" + source + " MODEL-" + yolo_model_str
+cv2.namedWindow(window)
+cv2.setMouseCallback(window, mouse_callback)
+cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
+
+if cap.isOpened() and save_vid == True:
+    output_file = 'output_video.mp4'
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec (choose the appropriate one for your system)
+    fpsVideoCap = 30.0  # Frames per second
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_file, fourcc, fpsVideoCap, (frame_width, frame_height))
 
 while cap.isOpened():
     # Read a frame from the video
     success, frame = cap.read()
     if success:
-        
+        # Start the timer
+        start_time = time()
+
         # Run YOLOv8 tracking on the frame, persisting tracks between frames
         results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False)
         
+        # Stop the timer
+        end_time = time()
+
+        # Calculate the FPS
+        fps = 1 / (end_time - start_time)
+
         # Get the boxes and track IDs
         boxes = results[0].boxes.xywh.cpu()
             
@@ -571,10 +357,10 @@ while cap.isOpened():
 
             # Check if the object's center point has crossed the line
             if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
-                object_ids_not_passed.add(track_id)
+                object_ids_not_passed.append(track_id)
 
             if len(object_ids_not_passed) > 50:
-                del object_ids_not_passed[0]
+                object_ids_not_passed.pop(0)
 
             if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
                 tid = True
@@ -585,13 +371,18 @@ while cap.isOpened():
                         tid = False
                         # print(tid)
                 if tid:
-                    object_ids_passed.add(track_id)
-                    object_ids_not_passed.remove(track_id)
+                    object_ids_passed.append(track_id)
+                    try:
+                        object_ids_not_passed.remove(track_id)
+                    except Exception as e:
+                        print("error cannot remove track_id:" + str(e))
                     last_id = track_id
                     if int(cl) != len(class_count)-1:
                         if wideArea < max_area:
                             kastrasi += 1
+                            kas_reset += 1
                     class_count[int(cl)] += 1 
+                    class_count_reset[int(cl)] += 1 
             
                     if wideArea < max_area:
                         skorTotal += baseScore[-1]
@@ -619,14 +410,15 @@ while cap.isOpened():
                 
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
         cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
-        cv2.putText(annotated_frame, str(last_id), (850, 80), font, 1.5, (0, 0, 255), 2)
+
+        last_id_str = "IDs: " + str(last_id)
+        cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 4)
+        cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+        cv2.putText(annotated_frame, "FPS: " + str(int(fps)), (1750, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
 
         if countOnFrame > jum_tertinggi:
                     jum_tertinggi = countOnFrame
-        
-        
-        prefix = str(date_start_no_space[0]) +'_'+ str(date_start_no_space[1])+ '_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
         
         if  countOnFrame >= 2 and nilai > skor_tertinggi:
             skor_tertinggi = round(nilai,2)
@@ -645,6 +437,18 @@ while cap.isOpened():
             save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
             # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
 
+        elapsed_time = datetime.now(tz=tzInfo) - timer_start
+        
+        if elapsed_time.total_seconds() > timer and mode != 'sampling' and mode != 'testing':
+            
+            current_state = list(class_count_reset)
+            kastrasi_int = int(kas_reset)
+            current_state.append(kastrasi_int) 
+            timer_start = datetime.now(tz=tzInfo)
+            save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
+
+            kas_reset = 0
+            class_count_reset = [0] * len(names)
 
         # Display the annotated frame
         width, height = 100, 100
@@ -658,10 +462,14 @@ while cap.isOpened():
 
         # Create the white border
         cv2.circle(annotated_frame, (1820,100), radius, (255, 255, 255), 5)
-        # Display the annotated frame
-        cv2.imshow("Detect FFB Yolov8", annotated_frame)
+        cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
+        cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
 
-        
+        # Display the annotated frame
+        cv2.imshow(window, annotated_frame)
+
+        if save_vid == True:
+            out.write(annotated_frame)
         # Break the loop if 'q' is pressed
         if cv2.waitKey(1) & 0xFF == ord("q") or bt:
             close()
@@ -677,7 +485,24 @@ while cap.isOpened():
 
 # Release the video capture object and close the display window
 cap.release()
+if save_vid == True:
+    out.release()
+    cmd = [
+        'ffmpeg',
+        '-i', str(output_file),
+        '-c:v', 'libx265',
+        '-crf', '23',  
+        '-pix_fmt', 'yuv420p',
+        '-r', str(fpsVideoCap),
+        '-s', f'{frame_width}x{frame_height}',
+        str("output_file.mp4")
+    ]
 cv2.destroyAllWindows()
+if save_vid == True :
+    subprocess.run(cmd)
+
+    if os.path.exists(output_file):
+        os.remove(output_file)
 
 
    
