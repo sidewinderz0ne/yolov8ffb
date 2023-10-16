@@ -355,12 +355,17 @@ while cap.isOpened():
             points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
             cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
-            # Check if the object's center point has crossed the line
-            if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
-                object_ids_not_passed.append(track_id)
+            try:
+                if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
+                    object_ids_not_passed.append(track_id)
+            except Exception as e:
+                print("error append track_id:" + str(e))
 
-            if len(object_ids_not_passed) > 50:
-                object_ids_not_passed.pop(0)
+            try:
+                if len(object_ids_not_passed) > 50:
+                    object_ids_not_passed.pop(0)
+            except Exception as e:
+                print("error pop object_ids_not_passed:" + str(e))
 
             if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
                 tid = True
@@ -371,7 +376,10 @@ while cap.isOpened():
                         tid = False
                         # print(tid)
                 if tid:
-                    object_ids_passed.append(track_id)
+                    try:
+                        object_ids_passed.append(track_id)
+                    except Exception as e:
+                        print("error pop object_ids_not_passed:" + str(e))
                     try:
                         object_ids_not_passed.remove(track_id)
                     except Exception as e:
@@ -391,7 +399,10 @@ while cap.isOpened():
                     countOnFrame += 1    
 
             if len(track_idsArr) > 10:
-                del track_idsArr[0]
+                try:
+                    track_idsArr.pop(0)
+                except Exception as e:
+                    print("error cannot remove track_idsArr:" + str(e))
 
         try:
             nilai = skorTotal / countOnFrame / 3 * 100
