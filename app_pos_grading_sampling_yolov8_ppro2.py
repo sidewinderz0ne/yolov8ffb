@@ -11,6 +11,8 @@ import threading
 import tkinter.font as tkFont
 import subprocess
 import pymssql
+import bcrypt
+import sqlite3
 import re
 import argparse
 import socket
@@ -542,31 +544,26 @@ class LoginFrame(tk.Frame):
         password = self.password_entry.get()
         mill = self.mill_combobox.get()
 
-        if not user or not password or not mill:
-            self.feedback_label.config(text="Semua kolom harus diisi", fg="red")
-            self.after(3000, self.clear_feedback)
-            return
+        conn = sqlite3.connect('./db/grading_sampling.db')
+        cursor = conn.cursor()
 
-        user_exists = False
-        with open(log_data_user, 'r') as log_file:
-            for line in log_file:
-                stored_user, stored_hashed_password = line.strip().split(';')
-                if stored_user == user:
-                    user_exists = True
+        cursor.execute("SELECT user, password FROM auth WHERE user = ?", (user,))
+        user_data = cursor.fetchone()
 
-                    hashed_password = hashlib.sha256(password.encode()).hexdigest()
-                    if hashed_password == stored_hashed_password:
-                        # print("Login successful")
-                        store_list_mill(log_mill, mill)
-                        self.master.switch_frame(Frame1)
-                    else:
-                        print("Incorrect password")
-                        self.feedback_label.config(text="Incorrect password", fg="red")
-                    break
+        if user_data:
+            stored_user, stored_password = user_data
+            stored_password = stored_password.encode('utf-8')
 
-        if not user_exists:
-            print("User not found")
+            if stored_user == user and bcrypt.checkpw(password.encode('utf-8'), stored_password):
+                print("Login successful. Welcome,", user)
+                self.master.switch_frame(Frame1)
+            else:
+                print("Login failed. Invalid credentials.")
+                self.feedback_label.config(text="Incorrect password", fg="red")
+        else:
+            print("User not found.")
             self.feedback_label.config(text="User not found", fg="red")
+        conn.close()
 
         self.after(3000, self.clear_feedback)
 
@@ -622,38 +619,36 @@ class RegisterFrame(tk.Frame):
             userRoot = self.useroot_entry.get()
             user = self.username_entry.get()
             password = self.password_entry.get()
-            
+
             if not user or not password or not userRoot:
                 self.feedback_label.config(text="Semua kolom harus diisi", fg="red")
                 self.after(3000, self.clear_feedback)
                 return  # Stop further execution
 
             if userRoot == 'grading':
-                hashed_password = hashlib.sha256(password.encode()).hexdigest()
-                strUser = user + ';' + hashed_password
+                hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+                conn = sqlite3.connect('./db/grading_sampling.db')
+                cursor = conn.cursor()
 
-                log_file_path = log_data_user
-                user_exists = False
-
-                with open(log_file_path, 'r') as log_file:
-                    for line in log_file:
-                        stored_user, _ = line.strip().split(';')
-                        if stored_user == user:
-                            user_exists = True
-                            break
-
-                if user_exists:
+                # Check if the username already exists in the database
+                cursor.execute("SELECT user FROM auth WHERE user = ?", (user,))
+                existing_user = cursor.fetchone()
+                if existing_user:
+                    print('User already exists!')
                     self.feedback_label.config(text="User tersebut sudah terdaftar", fg="red")
                 else:
-                    with open(log_file_path, 'a') as log_file:
-                        log_file.write(strUser + '\n')  # Append the result to the log file with a newline character
-                        # print("Data saved successfully to", log_file_path)
-                        self.feedback_label_success.config(text="User baru tersimpan", fg="green")
+                    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+                    cursor.execute("INSERT INTO auth (user, password) VALUES (?, ?)", (user, hashed_password.decode('utf-8')))
+
+                    conn.commit()
+
+                    print('User registered successfully')
+                    self.feedback_label_success.config(text="User baru tersimpan", fg="green")
+
+                conn.close()
             else:    
                 print('Tidak dapat menyimpan User!')
                 self.feedback_label.config(text="Tidak dapat menyimpan User!", fg="red")
-
-            self.after(3000, self.clear_feedback)
 
 def process_data_offline( data):
         arr_data  = []
