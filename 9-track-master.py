@@ -27,6 +27,7 @@ from reportlab.lib.pagesizes import letter
 import re
 import subprocess
 import json
+import sys
 from time import time
 
 
@@ -42,6 +43,7 @@ parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
 parser.add_argument('--mode', type=str, default='sampling')
 parser.add_argument('--save_vid', type=bool, default=False)
+parser.add_argument("--debug", type=bool, default=False, help="Enable debug mode to store everything printed result into txt file")
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
@@ -54,6 +56,7 @@ roi = opt.roi
 show = opt.show
 pull_data = opt.pull_data
 save_vid = opt.save_vid
+debug = opt.debug
 no_tiket = ""
 TotalJjg = 0
 timer = 25
@@ -85,6 +88,10 @@ elif contains_video_keywords(source):
 else:
     stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
     
+def print_debug(str):
+    if debug == True:
+        print(str)
+
 def append_hasil(apStr):
     video_path = source
     file_extension = os.path.splitext(video_path)[1]
@@ -169,6 +176,13 @@ date_end = None
 date_start_no_space = str(date_start).split(' ')
 bt = False
 timer_start = datetime.now(tz=tzInfo)
+if debug:
+    debug_dir = Path(os.getcwd() + '/hasil/debug/'  +str(date_start)+ '.TXT')
+    if not debug_dir.exists() :
+        log_folder = os.path.dirname(debug_dir)
+        os.makedirs(log_folder, exist_ok=True)
+        debug_dir.touch()
+
 def mouse_callback(event, x, y, flags, param):
     
     global bt  # Declare that you want to modify the global variable bt
@@ -277,243 +291,248 @@ cv2.setMouseCallback(window, mouse_callback)
 cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
 
 if cap.isOpened() and save_vid == True:
-    output_file = 'output_video.mp4'
+    output_file = str(date_start) + '.mp4'
     fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec (choose the appropriate one for your system)
     fpsVideoCap = 30.0  # Frames per second
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     out = cv2.VideoWriter(output_file, fourcc, fpsVideoCap, (frame_width, frame_height))
 
-while cap.isOpened():
-    # Read a frame from the video
-    success, frame = cap.read()
-    if success:
-        # Start the timer
-        start_time = time()
+if debug:
+    output_file_txt = debug_dir
+    save_debug = open(output_file_txt, 'w')
+    # Redirect stdout and stderr to the file
+    sys.stdout = save_debug
+    sys.stderr = save_debug
 
-        # Run YOLOv8 tracking on the frame, persisting tracks between frames
-        results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False)
-        
-        # Stop the timer
-        end_time = time()
+try:
 
-        # Calculate the FPS
-        fps = 1 / (end_time - start_time)
+    while cap.isOpened():
+        # Read a frame from the video
+        success, frame = cap.read()
+        if success:
+            # Start the timer
+            start_time = time()
 
-        # Get the boxes and track IDs
-        boxes = results[0].boxes.xywh.cpu()
+            # Run YOLOv8 tracking on the frame, persisting tracks between frames
+            results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False)
             
-        try:
-            track_ids = results[0].boxes.id.int().cpu().tolist()
-        except Exception as e:
-            #print(f"An error occurred-track_ids: {str(e)}")
-            track_ids = []
-        # track_ids = results[0].boxes.id.int().cpu().tolist()
-        clss = results[0].boxes.cls.cpu().tolist()
+            # Stop the timer
+            end_time = time()
 
-        # Visualize the results on the frame
-        annotated_frame = results[0].plot(conf=False)
-        
-        # Calculate the middle y-coordinate of the frame
-        middle_y = frame.shape[0] * (1-float(roi))
-        # Draw the horizontal line
-        cv2.line(annotated_frame, (0, int(middle_y)), (annotated_frame.shape[1], int(middle_y)), (0, 255, 0), 2)  # Green line
-       # Print the value counts
-        skorTotal = 0
-        countOnFrame = 0
-        nilai = 0
+            # Calculate the FPS
+            fps = 1 / (end_time - start_time)
 
-        track_idsArr.append(track_ids)
-        # Plot the tracks and count objects passing the line
-        for box, track_id, cl in zip(boxes, track_ids, clss):
-            x, y, w, h = box
-            # print(int(w), int(h))
-            
-            wideArea = int(w) * int(h)
-
-            track = track_history[track_id]
-            
-            track.append((float(x), float(y)))  # x, y center point
-            
-            if len(track) > 10:  # retain 10 tracks for 10 frames
-                track.pop(0)
-          
-            if wideArea < max_area and int(cl) < (int(len(class_count)-1)):
-                text = "kastrasi"
-                text_size, _ = cv2.getTextSize(text, font, fontRipeness, 2)
-
-                margin = 10  # Additional margin in pixels
-                rect_x = int(x) - margin
-                rect_y = int(y) - text_size[1] - margin  # Position the rectangle above the text with margin
-                rect_width = text_size[0] + 2 * margin  # Add margin on both sides
-                rect_height = text_size[1] + 2 * margin  # Add margin on top and bottom
-
-                cv2.rectangle(annotated_frame, (rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height), bgr_colors[len(class_count)], -1)
-                cv2.putText(annotated_frame, text, (int(x), int(y)), font, fontRipeness, (255, 255, 255), 2)
-
-            # Draw the tracking lines
-            points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
-            cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
-
-            try:
-                if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
-                    object_ids_not_passed.append(track_id)
-            except Exception as e:
-                print("error append track_id:" + str(e))
-
-            try:
-                if len(object_ids_not_passed) > 50:
-                    object_ids_not_passed.pop(0)
-            except Exception as e:
-                print("error pop object_ids_not_passed:" + str(e))
-
-            if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
-                tid = True
-                for tis in track_idsArr:
-                    # print("track_id: "+str(track_id))
-                    # print("tis: "+str(tis))
-                    if int(track_id) not in tis:
-                        tid = False
-                        # print(tid)
-                if tid:
-                    try:
-                        object_ids_passed.append(track_id)
-                    except Exception as e:
-                        print("error pop object_ids_not_passed:" + str(e))
-                    try:
-                        object_ids_not_passed.remove(track_id)
-                    except Exception as e:
-                        print("error cannot remove track_id:" + str(e))
-                    last_id = track_id
-                    if int(cl) != len(class_count)-1:
-                        if wideArea < max_area:
-                            kastrasi += 1
-                            kas_reset += 1
-                    class_count[int(cl)] += 1 
-                    class_count_reset[int(cl)] += 1 
-            
-                    if wideArea < max_area:
-                        skorTotal += baseScore[-1]
-                    elif int(y-(int(h)/2))>50 and int(y+(int(h)/2))<(frame.shape[0]-50):
-                        skorTotal += baseScore[int(cl)]
-                    countOnFrame += 1    
-
-            if len(track_idsArr) > 10:
-                try:
-                    track_idsArr.pop(0)
-                except Exception as e:
-                    print("error cannot remove track_idsArr:" + str(e))
-
-        try:
-            nilai = skorTotal / countOnFrame / 3 * 100
-        except Exception as e:
-            #print(f"An error occurred-nilai: {str(e)}")
-            nilai = 0
-        # print(nilai)        
-
-        # Display the object count on the frame
-        TotalJjg = sum(class_count)-int(class_count[5])+int(kastrasi)
-        cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (100, 100, 100), 15)
-        cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
-        for index, (name, cc) in enumerate(zip(names, class_count)):
-            cv2.putText(annotated_frame, f"{name}: {cc}", (20, ((index + 2) * 40)), font, fontRipeness, bgr_colors[index], 2)
-        cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+            # Get the boxes and track IDs
+            boxes = results[0].boxes.xywh.cpu()
                 
-        cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
-        cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
+            try:
+                track_ids = results[0].boxes.id.int().cpu().tolist()
+            except Exception as e:
+                #print(f"An error occurred-track_ids: {str(e)}")
+                track_ids = []
+            # track_ids = results[0].boxes.id.int().cpu().tolist()
+            clss = results[0].boxes.cls.cpu().tolist()
 
-        last_id_str = "IDs: " + str(last_id)
-        cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 4)
-        cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
-        cv2.putText(annotated_frame, "FPS: " + str(int(fps)), (1750, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
-
-        if countOnFrame > jum_tertinggi:
-                    jum_tertinggi = countOnFrame
-        
-        if  countOnFrame >= 2 and nilai > skor_tertinggi:
-            skor_tertinggi = round(nilai,2)
-            save_img_inference_sampling(annotated_frame, prefix + 'best.JPG')
-            # print('tersimpan best')
-        elif nilai == skor_tertinggi and countOnFrame > jum_tertinggi:
-            skor_tertinggi = round(nilai,2)
-            save_img_inference_sampling(annotated_frame, prefix +'best.JPG')
-            # print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
-        elif countOnFrame >2 and nilai < skor_terendah:
-            skor_terendah = round(nilai,2)
-            save_img_inference_sampling(annotated_frame, prefix +'worst.JPG')
-            # print('tersimpan worst')
-        elif nilai == skor_terendah and countOnFrame > jum_tertinggi:
-            skor_terendah = round(nilai,2)
-            save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
-            # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
-
-        elapsed_time = datetime.now(tz=tzInfo) - timer_start
-        
-        if elapsed_time.total_seconds() > timer and mode != 'sampling' and mode != 'testing':
+            # Visualize the results on the frame
+            annotated_frame = results[0].plot(conf=False)
             
-            current_state = list(class_count_reset)
-            kastrasi_int = int(kas_reset)
-            current_state.append(kastrasi_int) 
-            timer_start = datetime.now(tz=tzInfo)
-            save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
+            # Calculate the middle y-coordinate of the frame
+            middle_y = frame.shape[0] * (1-float(roi))
+            # Draw the horizontal line
+            cv2.line(annotated_frame, (0, int(middle_y)), (annotated_frame.shape[1], int(middle_y)), (0, 255, 0), 2)  # Green line
+            
+            skorTotal = 0
+            countOnFrame = 0
+            nilai = 0
 
-            kas_reset = 0
-            class_count_reset = [0] * len(names)
+            track_idsArr.append(track_ids)
+            # Plot the tracks and count objects passing the line
+            for box, track_id, cl in zip(boxes, track_ids, clss):
+                x, y, w, h = box
+                # print(int(w), int(h))
+                
+                wideArea = int(w) * int(h)
 
-        # Display the annotated frame
-        width, height = 100, 100
-        background_color = (255, 255, 255)  # White in BGR format
+                track = track_history[track_id]
+                
+                track.append((float(x), float(y)))  # x, y center point
+                
+                if len(track) > 10:  # retain 10 tracks for 10 frames
+                    track.pop(0)
+                
+                if wideArea < max_area and int(cl) < (int(len(class_count)-1)):
+                    text = "kastrasi"
+                    text_size, _ = cv2.getTextSize(text, font, fontRipeness, 2)
 
-        # Define the center and radius of the circular stop sign
-        center = (width // 2, height // 2)
-        radius = width // 2 - 5  # Leave a small border
+                    margin = 10  # Additional margin in pixels
+                    rect_x = int(x) - margin
+                    rect_y = int(y) - text_size[1] - margin  # Position the rectangle above the text with margin
+                    rect_width = text_size[0] + 2 * margin  # Add margin on both sides
+                    rect_height = text_size[1] + 2 * margin  # Add margin on top and bottom
 
-        cv2.circle(annotated_frame, (1820,100), radius, (0, 0, 255), -1)  # Red in BGR format
+                    cv2.rectangle(annotated_frame, (rect_x, rect_y), (rect_x + rect_width, rect_y + rect_height), bgr_colors[len(class_count)], -1)
+                    cv2.putText(annotated_frame, text, (int(x), int(y)), font, fontRipeness, (255, 255, 255), 2)
 
-        # Create the white border
-        cv2.circle(annotated_frame, (1820,100), radius, (255, 255, 255), 5)
-        cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
-        cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+                # Draw the tracking lines
+                points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
+                cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
-        # Display the annotated frame
-        cv2.imshow(window, annotated_frame)
+                try:
+                    if middle_y > y and track_id not in object_ids_passed and track_id not in object_ids_not_passed:
+                        object_ids_not_passed.append(track_id)
+                except Exception as e:
+                    print("error append track_id:" + str(e))
 
-        if save_vid == True:
-            out.write(annotated_frame)
-        # Break the loop if 'q' is pressed
-        if cv2.waitKey(1) & 0xFF == ord("q") or bt:
+                try:
+                    if len(object_ids_not_passed) > 50:
+                        object_ids_not_passed.pop(0)
+                except Exception as e:
+                    print("error pop object_ids_not_passed:" + str(e))
+                if y > middle_y and track_id not in object_ids_passed and track_id in object_ids_not_passed:
+                    tid = False
+                    for tis in track_idsArr:
+                        if int(track_id) in tis:
+                            tid = True
+                            break
+
+                    if tid:
+                        try:
+                            object_ids_passed.append(track_id)
+                        except Exception as e:
+                            print("error pop object_ids_not_passed:" + str(e))
+                        try:
+                            object_ids_not_passed.remove(track_id)
+                        except Exception as e:
+                            print("error cannot remove track_id:" + str(e))
+                        last_id = track_id
+                        if int(cl) != len(class_count)-1:
+                            if wideArea < max_area:
+                                kastrasi += 1
+                                kas_reset += 1
+                        class_count[int(cl)] += 1 
+                        class_count_reset[int(cl)] += 1 
+                
+                        if wideArea < max_area:
+                            skorTotal += baseScore[-1]
+                        elif int(y-(int(h)/2))>50 and int(y+(int(h)/2))<(frame.shape[0]-50):
+                            skorTotal += baseScore[int(cl)]
+                        countOnFrame += 1    
+
+                if len(track_idsArr) > 10:
+                    try:
+                        track_idsArr.pop(0)
+                    except Exception as e:
+                        print("error cannot remove track_idsArr:" + str(e))
+
+            try:
+                nilai = skorTotal / countOnFrame / 3 * 100
+            except Exception as e:
+                nilai = 0
+
+            # Display the object count on the frame
+            TotalJjg = sum(class_count)-int(class_count[5])+int(kastrasi)
+            cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (100, 100, 100), 15)
+            cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
+            for index, (name, cc) in enumerate(zip(names, class_count)):
+                cv2.putText(annotated_frame, f"{name}: {cc}", (20, ((index + 2) * 40)), font, fontRipeness, bgr_colors[index], 2)
+            cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                    
+            cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (100, 100, 100), 15)
+            cv2.putText(annotated_frame, str(datetime.now(tz=tzInfo).strftime("%A,%d-%m-%Y %H:%M:%S")), (850, 40), font, 1.5, (0, 255, 0), 2)
+
+            last_id_str = "IDs: " + str(last_id)
+            cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 0, 255), 4)
+            cv2.putText(annotated_frame, last_id_str, (1740, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+            cv2.putText(annotated_frame, "FPS: " + str(int(fps)), (1750, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+
+            if countOnFrame > jum_tertinggi:
+                        jum_tertinggi = countOnFrame
+            
+            if  countOnFrame >= 2 and nilai > skor_tertinggi:
+                skor_tertinggi = round(nilai,2)
+                save_img_inference_sampling(annotated_frame, prefix + 'best.JPG')
+                # print('tersimpan best')
+            elif nilai == skor_tertinggi and countOnFrame > jum_tertinggi:
+                skor_tertinggi = round(nilai,2)
+                save_img_inference_sampling(annotated_frame, prefix +'best.JPG')
+                # print('tersimpan best dengan jumlah tertinggi : ', str(jum_tertinggi))
+            elif countOnFrame >2 and nilai < skor_terendah:
+                skor_terendah = round(nilai,2)
+                save_img_inference_sampling(annotated_frame, prefix +'worst.JPG')
+                # print('tersimpan worst')
+            elif nilai == skor_terendah and countOnFrame > jum_tertinggi:
+                skor_terendah = round(nilai,2)
+                save_img_inference_sampling(annotated_frame,prefix +'worst.JPG')
+                # print('tersimpan worst dengan jumlah tertinggi : ', str(jum_tertinggi))
+
+            elapsed_time = datetime.now(tz=tzInfo) - timer_start
+            
+            if elapsed_time.total_seconds() > timer and mode != 'sampling' and mode != 'testing':
+                
+                current_state = list(class_count_reset)
+                kastrasi_int = int(kas_reset)
+                current_state.append(kastrasi_int) 
+                timer_start = datetime.now(tz=tzInfo)
+                save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
+
+                kas_reset = 0
+                class_count_reset = [0] * len(names)
+
+            # Display the annotated frame
+            width, height = 100, 100
+            background_color = (255, 255, 255)  # White in BGR format
+
+            # Define the center and radius of the circular stop sign
+            center = (width // 2, height // 2)
+            radius = width // 2 - 5  # Leave a small border
+
+            cv2.circle(annotated_frame, (1820,100), radius, (0, 0, 255), -1)  # Red in BGR format
+
+            # Create the white border
+            cv2.circle(annotated_frame, (1820,100), radius, (255, 255, 255), 5)
+            cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (150, 0, 0), 4)
+            cv2.putText(annotated_frame, window, (10, 1070), cv2.FONT_HERSHEY_PLAIN, 1, (255, 255, 255), 1)
+
+            # Display the annotated frame
+            cv2.imshow(window, annotated_frame)
+
+            if save_vid == True:
+                out.write(annotated_frame)
+            # Break the loop if 'q' is pressed
+            if cv2.waitKey(1) & 0xFF == ord("q") or bt:
+                close()
+                break
+                
+
+        else:
             close()
             break
-            
+        
+finally:
+    cap.release()
+    if save_vid:
+        out.release()
+        cmd = [
+            'ffmpeg',
+            '-i', str(output_file),
+            '-c:v', 'libx265',
+            '-crf', '23',  
+            '-pix_fmt', 'yuv420p',
+            '-r', str(fpsVideoCap),
+            '-s', f'{frame_width}x{frame_height}',
+            str(date_start) + '_exported.mp4'
+        ]
+    cv2.destroyAllWindows()
+    if save_vid :
+        subprocess.run(cmd)
 
-    else:
-        # Break the loop if the end of the video is reached
-        close()
-        break
-    # except:
-    #     print("Tidak ada janjang")
-
-# Release the video capture object and close the display window
-cap.release()
-if save_vid == True:
-    out.release()
-    cmd = [
-        'ffmpeg',
-        '-i', str(output_file),
-        '-c:v', 'libx265',
-        '-crf', '23',  
-        '-pix_fmt', 'yuv420p',
-        '-r', str(fpsVideoCap),
-        '-s', f'{frame_width}x{frame_height}',
-        str("output_file.mp4")
-    ]
-cv2.destroyAllWindows()
-if save_vid == True :
-    subprocess.run(cmd)
-
-    if os.path.exists(output_file):
-        os.remove(output_file)
+        if os.path.exists(output_file):
+            os.remove(output_file)
+    
+    if debug:
+        save_debug.close()
 
 
    
