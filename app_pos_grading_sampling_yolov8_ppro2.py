@@ -352,24 +352,32 @@ def get_list_mill(dir_mill, flag):
     
     mill_names = [entry.split(';')[0] for entry in mill_names]
 
-    #untuk mengambil satu value dari duplicate value txt
+
     mill_names = list(set(mill_names))
     return mill_names
 
-def store_list_mill(dir_mill, mill):
+def get_mill_ip():
 
-    if not dir_mill.exists():
-        dir_mill.touch()
+    conn = sqlite3.connect('./db/grading_sampling.db')
+    cursor = conn.cursor()
 
-    selected_mill = mill.split(';')[0]
+    cursor.execute("SELECT mill, ip FROM cctv")
+    records = cursor.fetchall()
 
-    with open(dir_mill, 'r') as file:
-        lines = file.readlines()
+    formatted_records = []
 
-    filtered_lines = [line for line in lines if line.strip().split(';')[0] == selected_mill]
 
-    with open(dir_mill, 'w') as file:
-        file.writelines(filtered_lines)
+    if not records:
+        print("No records found in the table.")
+    else:
+        for record in records:
+            formatted_record = f"{record[0]};{record[1]}"
+            formatted_records.append(formatted_record)
+                
+
+    conn.close()
+
+    return formatted_records
 
 class Frame4(tk.Frame):
     def __init__(self, master):
@@ -392,19 +400,19 @@ class Frame4(tk.Frame):
         self.server_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
         database_label = tk.Label(self, text="Database")
-        database_label.grid(row=4, column=0, sticky="w", pady=5)
+        database_label.grid(row=6, column=0, sticky="w", pady=5)
         self.database_entry = tk.Entry(self) 
-        self.database_entry.grid(row=4, column=1, sticky="ew")
+        self.database_entry.grid(row=6, column=1, sticky="ew")
 
         user_label = tk.Label(self, text="User")
-        user_label.grid(row=5, column=0, sticky="w", pady=5)
+        user_label.grid(row=4, column=0, sticky="w", pady=4)
         self.user_entry = tk.Entry(self) 
-        self.user_entry.grid(row=5, column=1, sticky="ew")
-        
+        self.user_entry.grid(row=4, column=1, sticky="ew")
+    
         password_label = tk.Label(self, text="Password")
-        password_label.grid(row=6, column=0, sticky="w", pady=5)
+        password_label.grid(row=5, column=0, sticky="w", pady=5)
         self.password_entry = tk.Entry(self) 
-        self.password_entry.grid(row=6, column=1, sticky="ew")
+        self.password_entry.grid(row=5, column=1, sticky="ew")
 
         mill_label = tk.Label(self, text="Mill")
         mill_label.grid(row=7, column=0, sticky="w", pady=5)
@@ -447,13 +455,49 @@ class Frame4(tk.Frame):
             cursor.execute("SELECT COUNT(*) FROM config WHERE id = 1")
             record_count = cursor.fetchone()[0]
 
+            # print(mill)
+            # print(server)
+            # print(user)
+            # print(password)
+            # print(database)
+
             if record_count == 0:
                 cursor.execute("INSERT INTO config (id, mill, server, user, password, database) VALUES (?, ?, ?, ?, ?, ?)",
                             (1, mill, server, user, password, database))
                 self.feedback_label_success.config(text="Berhasil Menambahkan Konfigurasi!")
             else:
+                # update db config
                 cursor.execute("UPDATE config SET mill=?, server=?, user=?, password=?, database=? WHERE id=1",
                             (mill, server, user, password, database))
+
+                url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
+
+                arr = None
+                try:
+                    # store the response of URL
+                    response = urlopen(url)
+                    arr = json.loads(response.read())
+                except Exception as e:
+                    print("An error occurred while fetching the server data:", str(e))
+
+
+                # mill = arr[0]['mill']
+                # ip = arr[0]['ip']
+                target_mill = mill  # The mill value you want to find
+                found_record = None
+
+                for record in arr:
+                    if record.get('mill') == target_mill:
+                        found_record = record
+                        break
+
+                if found_record:
+                    # update db cctv
+                    other_table_data = (mill, found_record['ip'])
+                    cursor.execute("UPDATE cctv SET mill=?, ip=? WHERE id=1", other_table_data)
+            
+    
+
                 self.feedback_label_success.config(text="Berhasil Memperbarui Konfigurasi!")
 
             conn.commit()
@@ -673,8 +717,35 @@ def connect_to_database():
 
         conn.close()
 
+
+
         server, user, password, database = record
+
+        # mencegah sql injection
         server = server.replace('\\\\', '\\')
+
+        # # Define a regular expression pattern to match an IPv4 address
+        # ip_pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+
+        # # Use re.findall to find the IP address in the string
+        # ip_match = re.findall(ip_pattern, server)
+
+        # if ip_match:
+        #     # Assuming there is only one IP address in the string
+        #     ip = ip_match[0]
+        #     non_ip_part = re.sub(ip_pattern, '', server)
+            
+        #     # Construct the result with double backslashes
+        #     result_str = f"{ip}\\{non_ip_part}"
+
+        #     print(result_str)
+        # else:
+        #     print("No valid IP address found in the input string.")
+
+        # print(result_str)
+        print(user)
+        print(password)
+        print(database)
         timeout = 0.5
         
         def try_connect():
@@ -774,12 +845,12 @@ class Frame1(tk.Frame):
         logo_label2.grid(row=0, column=1)  # Change column to 0 and sticky to "ne"
 
         self.mill_var = tk.StringVar()
-        cctv_choices = get_list_mill(log_mill, flag=True)
+        cctv_choices = get_mill_ip()
         cctv_choices.append('Video - Test')
         self.cctv_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=cctv_choices)
         self.mill_var.set(cctv_choices[0])
         source = self.mill_var.get()
-        self.cctv_combobox.grid(row=0, column=5)
+        self.cctv_combobox.grid(    row=0, column=5)
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
 
