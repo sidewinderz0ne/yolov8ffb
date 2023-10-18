@@ -403,23 +403,30 @@ class Frame4(tk.Frame):
         
         password_label = tk.Label(self, text="Password")
         password_label.grid(row=6, column=0, sticky="w", pady=5)
-        self.password_entry = tk.Entry(self, show="*") 
+        self.password_entry = tk.Entry(self) 
         self.password_entry.grid(row=6, column=1, sticky="ew")
 
-        # toggle_button = tk.Button(self, text="", command=self.toggle_password_visibility)
-        # toggle_button.grid(row=6, column=2, columnspan=2, pady=5)
+        mill_label = tk.Label(self, text="Mill")
+        mill_label.grid(row=7, column=0, sticky="w", pady=5)
+        mill_choices = get_list_mill(log_mill, flag=False)
+        self.mill_var = tk.StringVar()
+        self.mill_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=mill_choices)
+
+        if len(mill_choices) ==1:
+            self.mill_var.set(mill_choices[0])
+        self.mill_combobox.grid(row=7, column=1, pady=5, sticky="ew")
         
         submit_button = tk.Button(self, text="Submit", command=self.change_config)
-        submit_button.grid(row=7, column=0,sticky="w",   pady=(40, 0))
+        submit_button.grid(row=8, column=0,sticky="w",   pady=(40, 0))
         
         back_button = tk.Button(self, text="Kembali ke Login", command=self.backToLogin)
-        back_button.grid(row=7, column=1,sticky="w",   pady=(40, 0))
+        back_button.grid(row=8, column=1,sticky="w",   pady=(40, 0))
 
         self.feedback_label = tk.Label(self, text="", fg="red")
-        self.feedback_label.grid(row=8, column=0, columnspan=2, pady=(30, 10))
+        self.feedback_label.grid(row=9, column=0, columnspan=2, pady=(30, 10))
 
         self.feedback_label_success = tk.Label(self, text="", fg="green")
-        self.feedback_label_success.grid(row=8, column=0, columnspan=2, pady=(30, 10))
+        self.feedback_label_success.grid(row=9, column=0, columnspan=2, pady=(30, 10))
 
     def change_config(self):
         server = self.server_entry.get()
@@ -427,41 +434,35 @@ class Frame4(tk.Frame):
         user = self.user_entry.get()
         password = self.password_entry.get()
         database = self.database_entry.get()
-        if not server or not user or not userRoot or not password or not database:
+        mill = self.mill_combobox.get()
+        if not server or not user or not userRoot or not password or not database or not mill:
                 self.feedback_label.config(text="Semua kolom harus diisi", fg="red")
                 self.after(3000, self.clear_feedback)
                 return  # Stop further execution
-        # Define the default configuration
-        default_config = {
-            "server": "192.168.1.254\\DBSTAGING",
-            "user": "usertesting",
-            "password": "Qwerty@123",
-            "database": "skmstagingdb"
-        }
 
         if userRoot == 'grading':
-            # Check if the configuration file exists
-            config_file_path = Path(os.getcwd() + '/config/server.txt')  # Change this to your desired file path
-            if os.path.isfile(config_file_path):
-                # If the file exists, load the existing configuration
-                with open(config_file_path, "r") as config_file:
-                    existing_config = json.load(config_file)
+
+            conn = sqlite3.connect('./db/grading_sampling.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM config WHERE id = 1")
+            record_count = cursor.fetchone()[0]
+
+            if record_count == 0:
+                cursor.execute("INSERT INTO config (id, mill, server, user, password, database) VALUES (?, ?, ?, ?, ?, ?)",
+                            (1, mill, server, user, password, database))
+                self.feedback_label_success.config(text="Berhasil Menambahkan Konfigurasi!")
             else:
-                existing_config = default_config
+                cursor.execute("UPDATE config SET mill=?, server=?, user=?, password=?, database=? WHERE id=1",
+                            (mill, server, user, password, database))
+                self.feedback_label_success.config(text="Berhasil Memperbarui Konfigurasi!")
 
-            # Update the configuration with the values from Entry widgets
+            conn.commit()
+            conn.close()
+        
+        else:
+            self.feedback_label.config(text="User Root Salah", fg="red")
+            self.after(3000, self.clear_feedback)
             
-            existing_config["server"] = server
-            existing_config["user"] = user
-            existing_config["password"] = password
-            existing_config["database"] = database
-
-            # Save the updated configuration back to the file
-            with open(config_file_path, "w") as config_file:
-                json.dump(existing_config, config_file, indent=4)
-
-            # Provide feedback to the user
-            self.feedback_label_success.config(text="Configuration saved successfully!")
 
     def clear_feedback(self):
         if self.feedback_label.winfo_exists():
@@ -504,15 +505,15 @@ class LoginFrame(tk.Frame):
         self.password_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
         # Add a dropdown field
-        mill_label = tk.Label(self, text="Mill:")
-        mill_label.grid(row=4, column=0, sticky="w", pady=5)
-        self.mill_var = tk.StringVar()
-        mill_choices = get_list_mill(log_mill, flag=False)
-        self.mill_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=mill_choices)
+        # mill_label = tk.Label(self, text="Mill:")
+        # mill_label.grid(row=4, column=0, sticky="w", pady=5)
+        # self.mill_var = tk.StringVar()
+        # mill_choices = get_list_mill(log_mill, flag=False)
+        # self.mill_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=mill_choices)
 
-        if len(mill_choices) ==1:
-            self.mill_var.set(mill_choices[0])
-        self.mill_combobox.grid(row=4, column=1, pady=5, sticky="ew")
+        # if len(mill_choices) ==1:
+        #     self.mill_var.set(mill_choices[0])
+        # self.mill_combobox.grid(row=4, column=1, pady=5, sticky="ew")
 
         self.feedback_label = tk.Label(self, text="", fg="red")
         self.feedback_label.grid(row=6, column=0, columnspan=2, pady=(30, 10))
@@ -522,10 +523,10 @@ class LoginFrame(tk.Frame):
         register_label.bind("<Button-1>", self.register_clicked)
         
         login_button = tk.Button(self, text="Login", command=self.login)
-        login_button.grid(row=7, column=0, columnspan=2, sticky="w", pady=(40, 0))
+        login_button.grid(row=6, column=0, columnspan=2, sticky="w", pady=(40, 0))
 
         login_button = tk.Button(self, text="Config Server", command=self.config_server)
-        login_button.grid(row=7, column=1, columnspan=2, sticky="w", pady=(40, 0))
+        login_button.grid(row=6, column=1, columnspan=2, sticky="w", pady=(40, 0))
 
         self.password_entry.bind("<Return>", lambda event: self.login())
 
@@ -542,7 +543,6 @@ class LoginFrame(tk.Frame):
     def login(self):
         user = self.username_entry.get()
         password = self.password_entry.get()
-        mill = self.mill_combobox.get()
 
         conn = sqlite3.connect('./db/grading_sampling.db')
         cursor = conn.cursor()
@@ -666,14 +666,15 @@ def connect_to_database():
     global status_mode
     
     try:
-        with open(Path(os.getcwd() + '/config/server.txt'), "r") as file:
-            config = json.load(file)
+        conn = sqlite3.connect('./db/grading_sampling.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT server, user, password, database FROM config WHERE id = 1")
+        record = cursor.fetchone()
 
-        server = config["server"]
-        user = config["user"]
-        password = config["password"]
-        database = config["database"]
+        conn.close()
 
+        server, user, password, database = record
+        server = server.replace('\\\\', '\\')
         timeout = 0.5
         
         def try_connect():
