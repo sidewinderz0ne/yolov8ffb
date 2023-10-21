@@ -455,12 +455,6 @@ class Frame4(tk.Frame):
             cursor.execute("SELECT COUNT(*) FROM config WHERE id = 1")
             record_count = cursor.fetchone()[0]
 
-            # print(mill)
-            # print(server)
-            # print(user)
-            # print(password)
-            # print(database)
-
             if record_count == 0:
                 cursor.execute("INSERT INTO config (id, mill, server, user, password, database) VALUES (?, ?, ?, ?, ?, ?)",
                             (1, mill, server, user, password, database))
@@ -474,15 +468,11 @@ class Frame4(tk.Frame):
 
                 arr = None
                 try:
-                    # store the response of URL
                     response = urlopen(url)
                     arr = json.loads(response.read())
                 except Exception as e:
                     print("An error occurred while fetching the server data:", str(e))
 
-
-                # mill = arr[0]['mill']
-                # ip = arr[0]['ip']
                 target_mill = mill  # The mill value you want to find
                 found_record = None
 
@@ -495,8 +485,6 @@ class Frame4(tk.Frame):
                     # update db cctv
                     other_table_data = (mill, found_record['ip'])
                     cursor.execute("UPDATE cctv SET mill=?, ip=? WHERE id=1", other_table_data)
-            
-    
 
                 self.feedback_label_success.config(text="Berhasil Memperbarui Konfigurasi!")
 
@@ -723,29 +711,7 @@ def connect_to_database():
 
         # mencegah sql injection
         server = server.replace('\\\\', '\\')
-
-        # # Define a regular expression pattern to match an IPv4 address
-        # ip_pattern = r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
-
-        # # Use re.findall to find the IP address in the string
-        # ip_match = re.findall(ip_pattern, server)
-
-        # if ip_match:
-        #     # Assuming there is only one IP address in the string
-        #     ip = ip_match[0]
-        #     non_ip_part = re.sub(ip_pattern, '', server)
-            
-        #     # Construct the result with double backslashes
-        #     result_str = f"{ip}\\{non_ip_part}"
-
-        #     print(result_str)
-        # else:
-        #     print("No valid IP address found in the input string.")
-
-        # print(result_str)
-        print(user)
-        print(password)
-        print(database)
+        
         timeout = 0.5
         
         def try_connect():
@@ -1435,6 +1401,9 @@ class Frame3(tk.Frame):
 
         global WBTicketNo 
         global totalJjg
+ 
+        # Get the current datetime
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # Values for the new row
         new_row = {
@@ -1444,6 +1413,25 @@ class Frame3(tk.Frame):
             'AI_TotalJanjang': str(totalJjg),
             'AI_Janjang': str(intVal)
         }
+
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
+        sqlite_insert_query = '''
+        INSERT INTO quality (AI_NoTicket, AI_JanjangSample, AI_TotalJanjang, AI_Janjang, AI_push_time)
+        VALUES (?, ?, ?, ?, ?)
+        '''
+        
+        # Create a cursor and execute the INSERT statement for SQLite
+        sqlite_cursor.execute(sqlite_insert_query, (
+            new_row['AI_NoTicket'], new_row['AI_JanjangSample'], new_row['AI_TotalJanjang'],
+            new_row['AI_Janjang'], current_time
+        ))
+
+         # Commit the changes to the SQLite database
+        sqlite_conn.commit()
+    
+        # Close the cursor (not necessary, but recommended)
+        sqlite_cursor.close()
 
         # Build the SQL INSERT statement
         SQL_INSERT = """
@@ -1569,6 +1557,21 @@ class Frame3(tk.Frame):
             cursor.execute(SQL_UPDATE, (notiket))
             connection.commit()
             connection.close()
+
+            # Update in SQLite
+            sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+            sqlite_cursor = sqlite_conn.cursor()
+            current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            sqlite_update_query = '''
+            UPDATE weight_bridge
+            SET AI_pull_time = ?
+            WHERE WBTicketNo = ?;
+            '''
+            sqlite_cursor.execute(sqlite_update_query, (current_time, notiket))
+            sqlite_conn.commit()
+            sqlite_conn.close()
+
             return "Push time changed successfully."
         else:
             return "Failed to changed time"
@@ -1600,6 +1603,17 @@ class Frame3(tk.Frame):
 
     def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir):
         row_values_subset = ';'.join(map(str, row_values))
+
+        WBTicketNo = row_values[1] if row_values else ''
+        VehiclePoliceNO = row_values[2]if row_values else ''
+        DriverName = row_values[3]if row_values else ''
+        BUnit = row_values[4]if row_values else ''
+        Divisi = row_values[5]if row_values else ''
+        Field = row_values[6]if row_values else ''
+        Bunches = row_values[7]if row_values else ''
+        Ownership = row_values[8]if row_values else ''
+        push_time = row_values[9]if row_values else ''
+        
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
         dirt = self.dirtEntry.get()
