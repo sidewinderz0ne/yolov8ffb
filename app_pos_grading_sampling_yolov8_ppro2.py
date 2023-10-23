@@ -52,6 +52,11 @@ date_start_conveyor = None
 date_end_conveyor = None
 connection = None 
 accent2 = "#d2d7fc"
+id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
+
+id_mill = None
+with open(id_mill_dir, 'r') as z:
+    id_mill = z.readline()
 
 if not log_data_user.exists():
     log_data_user.touch()
@@ -337,6 +342,8 @@ def get_list_mill(dir_mill, flag):
         try:
             response = urlopen(url)
             get_mill_arr = json.loads(response.read())
+
+            print(get_mill_arr)
             mill_names = [f"{data['mill']};{data['ip']}" for data in get_mill_arr]
         except Exception as e:
             print("An error occurred while fetching the server data:", str(e))
@@ -481,10 +488,14 @@ class Frame4(tk.Frame):
                         found_record = record
                         break
 
+                
                 if found_record:
                     # update db cctv
                     other_table_data = (mill, found_record['ip'])
                     cursor.execute("UPDATE cctv SET mill=?, ip=? WHERE id=1", other_table_data)
+
+                    with open(id_mill_dir, 'w') as file:
+                        file.write(found_record['id_mill'])
 
                 self.feedback_label_success.config(text="Berhasil Memperbarui Konfigurasi!")
 
@@ -759,7 +770,7 @@ class Frame1(tk.Frame):
         self.style = ttk.Style(self)
         self.row_height = 100  # Set the desired row height
         self.detail_window = None
-        
+
         self.style.configure("Treeview", rowheight=self.row_height)
         self.tree.heading("#1", text="No")
         self.tree.heading("#2", text="NOMOR TIKET")
@@ -772,7 +783,6 @@ class Frame1(tk.Frame):
         self.tree.heading("#9", text="OWNERSHIP")
         self.tree.heading("#10", text="PUSH TIME")
         self.tree.heading("#11", text="ACTION")
-        
         
         # Adjust column widths
         self.tree.column("no", width=50)         
@@ -859,7 +869,6 @@ class Frame1(tk.Frame):
         global source  # Declare 'source' as a global variable
         selected_value = self.mill_var.get()
         self.selected_combobox_value = selected_value  # Store the selected value in a class variable
-        # print("Selected value:", selected_value)
         
         # Update 'source' to the current combobox value
         source = selected_value
@@ -1603,16 +1612,50 @@ class Frame3(tk.Frame):
 
     def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir):
         row_values_subset = ';'.join(map(str, row_values))
+        
+        # print(row_values)
+        mill_id = id_mill
+        WBTicketNo = row_values[0] if row_values else ''
+        VehiclePoliceNO = row_values[1]if row_values else ''
+        DriverName = row_values[2]if row_values else ''
+        BUnit = row_values[3]if row_values else ''
+        Divisi = row_values[4]if row_values else ''
+        Field = row_values[5]if row_values else ''
+        Status = row_values[7]if row_values else ''
+        waktu_mulai =  row_values[8]if row_values else ''
+        waktu_selesai =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        unripe = count_per_class[0]
+        ripe = count_per_class[1]
+        overripe = count_per_class[2]
+        empty_bunch = count_per_class[3]
+        abnormal = count_per_class[4]
+        kastrasi = count_per_class[5]
+        tp = count_per_class[6]
 
-        WBTicketNo = row_values[1] if row_values else ''
-        VehiclePoliceNO = row_values[2]if row_values else ''
-        DriverName = row_values[3]if row_values else ''
-        BUnit = row_values[4]if row_values else ''
-        Divisi = row_values[5]if row_values else ''
-        Field = row_values[6]if row_values else ''
-        Bunches = row_values[7]if row_values else ''
-        Ownership = row_values[8]if row_values else ''
-        push_time = row_values[9]if row_values else ''
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
+
+        insert_record_query = '''
+        INSERT INTO log_sampling (
+            mill_id, waktu_mulai, waktu_selesai, no_tiket, no_plat, nama_driver, bisnis_unit, divisi, blok, status, 
+            unripe, ripe, overripe, empty_bunch, abnormal, kastrasi, tp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        '''
+
+        record_data = (
+            mill_id, waktu_mulai, waktu_selesai, WBTicketNo, VehiclePoliceNO, DriverName, BUnit, Divisi, Field, Status, 
+            unripe, ripe, overripe, empty_bunch, abnormal, kastrasi, tp
+        )
+
+
+        try:
+            sqlite_cursor.execute(insert_record_query, record_data)
+            sqlite_conn.commit()
+
+            sqlite_conn.close()
+            print("New record inserted successfully.")
+        except Exception as e:
+            print("An error occurred while inserting the record:", str(e))
         
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
