@@ -386,7 +386,7 @@ def get_mill_ip():
 
     return formatted_records
 
-class Frame4(tk.Frame):
+class ConfigFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
@@ -478,7 +478,7 @@ class Frame4(tk.Frame):
                     response = urlopen(url)
                     arr = json.loads(response.read())
                 except Exception as e:
-                    print("An error occurred while fetching the server data:", str(e))
+                    print("Anda membutuhkan internet untuk fetching ID mill dari server")
 
                 target_mill = mill  # The mill value you want to find
                 found_record = None
@@ -547,16 +547,6 @@ class LoginFrame(tk.Frame):
         self.password_entry = tk.Entry(self, show="*") 
         self.password_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
-        # Add a dropdown field
-        # mill_label = tk.Label(self, text="Mill:")
-        # mill_label.grid(row=4, column=0, sticky="w", pady=5)
-        # self.mill_var = tk.StringVar()
-        # mill_choices = get_list_mill(log_mill, flag=False)
-        # self.mill_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=mill_choices)
-
-        # if len(mill_choices) ==1:
-        #     self.mill_var.set(mill_choices[0])
-        # self.mill_combobox.grid(row=4, column=1, pady=5, sticky="ew")
 
         self.feedback_label = tk.Label(self, text="", fg="red")
         self.feedback_label.grid(row=6, column=0, columnspan=2, pady=(30, 10))
@@ -581,7 +571,7 @@ class LoginFrame(tk.Frame):
         self.master.switch_frame(RegisterFrame)
 
     def config_server(self):
-        self.master.switch_frame(Frame4)
+        self.master.switch_frame(ConfigFrame)
 
     def login(self):
         user = self.username_entry.get()
@@ -762,10 +752,7 @@ def connect_to_database():
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
     
-    def __init__(self, master):
-        super().__init__(master)
-        global source
-        self.clicked_buttons = []
+    def make_tree(self):
         self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
         self.style = ttk.Style(self)
         self.row_height = 100  # Set the desired row height
@@ -796,6 +783,13 @@ class Frame1(tk.Frame):
         self.tree.column("ownership", anchor="center") 
         self.tree.column("pushtime", anchor="center") 
         self.tree.column("action", anchor="center") 
+
+    def __init__(self, master):
+        super().__init__(master)
+        global source
+        self.clicked_buttons = []
+        
+        self.make_tree()
 
         top_frame = ttk.Frame(self)
         top_frame.grid(row=0, column=0, sticky='ew')
@@ -830,18 +824,20 @@ class Frame1(tk.Frame):
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
 
-        self.mode_label = tk.Label(top_frame, text="", font=("Helvetica", 16, "bold"))
-        self.mode_label.grid(row=0, column=3)
+        # self.mode_label = tk.Label(top_frame, text="", font=("Helvetica", 16, "bold"))
+        # self.mode_label.grid(row=0, column=3)
+
+        self.refresh_button = ttk.Checkbutton(top_frame, text="Edit Data", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
+        self.refresh_button.grid(row=0, column=5)
         
         self.refresh_button = ttk.Checkbutton(top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
-        self.refresh_button.grid(row=0, column=5)       
+        self.refresh_button.grid(row=0, column=6)       
         
-        top_frame.grid_columnconfigure(5, weight=20)
+        top_frame.grid_columnconfigure(6, weight=20)
 
         
         # self.button_input = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
         # self.button_input.grid(row=0, column=5)
-          
         
 
         self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
@@ -863,7 +859,55 @@ class Frame1(tk.Frame):
 
         self.running_script = False  # Flag to track if script is running
         
-    
+    def password_frame(self):
+        
+        password_overlay = tk.Toplevel(self.master)
+        password_overlay.title("Konfirmasi")
+        
+        # Set the size of the overlay frame
+        overlay_width = 200
+        overlay_height = 200
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        x = (screen_width - overlay_width) // 2
+        y = (screen_height - overlay_height) // 2
+        password_overlay.geometry(f"{overlay_width}x{overlay_height}+{x}+{y}")
+        
+        # Create a frame within the Toplevel for grid placement
+        password_frame = ttk.Frame(password_overlay)
+        password_frame.grid(row=0, column=0, padx=10, pady=10)
+
+        # Example: Add a Submit button
+        label_button = ttk.Label(password_frame, text="Password Root")
+        label_button.grid(row=0, column=0, padx=10, pady=10)
+        
+        # Example: Add an Entry widget for password input
+        self.password_entry = ttk.Entry(password_frame, show="*")  # Use show="*" to hide the password characters
+        self.password_entry.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")  # Center vertically with sticky
+        
+        # Example: Add a Submit button
+        submit_button = ttk.Button(password_frame, text="SUBMIT", command=lambda: self.switch_frame_edit_data(password_overlay))
+        submit_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+
+        self.feedback_label = tk.Label(password_frame, text="", fg="red")
+        self.feedback_label.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
+
+
+    def switch_frame_edit_data(self, password_overlay):
+        
+        password = self.password_entry.get()
+
+        if password == 'grading':
+            password_overlay.destroy()
+            self.master.switch_frame(EditBridgeFrame)
+        else:
+            self.feedback_label.config(text="Error Password Root!", fg="red")
+
+        self.after(3000, self.clear_feedback)
+        
+    def clear_feedback(self):
+        if self.feedback_label.winfo_exists():
+            self.feedback_label.config(text="")
 
     def on_combobox_focus_out(self, event):
         global source  # Declare 'source' as a global variable
@@ -937,20 +981,29 @@ class Frame1(tk.Frame):
         else:
             return connection
 
-    def pull_data_ppro(self):
-        start_date = datetime.datetime(2023, 8, 24, 7, 0, 0)
+    def pull_data_ppro(self, date_today=None):
+        start_date = datetime.datetime(2023, 10, 9, 7, 0, 0)
         current_date = datetime.datetime.now().date()
         start_time = datetime.time(7, 0, 0)
         #start_date = datetime.datetime.combine(current_date, start_time)
-        # print(start_date)
+        
         end_date = start_date + datetime.timedelta(days=1)
-        # print(end_date)
+
+        if date_today != None:
+            tommorow = date_today + datetime.timedelta(days=1)
+        
         connection = connect_to_database()
         
         if isinstance(connection, pymssql.Connection):
             sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s"
+            if date_today:
+                sql_query += " AND AI_pull_time >= %s AND AI_pull_time < %s"
+             
             cursor = connection.cursor()
-            cursor.execute(sql_query, (start_date, end_date))
+            if date_today:
+                cursor.execute(sql_query, (start_date, end_date, date_today, tommorow))
+            else:
+                cursor.execute(sql_query, (start_date, end_date))
             records = cursor.fetchall()
             connection.close()
             return records
@@ -1047,8 +1100,12 @@ class Frame1(tk.Frame):
         self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
         if status_mode == 'online':
             arr_data = self.process_data(record, master_bunit, master_div, master_block)
-            self.refresh_button = ttk.Checkbutton(self.top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
+
+            self.refresh_button = ttk.Checkbutton(self.top_frame, text="Edit Data", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
             self.refresh_button.grid(row=0, column=5)
+            
+            self.refresh_button = ttk.Checkbutton(self.top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
+            self.refresh_button.grid(row=0, column=6)
 
             self.remove_input_button()
         else:
@@ -1698,6 +1755,357 @@ class Frame3(tk.Frame):
         threading.Thread(target=self.run_send_pdf_in_background).start()
 
         self.master.switch_frame(Frame1)
+
+class EditBridgeFrame(tk.Frame):
+    def __init__(self, master):
+        super().__init__(master)
+
+        self.clicked_buttons = []
+
+        frame1_instance = Frame1(master)
+
+        connection = connect_to_database()
+
+        if isinstance(connection, pymssql.Connection):
+            self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
+            self.style = ttk.Style(self)
+            self.row_height = 100  # Set the desired row height
+            self.detail_window = None
+
+            self.style.configure("Treeview", rowheight=self.row_height)
+            self.tree.heading("#1", text="No")
+            self.tree.heading("#2", text="NOMOR TIKET")
+            self.tree.heading("#3", text="NOMOR POLISI")
+            self.tree.heading("#4", text="NAMA DRIVER")
+            self.tree.heading("#5", text="BISNIS UNIT")
+            self.tree.heading("#6", text="DIVISI")
+            self.tree.heading("#7", text="FIELD")
+            self.tree.heading("#8", text="BUNCHES")
+            self.tree.heading("#9", text="OWNERSHIP")
+            self.tree.heading("#10", text="PUSH TIME")
+            self.tree.heading("#11", text="ACTION")
+
+            self.tree.column("no", width=50)
+            self.tree.column("notiket", width=250)
+            self.tree.column("nopol", width=100, anchor="center")
+            self.tree.column("driver")
+            self.tree.column("b_unit")
+            self.tree.column("divisi")
+            self.tree.column("field")
+            self.tree.column("bunches", width=70)
+            self.tree.column("ownership", anchor="center")
+            self.tree.column("pushtime", anchor="center")
+            self.tree.column("action", anchor="center")
+            master_bunit = frame1_instance.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
+            master_div = frame1_instance.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
+            master_block = frame1_instance.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
+
+            current_date = datetime.datetime.now().date()
+
+            start_time = datetime.time(7, 0, 0)
+            date_today = datetime.datetime.combine(current_date, start_time)
+            record = frame1_instance.pull_data_ppro(date_today)
+
+            frame1_instance.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
+            arr_data = frame1_instance.process_data(record, master_bunit, master_div, master_block)
+
+            frame1_instance.make_tree()
+        
+            for i, data in enumerate(arr_data, start=1):
+                # print('lazy')
+                # print(data[-1])
+                item = self.tree.insert("", "end", values=data, tags=i)
+                self.tree.set(item, "#1", str(i))
+                if data[-1] == None or data[-1] == 'None':
+                    self.tree.set(item, "#11", "READY")
+                    # self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
+                else:
+                    # self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
+                    self.tree.set(item, "#11", "DONE")
+                self.tree.tag_bind(i, "<Double-Button-1>", lambda event, row_item=item: self.edit_row(row_item, event))     
+
+            top_frame = ttk.Frame(self)
+            top_frame.grid(row=0, column=0, sticky='ew')
+
+            top_frame.grid_columnconfigure(0, weight=1)
+            top_frame.grid_columnconfigure(1, weight=1)
+            top_frame.grid_columnconfigure(2, weight=200)
+            top_frame.grid_columnconfigure(3, weight=20)
+            top_frame.grid_columnconfigure(4, weight=20)
+            self.top_frame = top_frame
+            
+            
+            self.title_label = tk.Label(top_frame, text=f"LIST TRUK SETELAH PROSES DETEKSI AI {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
+            self.title_label.grid(row=0, column=2)
+            self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
+            self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
+            logo_label = tk.Label(top_frame, image=self.logo_image)
+            logo_label.grid(row=0, column=0)
+
+            self.logo_image2 = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/LOGO-SRS(1).png'))
+            self.logo_image2 = self.logo_image2.subsample(2, 2)
+            logo_label2 = tk.Label(top_frame, image=self.logo_image2)
+            logo_label2.grid(row=0, column=1)  # Change column to 0 and sticky to "ne"
+
+            self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew") 
+
+
+            top_frame.grid_columnconfigure(6, weight=20)
+
+            self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
+
+            self.footer_frame = tk.Frame(self)
+            self.footer_frame.grid(row=2, column=0, columnspan=6, sticky="ew", pady=40)  # Use columnspan to span all columns
+
+            footer_label = tk.Label(self.footer_frame, text="Copyright @ Digital Architect SRS 2023", font=("Helvetica", 14, "bold"))
+            footer_label.pack()
+
+            self.last_update_model = tk.Frame(self)
+            self.last_update_model.grid(row=2, column=0, columnspan=3, sticky="nw", pady=10)  # Use columnspan to span all columns
+
+            last_model = tk.Label(self.last_update_model, text="Tanggal Update Model AI : 08 Agustus 2023",font=("Helvetica", 12, "italic"))
+            last_model.pack()
+                    
+            self.rowconfigure(1, weight=1)
+            self.columnconfigure(0, weight=1)
+                
+        else:
+            self.master.switch_frame(Frame1)
+
+
+    def edit_row(self, row_item, event ):
+
+        row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
+
+        column = self.tree.identify_column(event.x)  # Identify the column clicked
+        status_row = self.tree.item(row_item, "values")[-1]
+        row_values = self.tree.item(row_item, "values")  # Get values of the row
+        
+        
+        column = column.split("#")[-1]
+        for cb in self.clicked_buttons:
+            
+            self.tree.tag_configure(cb, background="#ffffff")  # Change row color
+            self.clicked_buttons.remove(cb)
+        
+        if status_row == "DONE" and row_id not in self.clicked_buttons:
+
+            self.tree.tag_configure(row_id, background=accent2)  # Change row color
+            self.clicked_buttons.append(row_id)
+
+            if int(column) == len(columns):
+
+                confirmation = messagebox.askyesno("Konfirmasi", f"Apakah benar akan melakukan edit pada SPB nomor {row_values[0]}?")
+                if confirmation:
+                    self.edit_field(row_values)
+
+
+    def edit_field(self, row_values):
+        WBTicketNo = row_values[1] if row_values else ''
+        VehiclePoliceNO = row_values[2]if row_values else ''
+        DriverName = row_values[3]if row_values else ''
+        BUnit = row_values[4]if row_values else ''
+        Divisi = row_values[5]if row_values else ''
+        Field = row_values[6]if row_values else ''
+        Bunches = row_values[7]if row_values else ''
+        
+        edit_data_overlay = tk.Toplevel(self.master)
+        edit_data_overlay.title("Edit Data " + str(WBTicketNo))
+        
+        overlay_width = 500
+        overlay_height = 550
+        screen_width = self.master.winfo_screenwidth()
+        screen_height = self.master.winfo_screenheight()
+        x = (screen_width - overlay_width) // 2
+        y = (screen_height - overlay_height) // 2
+        edit_data_overlay.geometry(f"{overlay_width}x{overlay_height}+{x}+{y}")
+        
+        overlay_frame = ttk.Frame(edit_data_overlay)
+        overlay_frame.grid(row=0, column=0, padx=10, pady=10)
+
+        tiket_label = ttk.Label(overlay_frame, text="Nomor Tiket")
+        tiket_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+        self.tiket_entry = ttk.Entry(overlay_frame, width=30)
+        self.tiket_entry.insert(0, WBTicketNo)  # Set the default value
+        self.tiket_entry.grid(row=1, column=0, padx=10, pady=10)
+
+        nopol_label = ttk.Label(overlay_frame, text="Nomor Polisi")
+        nopol_label.grid(row=0, column=1, padx=10, pady=10, sticky='w')
+
+        self.nopol_entry = ttk.Entry(overlay_frame, width=30)
+        self.nopol_entry.insert(0, VehiclePoliceNO)  # Set the default value
+        self.nopol_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        driver_label = ttk.Label(overlay_frame, text="Nama Driver")
+        driver_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        self.driver_entry = ttk.Entry(overlay_frame, width=30)
+        self.driver_entry.insert(0, DriverName)  # Set the default value
+        self.driver_entry.grid(row=3, column=1, padx=10, pady=10)
+
+        bunit_label = ttk.Label(overlay_frame, text="Bisnis Unit")
+        bunit_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+
+        self.bunit_entry = ttk.Entry(overlay_frame, width=30)
+        self.bunit_entry.insert(0, BUnit)  # Set the default value
+        self.bunit_entry.grid(row=3, column=0, padx=10, pady=10)
+
+
+        divisi_label = ttk.Label(overlay_frame, text="Bisnis Unit")
+        divisi_label.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+
+        self.divisi_entry = ttk.Entry(overlay_frame, width=30)
+        self.divisi_entry.insert(0, Divisi)  # Set the default value
+        self.divisi_entry.grid(row=5, column=0, padx=10, pady=10)
+
+        bunches_label = ttk.Label(overlay_frame, text="Bunches")
+        bunches_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+
+        self.bunches_entry = ttk.Entry(overlay_frame, width=30)
+        self.bunches_entry.insert(0, Bunches)  # Set the default value
+        self.bunches_entry.grid(row=5, column=1, padx=10, pady=10)
+
+        if '\n' in Field:
+            blok_values = Field.split('\n')
+            current_column = 0  # Initialize the column index
+            row_index = 7  # Initialize the row index
+            blok_count = 1
+
+            blok_entries = []
+
+            for blok_value in blok_values:
+                blok_label = ttk.Label(overlay_frame, text=f"Blok ke-{blok_count}" )
+                blok_label.grid(row=row_index, column=current_column, padx=10, pady=10, sticky='w')
+
+                blok_entry = ttk.Entry(overlay_frame, width=30)
+                blok_entry.insert(0, blok_value)
+                blok_entry.grid(row=row_index + 1, column=current_column, padx=10, pady=10)
+
+                blok_entries.append(blok_entry)
+
+                current_column += 1
+                if current_column >= 2:
+                    current_column = 0  # Reset to column 0
+                    row_index += 2  # Move to the next row
+
+                blok_count += 1
+
+            row_index += 2
+
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo))
+            submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
+        else:
+            blok_label = ttk.Label(overlay_frame, text="Blok")
+            blok_label.grid(row=7, column=0, padx=10, pady=10, sticky='w')
+
+            blok_entry = ttk.Entry(overlay_frame, width=30)
+            blok_entry.insert(0, Field)
+            blok_entry.grid(row=8, column=0, padx=10, pady=10)\
+
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entry, WBTicketNo))
+            submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
+
+            
+    def update_data(self, blok_entries, WBTicketNo):
+
+        connection = connect_to_database()
+
+        tiket = self.tiket_entry.get()
+
+        nopol = self.nopol_entry.get()
+        driver = self.driver_entry.get()
+        bunit = self.bunit_entry.get()
+        divisi = self.divisi_entry.get()
+        bunches = self.bunches_entry.get()
+
+        
+        
+
+        for blok_entry in blok_entries:
+            blok_value = blok_entry.get()
+
+            # Read data from MasterBlock_Staging
+            SQL_QUERY = """
+            SELECT *
+            FROM MasterBlock_Staging
+            WHERE Ppro_FieldName = %(blok_value)s;
+            """
+            query_values = {'blok_value': blok_value}
+
+            cursor = connection.cursor()
+            cursor.execute(SQL_QUERY, query_values)
+            block_record = cursor.fetchone()
+            cursor.close()
+
+            # Now, you can access the data from `block_record`
+            if block_record:
+
+                id = block_record['Ppro_FieldCode']
+
+                # Query MOPweighbridgeTicket_Staging
+                SQL_QUERY_WBTicket = """
+                SELECT *
+                FROM MOPweighbridgeTicket_Staging
+                WHERE Field = %(id)s AND WBTicketNo = %(WBTicketNo)s;
+                """
+                query_values_wbticket = {'id': id, 'WBTicketNo': WBTicketNo}
+
+                cursor_wbticket = connection.cursor()
+                cursor_wbticket.execute(SQL_QUERY_WBTicket, query_values_wbticket)
+                wbticket_record = cursor_wbticket.fetchone()
+                cursor_wbticket.close()
+
+                # Now, you can access the data from `wbticket_record`
+                if wbticket_record:
+
+                    # Update the WBTicketNo column with the new 'tiket' value
+                    SQL_UPDATE_WBTicket = """
+                    UPDATE MOPweighbridgeTicket_Staging
+                    SET WBTicketNo = %(tiket)s
+                    WHERE Field = %(id)s AND WBTicketNo = %(old_WBTicketNo)s;
+                    """
+                    # update  wb
+                    update_values_wbticket = {
+                        'tiket': tiket,
+                        'id': id,
+                        'old_WBTicketNo': WBTicketNo
+                    }  # Provide values for the placeholders
+
+                    cursor_wbticket_update = connection.cursor()
+                    cursor_wbticket_update.execute(SQL_UPDATE_WBTicket, update_values_wbticket)
+                    cursor_wbticket_update.close()
+                    connection.commit()
+
+
+
+        # update quality
+        SQL_UPDATE = """
+        UPDATE MOPQuality_Staging
+        SET AI_NoTicket = %(new_AI_NoTicket)s
+        WHERE AI_NoTicket = %(old_AI_NoTicket)s;
+        """
+
+       
+        update_values = {
+            'new_AI_NoTicket': tiket,  # Join blok values into a single string
+            'old_AI_NoTicket': WBTicketNo
+        }
+
+        # Create a cursor and execute the UPDATE statement
+        cursor = connection.cursor()
+        cursor.execute(SQL_UPDATE, update_values)
+
+        # Commit the changes to the database
+        connection.commit()
+
+        # Close the cursor and connection
+        cursor.close()
+        connection.close()
+
+        messagebox.showinfo("Success", "Data Tiket " + tiket + " Berhasil terupdate")  
+        
+        self.master.switch_frame(EditBridgeFrame)
         
 class Frame2(tk.Frame):
     def __init__(self, master):
@@ -1850,6 +2258,8 @@ class MainWindow(tk.Tk):
 
         if isinstance(self.current_frame, Frame1):
             self.current_frame.pack(padx=50, pady=50)  # Add padding for Frame1
+        elif isinstance(self.current_frame, EditBridgeFrame):
+            self.current_frame.pack(padx=50, pady=50)
         else:
             self.current_frame.pack()
 
@@ -1859,7 +2269,7 @@ class MainWindow(tk.Tk):
         elif isinstance(self.current_frame, RegisterFrame):
             window_width = 500
             window_height = 500
-        elif isinstance(self.current_frame, Frame4):
+        elif isinstance(self.current_frame, ConfigFrame):
             window_width = 500
             window_height = 500
         else:
