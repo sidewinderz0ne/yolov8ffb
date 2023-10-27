@@ -1993,7 +1993,7 @@ class EditBridgeFrame(tk.Frame):
 
             row_index += 2
 
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo))
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo, edit_data_overlay))
             submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
         else:
             blok_label = ttk.Label(overlay_frame, text="Blok")
@@ -2003,11 +2003,11 @@ class EditBridgeFrame(tk.Frame):
             blok_entry.insert(0, Field)
             blok_entry.grid(row=8, column=0, padx=10, pady=10)\
 
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entry, WBTicketNo))
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entry, WBTicketNo, edit_data_overlay))
             submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
 
             
-    def update_data(self, blok_entries, WBTicketNo):
+    def update_data(self, blok_entries, WBTicketNo, edit_data_overlay):
 
         connection = connect_to_database()
 
@@ -2019,13 +2019,9 @@ class EditBridgeFrame(tk.Frame):
         divisi = self.divisi_entry.get()
         bunches = self.bunches_entry.get()
 
-        
-        
-
         for blok_entry in blok_entries:
             blok_value = blok_entry.get()
 
-            # Read data from MasterBlock_Staging
             SQL_QUERY = """
             SELECT *
             FROM MasterBlock_Staging
@@ -2038,12 +2034,12 @@ class EditBridgeFrame(tk.Frame):
             block_record = cursor.fetchone()
             cursor.close()
 
-            # Now, you can access the data from `block_record`
             if block_record:
 
                 id = block_record['Ppro_FieldCode']
 
-                # Query MOPweighbridgeTicket_Staging
+
+
                 SQL_QUERY_WBTicket = """
                 SELECT *
                 FROM MOPweighbridgeTicket_Staging
@@ -2056,10 +2052,8 @@ class EditBridgeFrame(tk.Frame):
                 wbticket_record = cursor_wbticket.fetchone()
                 cursor_wbticket.close()
 
-                # Now, you can access the data from `wbticket_record`
                 if wbticket_record:
 
-                    # Update the WBTicketNo column with the new 'tiket' value
                     SQL_UPDATE_WBTicket = """
                     UPDATE MOPweighbridgeTicket_Staging
                     SET WBTicketNo = %(tiket)s
@@ -2070,7 +2064,7 @@ class EditBridgeFrame(tk.Frame):
                         'tiket': tiket,
                         'id': id,
                         'old_WBTicketNo': WBTicketNo
-                    }  # Provide values for the placeholders
+                    }  
 
                     cursor_wbticket_update = connection.cursor()
                     cursor_wbticket_update.execute(SQL_UPDATE_WBTicket, update_values_wbticket)
@@ -2078,6 +2072,21 @@ class EditBridgeFrame(tk.Frame):
                     connection.commit()
 
 
+                    sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+                    sqlite_cursor = sqlite_conn.cursor()
+
+                    # Update the record where WBTicketNo and Field match the provided values
+                    update_sqlite_query = '''
+                    UPDATE weight_bridge
+                    SET WBTicketNo = ?
+                    WHERE WBTicketNo = ? AND Field = ?;
+                    '''
+
+                    update_values = (tiket, WBTicketNo, id)
+                    sqlite_cursor.execute(update_sqlite_query, update_values)
+                    sqlite_conn.commit()
+                    sqlite_cursor.close()
+                    sqlite_conn.close()
 
         # update quality
         SQL_UPDATE = """
@@ -2086,7 +2095,6 @@ class EditBridgeFrame(tk.Frame):
         WHERE AI_NoTicket = %(old_AI_NoTicket)s;
         """
 
-       
         update_values = {
             'new_AI_NoTicket': tiket,  # Join blok values into a single string
             'old_AI_NoTicket': WBTicketNo
@@ -2103,8 +2111,15 @@ class EditBridgeFrame(tk.Frame):
         cursor.close()
         connection.close()
 
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
+        sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (tiket, WBTicketNo))
+        sqlite_conn.commit()
+        sqlite_cursor.close()
+        sqlite_conn.close()
+
         messagebox.showinfo("Success", "Data Tiket " + tiket + " Berhasil terupdate")  
-        
+        edit_data_overlay.destroy()
         self.master.switch_frame(EditBridgeFrame)
         
 class Frame2(tk.Frame):
