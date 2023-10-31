@@ -731,8 +731,8 @@ def connect_to_database():
                 )
 
             except Exception as e:
-                # print(f"Error connecting to the database: {str(e)}")
-                print('')
+                print(f"Error connecting to the database: {str(e)}")
+                # print('')
                  
         connection_thread = threading.Thread(target=try_connect)
         connection_thread.start()
@@ -903,7 +903,7 @@ class Frame1(tk.Frame):
         
         password = self.password_entry.get()
 
-        if password == 'grading':
+        if password == 'f':
             password_overlay.destroy()
             self.master.switch_frame(EditBridgeFrame)
         else:
@@ -990,7 +990,7 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self, date_today=None):
-        start_date = datetime.datetime(2023, 10, 9, 7, 0, 0)
+        start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
         current_date = datetime.datetime.now().date()
         start_time = datetime.time(7, 0, 0)
         #start_date = datetime.datetime.combine(current_date, start_time)
@@ -1928,8 +1928,8 @@ class EditBridgeFrame(tk.Frame):
         edit_data_overlay = tk.Toplevel(self.master)
         edit_data_overlay.title("Edit Data " + str(WBTicketNo))
         
-        overlay_width = 500
-        overlay_height = 550
+        overlay_width = 580
+        overlay_height = 500
         screen_width = self.master.winfo_screenwidth()
         screen_height = self.master.winfo_screenheight()
         x = (screen_width - overlay_width) // 2
@@ -1943,74 +1943,127 @@ class EditBridgeFrame(tk.Frame):
         tiket_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
 
         self.tiket_entry = ttk.Entry(overlay_frame, width=30)
-        self.tiket_entry.insert(0, WBTicketNo)  # Set the default value
-        self.tiket_entry.grid(row=1, column=0, padx=10, pady=10)
 
+        tiket = []
+        if status_mode == 'online':
+            start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
+            current_date = datetime.datetime.now().date()
+            start_time = datetime.time(7, 0, 0)
+            #start_date = datetime.datetime.combine(current_date, start_time)
+            
+            end_date = start_date + datetime.timedelta(days=1)
+            connection = connect_to_database()
+
+            sql_query = "SELECT  DISTINCT WBTicketNo FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s AND WBTicketNo <> %s AND AI_pull_time IS NULL"
+            cursor = connection.cursor()
+            cursor.execute(sql_query, (start_date, end_date, WBTicketNo))
+            records = cursor.fetchall()
+
+            tiket = [record['WBTicketNo'] for record in records]
+            connection.close()
+        
+        self.tiket_combobox = ttk.Combobox(overlay_frame, values=tiket, width=30)  # Adjust the width value as needed
+        self.tiket_combobox.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        self.tiket_combobox.bind("<<ComboboxSelected>>", lambda event=None: update_label())
+
+        def update_label():
+            selected_value = self.tiket_combobox.get()
+            connection = connect_to_database()
+            if isinstance(connection, pymssql.Connection):
+                sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s AND AI_pull_time IS NULL"
+                cursor = connection.cursor()
+                cursor.execute(sql_query, (selected_value,))
+                records = cursor.fetchall()
+
+                if records:
+                    nopol_values = [record['VehiclePoliceNO'] for record in records]
+                    driver_names = [record['DriverName'] for record in records]
+                    bunit_codes = [record['BUnitCode'] for record in records]
+                    division_codes = [record['DivisionCode'] for record in records]
+                    fields = [record['Field'] for record in records]
+                    bunches = [record['Bunches'] for record in records]
+
+                    unique_nopol_values = list(set(nopol_values))
+                    unique_driver_names = list(set(driver_names))
+                    unique_bunit_names = list(set(bunit_codes))
+                    unique_division_names = list(set(division_codes))
+                    unique_bunches_names = [str(item) for item in list(set(bunches))]
+                    unique_field_names = list(set(fields))
+                    
+                    additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_staging WHERE Ppro_BUnitCode IN %s"
+                    cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
+                    additional_records = cursor.fetchall()
+                    bunit_name = [record['Ppro_BUnitName'] for record in additional_records]
+                    final_bunit =  list(set(bunit_name))
+
+                    additional_sql_query = "SELECT Ppro_DivisionName FROM MasterDivisi_Staging WHERE Ppro_DivisionCode IN %s"
+                    cursor.execute(additional_sql_query, (tuple(unique_division_names),))
+                    additional_records = cursor.fetchall()
+                    divisi_name = [record['Ppro_DivisionName'] for record in additional_records]
+                    final_divisi =  list(set(divisi_name))
+
+                    additional_sql_query = "SELECT Ppro_FieldName FROM MasterBlock_Staging WHERE Ppro_FieldCode IN %s"
+                    cursor.execute(additional_sql_query, (tuple(unique_field_names),))
+                    additional_records = cursor.fetchall()
+                    blok_name = [record['Ppro_FieldName'] for record in additional_records]
+                    final_blok =  list(set(blok_name))
+
+                    nopol_val.config(text=", ".join(unique_nopol_values))
+                    driver_val.config(text=", ".join(unique_driver_names))
+                    bunit_val.config(text=", ".join(final_bunit))
+                    divisi_val.config(text=", ".join(final_divisi))
+                    bunches_val.config(text=", ".join(unique_bunches_names))
+                    if not final_blok:
+                        blok_val.config(text="-")
+                    else:
+                        blok_val.config(text="\n".join(final_blok))
+
+                connection.close()
+
+
+        bold_font = ("Arial", 10, "bold")
+    
         nopol_label = ttk.Label(overlay_frame, text="Nomor Polisi")
         nopol_label.grid(row=0, column=1, padx=10, pady=10, sticky='w')
 
-        self.nopol_entry = ttk.Entry(overlay_frame, width=30)
-        self.nopol_entry.insert(0, VehiclePoliceNO)  # Set the default value
-        self.nopol_entry.grid(row=1, column=1, padx=10, pady=10)
+        nopol_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        nopol_val.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
         driver_label = ttk.Label(overlay_frame, text="Nama Driver")
-        driver_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+        driver_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
 
-        self.driver_entry = ttk.Entry(overlay_frame, width=30)
-        self.driver_entry.insert(0, DriverName)  # Set the default value
-        self.driver_entry.grid(row=3, column=1, padx=10, pady=10)
+        driver_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        driver_val.grid(row=3, column=0, padx=10, pady=10, sticky='w')
 
         bunit_label = ttk.Label(overlay_frame, text="Bisnis Unit")
-        bunit_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        bunit_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
-        self.bunit_entry = ttk.Entry(overlay_frame, width=30)
-        self.bunit_entry.insert(0, BUnit)  # Set the default value
-        self.bunit_entry.grid(row=3, column=0, padx=10, pady=10)
+        bunit_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        bunit_val.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
-
-        divisi_label = ttk.Label(overlay_frame, text="Bisnis Unit")
+        divisi_label = ttk.Label(overlay_frame, text="Divisi")
         divisi_label.grid(row=4, column=0, padx=10, pady=10, sticky='w')
 
-        self.divisi_entry = ttk.Entry(overlay_frame, width=30)
-        self.divisi_entry.insert(0, Divisi)  # Set the default value
-        self.divisi_entry.grid(row=5, column=0, padx=10, pady=10)
+        divisi_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        divisi_val.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
         if status_mode == 'online':
             bunches_label = ttk.Label(overlay_frame, text="Bunches")
             bunches_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
 
-            self.bunches_entry = ttk.Entry(overlay_frame, width=30)
-            self.bunches_entry.insert(0, Bunches)  # Set the default value
-            self.bunches_entry.grid(row=5, column=1, padx=10, pady=10)
+            bunches_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+            bunches_val.grid(row=5, column=1, padx=10, pady=10, sticky='w')
+
+            blok_label = ttk.Label(overlay_frame, text="Blok")
+            blok_label.grid(row=6, column=0, padx=10, pady=10, sticky='w')
+
+            blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
+            blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
 
         blok_entries = []
         if '\n' in Field:
-            blok_values = Field.split('\n')
-            current_column = 0  # Initialize the column index
-            row_index = 7  # Initialize the row index
-            blok_count = 1
 
-
-            for blok_value in blok_values:
-                blok_label = ttk.Label(overlay_frame, text=f"Blok ke-{blok_count}" )
-                blok_label.grid(row=row_index, column=current_column, padx=10, pady=10, sticky='w')
-
-                blok_entry = ttk.Entry(overlay_frame, width=30)
-                blok_entry.insert(0, blok_value)
-                blok_entry.grid(row=row_index + 1, column=current_column, padx=10, pady=10)
-
-                blok_entries.append(blok_entry)
-
-                current_column += 1
-                if current_column >= 2:
-                    current_column = 0  # Reset to column 0
-                    row_index += 2  # Move to the next row
-
-                blok_count += 1
-
-            row_index += 2
-
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo, edit_data_overlay))
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
             submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
         else:
             blok_label = ttk.Label(overlay_frame, text="Blok")
@@ -2026,6 +2079,7 @@ class EditBridgeFrame(tk.Frame):
             else:
                 submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( blok_entries, edit_data_overlay, row_values[0]))
             submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
+    
 
     def update_data_offline(self, blok_entries, edit_data_overlay, id):
 
@@ -2066,133 +2120,36 @@ class EditBridgeFrame(tk.Frame):
         self.master.switch_frame(EditBridgeFrame)
         
             
-    def update_data(self, blok_entries, WBTicketNo, edit_data_overlay):
+    def update_data(self, WBTicketNo, edit_data_overlay):
+        new_tiket_value = self.tiket_combobox.get()
 
         connection = connect_to_database()
 
-        tiket = self.tiket_entry.get()
-        nopol = self.nopol_entry.get()
-        driver = self.driver_entry.get()
-        bunit = self.bunit_entry.get()
-        divisi = self.divisi_entry.get()
-        bunches = self.bunches_entry.get()
-
-        for blok_entry in blok_entries:
-            blok_value = blok_entry.get()
-
-            SQL_QUERY = """
-            SELECT *
-            FROM MasterBlock_Staging
-            WHERE Ppro_FieldName = %(blok_value)s;
-            """
-            query_values = {'blok_value': blok_value}
-
+        try:
             cursor = connection.cursor()
-            cursor.execute(SQL_QUERY, query_values)
-            block_record = cursor.fetchone()
-            cursor.close()
 
-            SQL_QUERY_DIVISI = """
-            SELECT *
-            FROM MasterDivisi_Staging
-            WHERE Ppro_DivisionName = %(divisi)s;
+            # Update the old WBTicketNo
+            update_old_query = """
+            UPDATE MOPweighbridgeTicket_Staging
+            SET AI_pull_time = NULL
+            WHERE WBTicketNo = %s
             """
-            query_values_divisi = {'divisi': divisi}
+            cursor.execute(update_old_query, (WBTicketNo,))
+            connection.commit()
 
-            cursor_divisi = connection.cursor()
-            cursor_divisi.execute(SQL_QUERY_DIVISI, query_values_divisi)
-            divisi_record = cursor_divisi.fetchone()
-            cursor_divisi.close()
-
-            divisi_id = divisi_record['Ppro_DivisionCode'] if divisi_record else None
-
-            # Get Bunit ID by querying the MasterBunit_staging table
-            SQL_QUERY_BUNIT = """
-            SELECT *
-            FROM MasterBunit_staging
-            WHERE Ppro_BUnitName = %(bunit)s;
+            # Update the new WBTicketNo with the current date and time
+            current_datetime = datetime.datetime.now()
+            update_new_query = """
+            UPDATE MOPweighbridgeTicket_Staging
+            SET AI_pull_time = %s
+            WHERE WBTicketNo = %s
             """
-            query_values_bunit = {'bunit': bunit}
+            cursor.execute(update_new_query, (current_datetime, new_tiket_value))
+            connection.commit()
 
-            cursor_bunit = connection.cursor()
-            cursor_bunit.execute(SQL_QUERY_BUNIT, query_values_bunit)
-            bunit_record = cursor_bunit.fetchone()
-            cursor_bunit.close()
-
-            bunit_id = bunit_record['Ppro_BUnitCode'] if bunit_record else None
-
-            if block_record:
-
-                id_blok = block_record['Ppro_FieldCode']
-
-
-
-                SQL_QUERY_WBTicket = """
-                SELECT *
-                FROM MOPweighbridgeTicket_Staging
-                WHERE Field = %(id)s AND WBTicketNo = %(WBTicketNo)s;
-                """
-                query_values_wbticket = {'id': id_blok, 'WBTicketNo': WBTicketNo}
-
-                cursor_wbticket = connection.cursor()
-                cursor_wbticket.execute(SQL_QUERY_WBTicket, query_values_wbticket)
-                wbticket_record = cursor_wbticket.fetchone()
-                cursor_wbticket.close()
-
-                if wbticket_record:
-
-                    SQL_UPDATE_WBTicket = """
-                    UPDATE MOPweighbridgeTicket_Staging
-                    SET WBTicketNo = %(tiket)s,
-                        VehiclePoliceNO = %(nopol)s,
-                        DriverName = %(driver)s,
-                        BUnitCode = %(bunit)s,
-                        DivisionCode = %(divisi)s,
-                        Bunches = %(bunches)s,
-                        Field = %(field)s
-                    WHERE Field = %(id)s AND WBTicketNo = %(old_WBTicketNo)s;
-                    """
-
-                    # Update wb
-                    update_values_wbticket = {
-                        'tiket': tiket,
-                        'nopol': nopol,
-                        'driver': driver,
-                        'bunit': bunit_id,
-                        'divisi': divisi_id,
-                        'bunches': bunches,
-                        'field': id_blok,
-                        'id': id_blok,
-                        'old_WBTicketNo': WBTicketNo
-                    }
-
-                    cursor_wbticket_update = connection.cursor()
-                    cursor_wbticket_update.execute(SQL_UPDATE_WBTicket, update_values_wbticket)
-                    cursor_wbticket_update.close()
-                    connection.commit()
-
-
-                    sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-                    sqlite_cursor = sqlite_conn.cursor()
-
-                    # Update the record where WBTicketNo and Field match the provided values
-                    update_sqlite_query = '''
-                    UPDATE weight_bridge
-                    SET WBTicketNo = ?,
-                        VehiclePoliceNO = ?,
-                        DriverName = ?,
-                        BUnitCode = ?,
-                        DivisionCode = ?,
-                        Bunches = ?,
-                        Field = ?
-                    WHERE WBTicketNo = ? AND Field = ?;
-                    '''
-
-                    update_values = (tiket, nopol, driver,bunit, divisi, bunches, blok_value, WBTicketNo, id_blok)
-                    sqlite_cursor.execute(update_sqlite_query, update_values)
-                    sqlite_conn.commit()
-                    sqlite_cursor.close()
-                    sqlite_conn.close()
+            connection.close()
+        except pymssql.Error as e:
+            print(f"An error occurred: {e}")
 
         # update quality
         SQL_UPDATE = """
@@ -2202,7 +2159,7 @@ class EditBridgeFrame(tk.Frame):
         """
 
         update_values = {
-            'new_AI_NoTicket': tiket,  # Join blok values into a single string
+            'new_AI_NoTicket': new_tiket_value,  # Join blok values into a single string
             'old_AI_NoTicket': WBTicketNo
         }
 
@@ -2219,12 +2176,12 @@ class EditBridgeFrame(tk.Frame):
 
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
         sqlite_cursor = sqlite_conn.cursor()
-        sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (tiket, WBTicketNo))
+        sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, WBTicketNo))
         sqlite_conn.commit()
         sqlite_cursor.close()
         sqlite_conn.close()
 
-        messagebox.showinfo("Success", "Data Tiket " + tiket + " Berhasil terupdate")  
+        messagebox.showinfo("Success", "Data Tiket " + new_tiket_value + " Berhasil terupdate")  
         edit_data_overlay.destroy()
         self.master.switch_frame(EditBridgeFrame)
         
