@@ -10,6 +10,7 @@ from datetime import datetime as dt
 import threading
 import tkinter.font as tkFont
 import subprocess
+from unicodedata import name
 from unittest import result
 import pymssql
 import bcrypt
@@ -91,7 +92,7 @@ def remove_non_numeric(input_str):
 def create_datetime(date, hour, minute, second):
     return dt(date.year, date.month, date.day, hour, minute, second)
 
-def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, dirt):
+def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, dirt, editData = None):
 
     prctgUnripe = 0
     prctgRipe = 0
@@ -140,7 +141,7 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
 
     dateStart = date_start_conveyor
     dateEnd = date_end_conveyor
-    
+
     max_widthQr = 140
     if int(totalJjg) != 0:
         max_widthQr =150
@@ -258,9 +259,15 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
         ('FONTITALIC', (0, 0), (-1, -1), 1),
     ]))
 
-    
     name_pdf = str(img_dir) +  '.pdf'
-    # print(name_pdf)
+
+    print(img_dir)
+
+    if editData:
+        name_pdf = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/' + str(raw[1].replace('/','_')) + '_' + str(raw[4]) + '_' + str(raw[5]) + '.pdf'
+
+    print(name_pdf)
+    
     doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
     
     table1 = Table(TabelAtas,colWidths=colEachTable1)
@@ -394,6 +401,15 @@ class ConfigFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
 
+        conn = sqlite3.connect('./db/grading_sampling.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT server, user, password, database FROM config WHERE id = 1")
+        record = cursor.fetchone()
+
+        conn.close()
+
+        server, user, password, database = record
+
         register_label = tk.Label(self, text="Konfigurasi Server Database", font=("Times New Roman", 20, "bold"))
         register_label.grid(row=0, column=0, columnspan=2, sticky='w', pady=(40, 0))
 
@@ -407,23 +423,27 @@ class ConfigFrame(tk.Frame):
 
         server_label = tk.Label(self, text="Server")
         server_label.grid(row=3, column=0, sticky="w", pady=5)
-        self.server_entry = tk.Entry(self)
+        self.server_entry = tk.Entry(self )
         self.server_entry.grid(row=3, column=1, pady=5, sticky="ew")
+        self.server_entry.insert(0, server)
 
         database_label = tk.Label(self, text="Database")
         database_label.grid(row=6, column=0, sticky="w", pady=5)
         self.database_entry = tk.Entry(self) 
         self.database_entry.grid(row=6, column=1, sticky="ew")
+        self.database_entry.insert(0, database)
 
         user_label = tk.Label(self, text="User")
         user_label.grid(row=4, column=0, sticky="w", pady=4)
         self.user_entry = tk.Entry(self) 
         self.user_entry.grid(row=4, column=1, sticky="ew")
+        self.user_entry.insert(0, user)
     
         password_label = tk.Label(self, text="Password")
         password_label.grid(row=5, column=0, sticky="w", pady=5)
         self.password_entry = tk.Entry(self) 
         self.password_entry.grid(row=5, column=1, sticky="ew")
+        self.password_entry.insert(0, password)
 
         mill_label = tk.Label(self, text="Mill")
         mill_label.grid(row=7, column=0, sticky="w", pady=5)
@@ -715,9 +735,11 @@ def connect_to_database():
         server, user, password, database = record
 
         # mencegah sql injection
-        server = server.replace('\\\\', '\\')
+        # print(server)
+        # server = server.replace('\\\\', '\\')
+        # server = r(server)
         
-        timeout = 0.5
+        timeout = 15
         
         def try_connect():
             global connection
@@ -826,7 +848,7 @@ class Frame1(tk.Frame):
         self.cctv_combobox = ttk.Combobox(self, textvariable=self.mill_var, values=cctv_choices)
         self.mill_var.set(cctv_choices[0])
         source = self.mill_var.get()
-        self.cctv_combobox.grid(    row=0, column=5)
+        self.cctv_combobox.grid(row=0, column=5)
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
 
@@ -943,80 +965,6 @@ class Frame1(tk.Frame):
                 self.tree.set(item, "#11", "DONE")
             self.tree.tag_bind(i, "<Double-Button-1>", lambda event, row_item=item: self.update_row(row_item, event))     
 
-    def pull_master(self, table, code, name, file_name):
-        connection = connect_to_database()
-
-        if isinstance(connection, pymssql.Connection):
-            sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
-            cursor = connection.cursor()
-            cursor.execute(sql_query)
-            records = cursor.fetchall()
-            connection.close()
-            
-            if len(records) > 0 or not file_name.exists():
-                sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)}"
-                connection = connect_to_database()  
-                cursor = connection.cursor()
-                cursor.execute(sql_query)
-                records = cursor.fetchall()
-                connection.close()
-                mapping = {r[str(code)]: r[str(name)] for r in records}
-                
-                file_name.touch()
-                with open(file_name, 'w') as file:
-                    for code, name in mapping.items():
-                        file.write(f"{code}:{name}\n")
-                connection = connect_to_database()
-                update_query = f"UPDATE {str(table)} SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
-                cursor = connection.cursor()
-                try:
-                    cursor.execute(update_query)
-                    connection.commit()  # Commit the transaction                
-                except Exception as e:
-                    connection.rollback()  # Rollback the transaction in case of an error
-                    print(f"Error executing update query: {str(e)}")
-                connection.close()
-                return mapping
-            else:
-                mapping = {}
-                with open(file_name, 'r') as file:
-                    lines = file.readlines()
-                    for line in lines:
-                        code, name = line.strip().split(':')
-                        mapping[int(code)] = name
-                return mapping
-
-        else:
-            return connection
-
-    def pull_data_ppro(self, date_today=None):
-        start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
-        current_date = datetime.datetime.now().date()
-        start_time = datetime.time(7, 0, 0)
-        #start_date = datetime.datetime.combine(current_date, start_time)
-        
-        end_date = start_date + datetime.timedelta(days=1)
-
-        if date_today != None:
-            tommorow = date_today + datetime.timedelta(days=1)
-        
-        connection = connect_to_database()
-        
-        if isinstance(connection, pymssql.Connection):
-            sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s"
-            if date_today:
-                sql_query += " AND AI_pull_time >= %s AND AI_pull_time < %s"
-             
-            cursor = connection.cursor()
-            if date_today:
-                cursor.execute(sql_query, (start_date, end_date, date_today, tommorow))
-            else:
-                cursor.execute(sql_query, (start_date, end_date))
-            records = cursor.fetchall()
-            connection.close()
-            return records
-        else:
-            return connection
 
     def process_data(self, record, master_bunit, master_div, master_block):
         arr_data = []
@@ -1088,6 +1036,170 @@ class Frame1(tk.Frame):
         
         return sorted_data
 
+    def pull_data(self, connection, date_today = None):
+        start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
+        current_date = datetime.datetime.now().date()
+        start_time = datetime.time(7, 0, 0)
+        #start_date = datetime.datetime.combine(current_date, start_time)
+        
+        end_date = start_date + datetime.timedelta(days=1)
+
+        if date_today != None:
+            tommorow = date_today + datetime.timedelta(days=1)
+        
+        if isinstance(connection, pymssql.Connection):
+            sql_query = f"SELECT Ppro_BUnitCode , Ppro_BUnitName FROM MasterBunit_staging WHERE AI_pull_time IS NULL"
+            cursor = connection.cursor()
+            cursor.execute(sql_query)
+            records = cursor.fetchall()
+
+            result_json = []
+            
+            if len(records) > 0 or not data_bunit.exists():
+                sql_query = f"SELECT Ppro_BUnitCode , Ppro_BUnitName FROM MasterBunit_staging"
+                # connection = connect_to_database()  
+                cursor = connection.cursor()
+                cursor.execute(sql_query)
+                records = cursor.fetchall()
+                # connection.close()
+                mapping = {r[str(code)]: r[str(name)] for r in records}
+                
+                data_bunit.touch()
+                with open(data_bunit, 'w') as file:
+                    for code, name in mapping.items():
+                        file.write(f"{code}:{name}\n")
+                # connection = connect_to_database()
+                update_query = f"UPDATE MasterBunit_staging SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(update_query)
+                    connection.commit()  # Commit the transaction                
+                except Exception as e:
+                    connection.rollback()  # Rollback the transaction in case of an error
+                    print(f"Error executing update query: {str(e)}")
+                # connection.close()
+                # return mapping
+
+                mapping = {'masterBunit': mapping}
+                result_json.append(mapping)
+            else:
+                mapping = {}
+                with open(data_bunit, 'r') as file:
+                    lines = file.readlines()
+                    for line in lines:
+                        code, name = line.strip().split(':')
+                        mapping[int(code)] = name
+                # return mapping
+                mapping = {'masterBunit': mapping}
+                result_json.append(mapping)
+
+
+            sql_query = f"SELECT Ppro_DivisionCode , Ppro_DivisionName FROM MasterDivisi_Staging WHERE AI_pull_time IS NULL"
+            cursor = connection.cursor()
+            cursor.execute(sql_query)
+            records = cursor.fetchall()
+            
+            if len(records) > 0 or not data_div.exists():
+                sql_query = f"SELECT Ppro_DivisionCode , Ppro_DivisionName FROM MasterDivisi_Staging"
+                # connection = connect_to_database()  
+                cursor = connection.cursor()
+                cursor.execute(sql_query)
+                records = cursor.fetchall()
+                # connection.close()
+                mapping = {r[str(code)]: r[str(name)] for r in records}
+                
+                data_div.touch()
+                with open(data_div, 'w') as file:
+                    for code, name in mapping.items():
+                        file.write(f"{code}:{name}\n")
+                # connection = connect_to_database()
+                update_query = f"UPDATE MasterDivisi_Staging SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(update_query)
+                    connection.commit()  # Commit the transaction                
+                except Exception as e:
+                    connection.rollback()  # Rollback the transaction in case of an error
+                    print(f"Error executing update query: {str(e)}")
+                # connection.close()
+                # return mapping
+
+                mapping = {'masterDiv': mapping}
+                result_json.append(mapping)
+            else:
+                mapping = {}
+                with open(data_div, 'r') as file:
+                    lines = file.readlines()
+                    for line in lines:
+                        code, name = line.strip().split(':')
+                        mapping[int(code)] = name
+                # return mapping
+                mapping = {'masterDiv': mapping}
+                result_json.append(mapping)
+
+            sql_query = f"SELECT Ppro_FieldCode , Ppro_FieldName FROM MasterBlock_Staging WHERE AI_pull_time IS NULL"
+            cursor = connection.cursor()
+            cursor.execute(sql_query)
+            records = cursor.fetchall()
+            
+            if len(records) > 0 or not data_block.exists():
+                sql_query = f"SELECT Ppro_FieldCode , Ppro_FieldName FROM MasterBlock_Staging"
+                # connection = connect_to_database()  
+                cursor = connection.cursor()
+                cursor.execute(sql_query)
+                records = cursor.fetchall()
+                # connection.close()
+                mapping = {r[str(code)]: r[str(name)] for r in records}
+                
+                data_block.touch()
+                with open(data_block, 'w') as file:
+                    for code, name in mapping.items():
+                        file.write(f"{code}:{name}\n")
+                # connection = connect_to_database()
+                update_query = f"UPDATE MasterBlock_Staging SET AI_pull_time = GETDATE() WHERE AI_pull_time IS NULL"
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(update_query)
+                    connection.commit()  # Commit the transaction                
+                except Exception as e:
+                    connection.rollback()  # Rollback the transaction in case of an error
+                    print(f"Error executing update query: {str(e)}")
+                # connection.close()
+                # return mapping
+
+                mapping = {'masterBlock': mapping}
+                result_json.append(mapping)
+            else:
+                mapping = {}
+                with open(data_block, 'r') as file:
+                    lines = file.readlines()
+                    for line in lines:
+                        code, name = line.strip().split(':')
+                        mapping[int(code)] = name
+                # return mapping
+                mapping = {'masterBlock': mapping}
+                result_json.append(mapping)
+
+            sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s"
+            if date_today:
+                sql_query += " AND AI_pull_time >= %s AND AI_pull_time < %s"
+                
+            cursor = connection.cursor()
+            if date_today:
+                cursor.execute(sql_query, (start_date, end_date, date_today, tommorow))
+            else:
+                cursor.execute(sql_query, (start_date, end_date))
+            records = cursor.fetchall()
+            
+            # print(records)
+            mapping = {'record': records}
+            result_json.append(mapping)
+
+            return result_json
+
+        else:
+            return connection
+
     def remove_input_button(self):
         if hasattr(self, 'button_input'):
             self.button_input.grid_remove()
@@ -1101,10 +1213,28 @@ class Frame1(tk.Frame):
 
     def refresh_data(self):
         self.tree.delete(*self.tree.get_children())
-        master_bunit = self.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
-        master_div = self.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
-        master_block = self.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
-        record = self.pull_data_ppro()
+
+        database_connection = connect_to_database()
+        recordData = self.pull_data(database_connection)
+
+        master_bunit = None
+        master_div = None
+        master_block = None
+        record = None 
+
+        # Iterate over the list to find the JSON object with the 'masterBunit' key
+        for item in recordData:
+            if 'masterBunit' in item:
+                master_bunit = item['masterBunit']
+            elif 'masterDiv' in item:
+                master_div = item['masterDiv']
+            elif 'masterBlock' in item:
+                master_block = item['masterBlock']
+            elif 'record' in item:
+                record = item['record']
+        database_connection.close()
+
+
         self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
         if status_mode == 'online':
             arr_data = self.process_data(record, master_bunit, master_div, master_block)
@@ -1165,7 +1295,14 @@ class Frame1(tk.Frame):
                     except Exception as e:
                         print(f"Error opening PDF: {e}")
                 else:
-                    messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
+                    bunit = str(row_val[4])
+                    pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
+                    print(pdf_path)
+                    try:
+                        subprocess.Popen(["xdg-open", pdf_path])
+                    except Exception as e:
+                        print(f"Error opening PDF: {e}")
+                        messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
 
 
     def run_script(self, row_item, row_id, row_values):
@@ -1806,15 +1943,30 @@ class EditBridgeFrame(tk.Frame):
 
         if isinstance(connection, pymssql.Connection):
             
-            master_bunit = frame1_instance.pull_master('MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
-            master_div = frame1_instance.pull_master('MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
-            master_block = frame1_instance.pull_master('MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
-
+            
             current_date = datetime.datetime.now().date()
 
             start_time = datetime.time(7, 0, 0)
             date_today = datetime.datetime.combine(current_date, start_time)
-            record = frame1_instance.pull_data_ppro(date_today)
+            recordData = frame1_instance.pull_data(connection, date_today)
+            
+            master_bunit = None
+            master_div = None
+            master_block = None
+            record = None 
+
+            # Iterate over the list to find the JSON object with the 'masterBunit' key
+            for item in recordData:
+                if 'masterBunit' in item:
+                    master_bunit = item['masterBunit']
+                elif 'masterDiv' in item:
+                    master_div = item['masterDiv']
+                elif 'masterBlock' in item:
+                    master_block = item['masterBlock']
+                elif 'record' in item:
+                    record = item['record']
+            
+            connection.close()
 
             frame1_instance.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
             arr_data = frame1_instance.process_data(record, master_bunit, master_div, master_block)
@@ -1862,7 +2014,10 @@ class EditBridgeFrame(tk.Frame):
         top_frame.grid_columnconfigure(4, weight=20)
         self.top_frame = top_frame
         
-        
+        self.button = ttk.Button(self, text="Kembali", command=self.switch_frame)
+        self.button.grid(row=0, column=0, sticky="ne")
+
+
         self.title_label = tk.Label(top_frame, text=f"LIST TRUK SETELAH PROSES DETEKSI AI {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
         self.title_label.grid(row=0, column=2)
         self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
@@ -1896,6 +2051,8 @@ class EditBridgeFrame(tk.Frame):
         self.rowconfigure(1, weight=1)
         self.columnconfigure(0, weight=1)
 
+    def switch_frame(self):
+        self.master.switch_frame(Frame1)
 
     def edit_row(self, row_item, event ):
 
@@ -2060,25 +2217,25 @@ class EditBridgeFrame(tk.Frame):
             blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
             blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
 
-        blok_entries = []
-        if '\n' in Field:
+        # blok_entries = []
+        # if '\n' in Field:
 
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
-            submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
-        else:
-            blok_label = ttk.Label(overlay_frame, text="Blok")
-            blok_label.grid(row=7, column=0, padx=10, pady=10, sticky='w')
+        submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
+        submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
+        # else:
+        #     blok_label = ttk.Label(overlay_frame, text="Blok")
+        #     blok_label.grid(row=7, column=0, padx=10, pady=10, sticky='w')
 
-            blok_entry = ttk.Entry(overlay_frame, width=30)
-            blok_entry.insert(0, Field)
-            blok_entry.grid(row=8, column=0, padx=10, pady=10)
+        #     blok_entry = ttk.Entry(overlay_frame, width=30)
+        #     blok_entry.insert(0, Field)
+        #     blok_entry.grid(row=8, column=0, padx=10, pady=10)
 
-            blok_entries.append(blok_entry)
-            if status_mode == 'online':
-                submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo, edit_data_overlay))
-            else:
-                submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( blok_entries, edit_data_overlay, row_values[0]))
-            submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
+        #     blok_entries.append(blok_entry)
+        #     if status_mode == 'online':
+        #         submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo, edit_data_overlay))
+        #     else:
+        #         submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( blok_entries, edit_data_overlay, row_values[0]))
+        #     submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
     
 
     def update_data_offline(self, blok_entries, edit_data_overlay, id):
@@ -2121,10 +2278,80 @@ class EditBridgeFrame(tk.Frame):
         
             
     def update_data(self, WBTicketNo, edit_data_overlay):
+
+        classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk']
         new_tiket_value = self.tiket_combobox.get()
 
         connection = connect_to_database()
 
+        # raw data untuk pdf
+        sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s"
+        cursor = connection.cursor()
+        cursor.execute(sql_query, (new_tiket_value,))
+        records = cursor.fetchall()
+        rawData = []
+        if records:
+            # print(records)
+            nopol_values = [record['VehiclePoliceNO'] for record in records]
+            driver_names = [record['DriverName'] for record in records]
+            bunit_codes = [record['BUnitCode'] for record in records]
+            division_codes = [record['DivisionCode'] for record in records]
+            fields = [record['Field'] for record in records]
+            bunches = [record['Bunches'] for record in records]
+            status = [record['Ownership'] for record in records]
+
+            unique_nopol_values = list(set(nopol_values))
+            unique_driver_names = list(set(driver_names))
+            unique_bunit_names = list(set(bunit_codes))
+            unique_division_names = list(set(division_codes))
+            unique_bunches_names = [str(item) for item in list(set(bunches))]
+            unique_field_names = list(set(fields))
+            unique_status_names = list(set(status))
+            
+            additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_staging WHERE Ppro_BUnitCode IN %s"
+            cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
+            additional_records = cursor.fetchall()
+            bunit_name = [record['Ppro_BUnitName'] for record in additional_records]
+            final_bunit =  list(set(bunit_name))
+
+            additional_sql_query = "SELECT Ppro_DivisionName FROM MasterDivisi_Staging WHERE Ppro_DivisionCode IN %s"
+            cursor.execute(additional_sql_query, (tuple(unique_division_names),))
+            additional_records = cursor.fetchall()
+            divisi_name = [record['Ppro_DivisionName'] for record in additional_records]
+            final_divisi =  list(set(divisi_name))
+
+            additional_sql_query = "SELECT Ppro_FieldName FROM MasterBlock_Staging WHERE Ppro_FieldCode IN %s"
+            cursor.execute(additional_sql_query, (tuple(unique_field_names),))
+            additional_records = cursor.fetchall()
+            blok_name = [record['Ppro_FieldName'] for record in additional_records]
+            final_blok =  list(set(blok_name))
+            rawData.append(new_tiket_value)
+            rawData.append("; ".join(unique_nopol_values))
+            rawData.append("; ".join(unique_driver_names))
+            rawData.append("; ".join(final_bunit))
+            rawData.append("; ".join(final_divisi))
+            
+            
+            if not final_blok:
+                rawData.append("-")
+            else:
+                rawData.append("\n".join(final_blok))
+            rawData.append("; ".join(unique_bunches_names))
+            rawData.append("; ".join(unique_status_names))
+        
+        rawData.insert(0, "")
+
+        with open(save_dir_txt, 'r') as file:
+            raw = file.readline()
+    
+        parts = raw.split('$')
+
+        parts = [part.strip() for part in parts]
+
+        img_dir = parts[2]
+
+
+        # update wb
         try:
             cursor = connection.cursor()
 
@@ -2147,9 +2374,123 @@ class EditBridgeFrame(tk.Frame):
             cursor.execute(update_new_query, (current_datetime, new_tiket_value))
             connection.commit()
 
-            connection.close()
+            # connection.close()
         except pymssql.Error as e:
-            print(f"An error occurred: {e}")
+            messagebox.showinfo("Error", f"An error occurred while updating the database MOPweighbridgeTicket_Staging: {e}")  
+           
+
+        select_query = """
+        SELECT AI_NoTicket, AI_Grading, AI_Janjang  FROM MOPQuality_Staging
+        WHERE AI_NoTicket = %s
+        """
+
+        cursor = connection.cursor()
+        cursor.execute(select_query, (WBTicketNo,))
+        result = cursor.fetchall()  # Assuming you expect only one row; use fetchall() for multiple rows if needed
+        
+        grade_codes = []
+        for row in result:
+            AI_Grading = row['AI_Grading']
+            Jumlah_AI_Grading = row['AI_Janjang']
+
+            SQL_QUERY = """
+            SELECT *
+            FROM MasterGrading_Staging
+            WHERE Ppro_GradeCode = %s
+            """
+            cursor.execute(SQL_QUERY, (AI_Grading,))
+            inner_result = cursor.fetchall()
+
+            inner_data = []
+            for inner_row in inner_result:
+                # Access and process data from inner_result if necessary
+                Ppro_GradeName = inner_row['Ppro_GradeDescription']
+                
+                inner_data.append({
+                    'nama': Ppro_GradeName,
+                    'jumlah_janjang': Jumlah_AI_Grading,
+                })
+
+            # Append the inner_data list to the grade_codes list
+            grade_codes.extend(inner_data)
+        
+        cursor.close()
+
+        classes_to_find = [ 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
+
+        # Create a dictionary to store the indices and 'jumlah_janjang' values
+        found_classes = {}
+
+        for class_name in classes_to_find:
+            target_index = None
+            target_jumlah_janjang = None
+
+            for index, grade_data in enumerate(grade_codes):
+                if grade_data['nama'] == class_name:
+                    target_index = index
+                    target_jumlah_janjang = grade_data['jumlah_janjang']
+                    break
+
+            if target_index is not None:
+                found_classes[class_name] = {
+                    'index': target_index,
+                    'jumlah_janjang': target_jumlah_janjang
+                }
+
+        newInput = []
+        default_value = 0
+
+        for class_name in classes_to_find:
+            data = found_classes.get(class_name, {'jumlah_janjang': default_value})
+            newInput.append(int(data['jumlah_janjang']))       
+
+        def match_names(classAll, grade_codes):
+            matched_data = {}
+            for class_name in classAll:
+                if class_name == 'empty_bunch':
+                    empty_bunch_data = None
+                    for grade_data in grade_codes:
+                        if grade_data['nama'].lower() == 'Empty Bunch'.lower():
+                            empty_bunch_data = grade_data
+                            break
+                    
+                    if empty_bunch_data is not None:
+                        matched_data[class_name] = empty_bunch_data
+                    else:
+                        matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
+                elif class_name == 'long_stalk':
+                    long_stalk_data = None
+                    for grade_data in grade_codes:
+                        if grade_data['nama'].lower() == 'Tangkai Panjang'.lower():
+                            long_stalk_data = grade_data
+                            break
+                    
+                    if long_stalk_data is not None:
+                        matched_data[class_name] = long_stalk_data
+                    else:
+                        matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
+                else:
+                    for grade_data in grade_codes:
+                        if class_name.lower() in grade_data['nama'].lower():
+                            matched_data[class_name] = grade_data
+                            break
+                    else:
+                        matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
+            
+            return matched_data
+
+        # Call the mapping function to match the data
+        matched_data = match_names(classAll, grade_codes)
+
+        jumlah_janjang_array = [int(grade_data['jumlah_janjang']) for grade_data in matched_data.values()]
+        
+
+
+        total_jumlah_janjang = sum(jumlah_janjang_array)
+
+        jumlah_janjang_array.append('0')
+
+        generate_report(rawData, img_dir,jumlah_janjang_array, total_jumlah_janjang, newInput[0], newInput[1], newInput[2], 1)
 
         # update quality
         SQL_UPDATE = """
@@ -2163,27 +2504,35 @@ class EditBridgeFrame(tk.Frame):
             'old_AI_NoTicket': WBTicketNo
         }
 
-        # Create a cursor and execute the UPDATE statement
-        cursor = connection.cursor()
-        cursor.execute(SQL_UPDATE, update_values)
+        try:
+            
 
-        # Commit the changes to the database
-        connection.commit()
+            # Create a cursor and execute the UPDATE statement
+            cursor = connection.cursor()
+            cursor.execute(SQL_UPDATE, update_values)
 
-        # Close the cursor and connection
-        cursor.close()
+            # Commit the changes to the database
+            connection.commit()
+
+            # Close the cursor and connection
+            cursor.close()
+            
+
+            sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+            sqlite_cursor = sqlite_conn.cursor()
+            sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, WBTicketNo))
+            sqlite_conn.commit()
+            sqlite_cursor.close()
+            sqlite_conn.close()
+        
+
+            messagebox.showinfo("Success", "Data Tiket " + new_tiket_value + " Berhasil terupdate")  
+            edit_data_overlay.destroy()
+            self.master.switch_frame(EditBridgeFrame)
+        except Exception as e:
+            messagebox.showinfo("Error", f"An error occurred while updating the database MOPQuality_Staging: {e}")  
+
         connection.close()
-
-        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-        sqlite_cursor = sqlite_conn.cursor()
-        sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, WBTicketNo))
-        sqlite_conn.commit()
-        sqlite_cursor.close()
-        sqlite_conn.close()
-
-        messagebox.showinfo("Success", "Data Tiket " + new_tiket_value + " Berhasil terupdate")  
-        edit_data_overlay.destroy()
-        self.master.switch_frame(EditBridgeFrame)
         
 class Frame2(tk.Frame):
     def __init__(self, master):
