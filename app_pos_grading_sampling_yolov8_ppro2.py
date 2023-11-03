@@ -573,7 +573,7 @@ class LoginFrame(tk.Frame):
 
 
         self.feedback_label = tk.Label(self, text="", fg="red")
-        self.feedback_label.grid(row=6, column=0, columnspan=2, pady=(30, 10))
+        self.feedback_label.grid(row=7, column=0, columnspan=2, pady=(30, 10))
 
         register_label = tk.Label(self, text="Belum memiliki akun ?", font=("Times New Roman", 12, "italic"), fg="blue", cursor="hand2")
         register_label.grid(row=5, column=0, columnspan=2, sticky="e")
@@ -753,8 +753,8 @@ def connect_to_database():
                 )
 
             except Exception as e:
-                print(f"Error connecting to the database: {str(e)}")
-                # print('')
+                # print(f"Error connecting to the database: {str(e)}")
+                print('')
                  
         connection_thread = threading.Thread(target=try_connect)
         connection_thread.start()
@@ -1129,7 +1129,8 @@ class Frame1(tk.Frame):
         master_div = self.pull_master(database_connection, 'MasterDivisi_Staging', 'Ppro_DivisionCode', 'Ppro_DivisionName', data_div)
         master_block = self.pull_master(database_connection, 'MasterBlock_Staging', 'Ppro_FieldCode', 'Ppro_FieldName', data_block)
         record = self.pull_data_ppro(database_connection)
-        database_connection.close()
+        if status_mode == 'online':
+            database_connection.close()
         self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
         if status_mode == 'online':
             arr_data = self.process_data(record, master_bunit, master_div, master_block)
@@ -1999,14 +2000,29 @@ class EditBridgeFrame(tk.Frame):
 
             tiket = [record['WBTicketNo'] for record in records]
             connection.close()
-        
+        else:
+            with open(offline_log_dir, 'r') as file:
+                    data = file.readlines()
+                    
+                    for line in data:
+                        if "None" in line:
+                            line_parts = line.split(';')
+
+                            if len(line_parts) > 0:
+                                tiket.append(line_parts[0])
+                                
+                        
         self.tiket_combobox = ttk.Combobox(overlay_frame, values=tiket, width=30)  # Adjust the width value as needed
         self.tiket_combobox.grid(row=1, column=0, padx=10, pady=10, sticky='w')
         self.tiket_combobox.bind("<<ComboboxSelected>>", lambda event=None: update_label())
 
+        selected_value = '-'
         def update_label():
+            global selected_value
             selected_value = self.tiket_combobox.get()
             connection = connect_to_database()
+
+
             if isinstance(connection, pymssql.Connection):
                 sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s AND AI_pull_time IS NULL"
                 cursor = connection.cursor()
@@ -2046,8 +2062,10 @@ class EditBridgeFrame(tk.Frame):
                     blok_name = [record['Ppro_FieldName'] for record in additional_records]
                     final_blok =  list(set(blok_name))
 
-                    nopol_val.config(text=", ".join(unique_nopol_values))
-                    driver_val.config(text=", ".join(unique_driver_names))
+                    self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                    self.nopol_val.insert(0, ", ".join(unique_nopol_values))  # Set the new value
+                    self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                    self.driver_val.insert(0, ", ".join(unique_driver_names))  # Set the new value
                     bunit_val.config(text=", ".join(final_bunit))
                     divisi_val.config(text=", ".join(final_divisi))
                     bunches_val.config(text=", ".join(unique_bunches_names))
@@ -2055,23 +2073,59 @@ class EditBridgeFrame(tk.Frame):
                         blok_val.config(text="-")
                     else:
                         blok_val.config(text="\n".join(final_blok))
+            else:
+                with open(offline_log_dir, 'r') as file:
+                    data = file.readlines()
 
+                for line in data:
+                    line_parts = line.split(';')
+                    
+                    if len(line_parts) > 0:
+                        tiket = line_parts[0] if line_parts[0] else '-'
+                        nopol = line_parts[1] if line_parts[1] else '-'
+                        driver = line_parts[2] if line_parts[2] else '-'
+                        bunit = line_parts[3] if line_parts[3] else '-'
+                        divisi = line_parts[4] if line_parts[4] else '-'
+                        blok = line_parts[5] if line_parts[5] else '-'
+                        bunches = line_parts[6] if line_parts[6] else '-'
+                        # status = line_parts[7]
+                        
+                        if tiket == selected_value:
+                            # bunit_val.config(text=tiket)
+                            self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                            self.nopol_val.insert(0, nopol)  # Set the new value
+                            self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                            self.driver_val.insert(0, driver)  # Set the new value
+                            bunit_val.config(text=bunit)
+                            divisi_val.config(text=divisi)
+                            blok_val.config(text=blok)
+                            bunches_val.config(text=bunches)
+                            # bunit_val.config(text=status)
+            
+
+            if status_mode == 'online':
                 connection.close()
+            
+            return selected_value
 
+        
 
+        
         bold_font = ("Arial", 10, "bold")
     
         nopol_label = ttk.Label(overlay_frame, text="Nomor Polisi")
         nopol_label.grid(row=0, column=1, padx=10, pady=10, sticky='w')
 
-        nopol_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
-        nopol_val.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+        self.nopol_val = ttk.Entry(overlay_frame, width=30)
+        self.nopol_val.insert(0, "-") 
+        self.nopol_val.grid(row=1, column=1, padx=10, pady= 10, sticky='w')
 
         driver_label = ttk.Label(overlay_frame, text="Nama Driver")
         driver_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
 
-        driver_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
-        driver_val.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        self.driver_val = ttk.Entry(overlay_frame, width=30)
+        self.driver_val.insert(0, "-")
+        self.driver_val.grid(row=3, column=0, padx=10, pady= 10, sticky='w')
 
         bunit_label = ttk.Label(overlay_frame, text="Bisnis Unit")
         bunit_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
@@ -2085,24 +2139,31 @@ class EditBridgeFrame(tk.Frame):
         divisi_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
         divisi_val.grid(row=5, column=0, padx=10, pady=10, sticky='w')
 
-        if status_mode == 'online':
-            bunches_label = ttk.Label(overlay_frame, text="Bunches")
-            bunches_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+        # if status_mode == 'online':
+        bunches_label = ttk.Label(overlay_frame, text="Bunches")
+        bunches_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
 
-            bunches_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
-            bunches_val.grid(row=5, column=1, padx=10, pady=10, sticky='w')
+        bunches_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        bunches_val.grid(row=5, column=1, padx=10, pady=10, sticky='w')
 
-            blok_label = ttk.Label(overlay_frame, text="Blok")
-            blok_label.grid(row=6, column=0, padx=10, pady=10, sticky='w')
+        blok_label = ttk.Label(overlay_frame, text="Blok")
+        blok_label.grid(row=6, column=0, padx=10, pady=10, sticky='w')
 
-            blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
-            blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
+        blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
+        blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
 
         # blok_entries = []
         # if '\n' in Field:
+        if status_mode == 'online':
 
-        submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
-        submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
+            submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
+        else:
+            selected_value = update_label()
+            
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline(selected_value, self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"), edit_data_overlay))
+            submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
+
         # else:
         #     blok_label = ttk.Label(overlay_frame, text="Blok")
         #     blok_label.grid(row=7, column=0, padx=10, pady=10, sticky='w')
@@ -2119,49 +2180,62 @@ class EditBridgeFrame(tk.Frame):
         #     submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
     
 
-    def update_data_offline(self, blok_entries, edit_data_overlay, id):
+    def update_data_offline(self, tiket, nopol, driver, bunit, divisi, blok, edit_data_overlay):
 
-        first_blok_entry = blok_entries[0]
+        # first_blok_entry = blok_entries[0]
+        # tiket = self.tiket_entry.get()
+        # nopol = self.nopol_entry.get()
+        # driver = self.driver_entry.get()
+        # bunit = self.bunit_entry.get()
+        # divisi = self.divisi_entry.get()
+        # blok = first_blok_entry.get()
+
+        print(tiket)
+        print(nopol)
+        print(driver)
+        print(bunit)
+        print(divisi)
+        print(blok)
+        # print(nopol)
+
         
-        tiket = self.tiket_entry.get()
-        nopol = self.nopol_entry.get()
-        driver = self.driver_entry.get()
-        bunit = self.bunit_entry.get()
-        divisi = self.divisi_entry.get()
-        blok = first_blok_entry.get()
+
 
         # Connect to the SQLite3 database
-        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-        sqlite_cursor = sqlite_conn.cursor()
+        # sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        # sqlite_cursor = sqlite_conn.cursor()
 
-        # Update the specified columns in the database table
-        update_query = '''
-        UPDATE log_sampling
-        SET no_tiket = ?,
-            no_plat = ?,
-            nama_driver = ?,
-            bisnis_unit = ?,
-            divisi = ?,
-            blok = ?
-        WHERE id = ?
-        '''
-        sqlite_cursor.execute(update_query, (tiket, nopol, driver, bunit, divisi, blok, id))
+        # # Update the specified columns in the database table
+        # update_query = '''
+        # UPDATE log_sampling
+        # SET no_tiket = ?,
+        #     no_plat = ?,
+        #     nama_driver = ?,
+        #     bisnis_unit = ?,
+        #     divisi = ?,
+        #     blok = ?
+        # WHERE id = ?
+        # '''
+        # sqlite_cursor.execute(update_query, (tiket, nopol, driver, bunit, divisi, blok, id))
 
-        # Commit the changes to the database
-        sqlite_conn.commit()
+        # # Commit the changes to the database
+        # sqlite_conn.commit()
 
-        # Close the database connection
-        sqlite_conn.close()
+        # # Close the database connection
+        # sqlite_conn.close()
         
-        messagebox.showinfo("Success", "Data Tiket " + tiket + " Berhasil terupdate")  
-        edit_data_overlay.destroy()
-        self.master.switch_frame(EditBridgeFrame)
+        # messagebox.showinfo("Success", "Data Tiket " + tiket + " Berhasil terupdate")  
+        # edit_data_overlay.destroy()
+        # self.master.switch_frame(EditBridgeFrame)
         
             
     def update_data(self, WBTicketNo, edit_data_overlay):
 
         classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk']
         new_tiket_value = self.tiket_combobox.get()
+
+        nopol = self.nopol_val.get()
+        driver = self.driver_val.get()
 
         connection = connect_to_database()
 
@@ -2247,12 +2321,15 @@ class EditBridgeFrame(tk.Frame):
 
             # Update the new WBTicketNo with the current date and time
             current_datetime = datetime.datetime.now()
+            
             update_new_query = """
-            UPDATE MOPweighbridgeTicket_Staging
-            SET AI_pull_time = %s
-            WHERE WBTicketNo = %s
+                UPDATE MOPweighbridgeTicket_Staging
+                SET AI_pull_time = %s,
+                    VehiclePoliceNO = %s,
+                    DriverName = %s
+                WHERE WBTicketNo = %s
             """
-            cursor.execute(update_new_query, (current_datetime, new_tiket_value))
+            cursor.execute(update_new_query, (current_datetime, nopol, driver, new_tiket_value))
             connection.commit()
 
             # connection.close()
