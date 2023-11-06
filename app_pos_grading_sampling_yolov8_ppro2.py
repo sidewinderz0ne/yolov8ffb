@@ -925,7 +925,7 @@ class Frame1(tk.Frame):
         
         password = self.password_entry.get()
 
-        if password == 'f':
+        if password == 'grading':
             password_overlay.destroy()
             self.master.switch_frame(EditBridgeFrame)
         else:
@@ -2015,10 +2015,8 @@ class EditBridgeFrame(tk.Frame):
         self.tiket_combobox = ttk.Combobox(overlay_frame, values=tiket, width=30)  # Adjust the width value as needed
         self.tiket_combobox.grid(row=1, column=0, padx=10, pady=10, sticky='w')
         self.tiket_combobox.bind("<<ComboboxSelected>>", lambda event=None: update_label())
-
-        selected_value = '-'
+ 
         def update_label():
-            global selected_value
             selected_value = self.tiket_combobox.get()
             connection = connect_to_database()
 
@@ -2159,9 +2157,7 @@ class EditBridgeFrame(tk.Frame):
             submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
             submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
         else:
-            selected_value = update_label()
-            
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline(selected_value, self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"), edit_data_overlay))
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"), edit_data_overlay))
             submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
 
         # else:
@@ -2180,23 +2176,16 @@ class EditBridgeFrame(tk.Frame):
         #     submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
     
 
-    def update_data_offline(self, tiket, nopol, driver, bunit, divisi, blok, edit_data_overlay):
+    def update_data_offline(self, nopol, driver, bunit, divisi, blok, edit_data_overlay):
 
-        # first_blok_entry = blok_entries[0]
-        # tiket = self.tiket_entry.get()
-        # nopol = self.nopol_entry.get()
-        # driver = self.driver_entry.get()
-        # bunit = self.bunit_entry.get()
-        # divisi = self.divisi_entry.get()
-        # blok = first_blok_entry.get()
-
+        tiket = self.tiket_combobox.get()
+        
         print(tiket)
         print(nopol)
         print(driver)
         print(bunit)
         print(divisi)
         print(blok)
-        # print(nopol)
 
         
 
@@ -2335,135 +2324,161 @@ class EditBridgeFrame(tk.Frame):
             # connection.close()
         except pymssql.Error as e:
             messagebox.showinfo("Error", f"An error occurred while updating the database MOPweighbridgeTicket_Staging: {e}")  
-           
-
-        select_query = """
-        SELECT AI_NoTicket, AI_Grading, AI_Janjang  FROM MOPQuality_Staging
-        WHERE AI_NoTicket = %s
-        """
-
-        cursor = connection.cursor()
-        cursor.execute(select_query, (WBTicketNo,))
-        result = cursor.fetchall()  # Assuming you expect only one row; use fetchall() for multiple rows if needed
         
-        grade_codes = []
-        for row in result:
-            AI_Grading = row['AI_Grading']
-            Jumlah_AI_Grading = row['AI_Janjang']
+        #update sql set ai_pull_time old tiket ke null
+        # Connect to the database
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
+        # Update the weight_bridge table with AI_pull_time set to NULL for the specified WBTicketNo
+        update_sql = "UPDATE weight_bridge SET AI_pull_time = NULL WHERE WBTicketNo = ?;"
+        sqlite_cursor.execute(update_sql, (WBTicketNo,))
+        sqlite_conn.commit()
+        sqlite_cursor.close()
+        sqlite_conn.close()
 
-            SQL_QUERY = """
-            SELECT *
-            FROM MasterGrading_Staging
-            WHERE Ppro_GradeCode = %s
-            """
-            cursor.execute(SQL_QUERY, (AI_Grading,))
-            inner_result = cursor.fetchall()
+        #udpate sql wb new tiket new ai_pull_time
+        # Connect to the database
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
 
-            inner_data = []
-            for inner_row in inner_result:
-                # Access and process data from inner_result if necessary
-                Ppro_GradeName = inner_row['Ppro_GradeDescription']
-                
-                inner_data.append({
-                    'nama': Ppro_GradeName,
-                    'jumlah_janjang': Jumlah_AI_Grading,
-                })
+        # Update the weight_bridge table with the new values
+        update_sql = "UPDATE weight_bridge SET AI_pull_time = ?, VehiclePoliceNO = ?, DriverName = ? WHERE WBTicketNo = ?;"
+        sqlite_cursor.execute(update_sql, (current_datetime, nopol, driver, new_tiket_value))
 
-            # Append the inner_data list to the grade_codes list
-            grade_codes.extend(inner_data)
-        
-        cursor.close()
-
-        classes_to_find = [ 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
-
-        # Create a dictionary to store the indices and 'jumlah_janjang' values
-        found_classes = {}
-
-        for class_name in classes_to_find:
-            target_index = None
-            target_jumlah_janjang = None
-
-            for index, grade_data in enumerate(grade_codes):
-                if grade_data['nama'] == class_name:
-                    target_index = index
-                    target_jumlah_janjang = grade_data['jumlah_janjang']
-                    break
-
-            if target_index is not None:
-                found_classes[class_name] = {
-                    'index': target_index,
-                    'jumlah_janjang': target_jumlah_janjang
-                }
-
-        newInput = []
-        default_value = 0
-
-        for class_name in classes_to_find:
-            data = found_classes.get(class_name, {'jumlah_janjang': default_value})
-            newInput.append(int(data['jumlah_janjang']))       
-
-        def match_names(classAll, grade_codes):
-            matched_data = {}
-            for class_name in classAll:
-                if class_name == 'empty_bunch':
-                    empty_bunch_data = None
-                    for grade_data in grade_codes:
-                        if grade_data['nama'].lower() == 'Empty Bunch'.lower():
-                            empty_bunch_data = grade_data
-                            break
-                    
-                    if empty_bunch_data is not None:
-                        matched_data[class_name] = empty_bunch_data
-                    else:
-                        matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
-                elif class_name == 'long_stalk':
-                    long_stalk_data = None
-                    for grade_data in grade_codes:
-                        if grade_data['nama'].lower() == 'Tangkai Panjang'.lower():
-                            long_stalk_data = grade_data
-                            break
-                    
-                    if long_stalk_data is not None:
-                        matched_data[class_name] = long_stalk_data
-                    else:
-                        matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
-                else:
-                    for grade_data in grade_codes:
-                        if class_name.lower() in grade_data['nama'].lower():
-                            matched_data[class_name] = grade_data
-                            break
-                    else:
-                        matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
-            
-            return matched_data
-
-        # Call the mapping function to match the data
-        matched_data = match_names(classAll, grade_codes)
-
-        jumlah_janjang_array = [int(grade_data['jumlah_janjang']) for grade_data in matched_data.values()]
-        
-
-
-        total_jumlah_janjang = sum(jumlah_janjang_array)
-
-        jumlah_janjang_array.append('0')
-
-        generate_report(rawData, img_dir,jumlah_janjang_array, total_jumlah_janjang, newInput[0], newInput[1], newInput[2], 1)
-
-        # update quality
-        SQL_UPDATE = """
-        UPDATE MOPQuality_Staging
-        SET AI_NoTicket = %(new_AI_NoTicket)s
-        WHERE AI_NoTicket = %(old_AI_NoTicket)s;
-        """
-
-        update_values = {
-            'new_AI_NoTicket': new_tiket_value,  # Join blok values into a single string
-            'old_AI_NoTicket': WBTicketNo
-        }
+        sqlite_conn.commit()
+        sqlite_cursor.close()
+        sqlite_conn.close()
 
         try:
+
+            select_query = """
+            SELECT AI_NoTicket, AI_Grading, AI_Janjang  FROM MOPQuality_Staging
+            WHERE AI_NoTicket = %s
+            """
+            cursor = connection.cursor()
+            cursor.execute(select_query, (WBTicketNo,))
+            result = cursor.fetchall()  # Assuming you expect only one row; use fetchall() for multiple rows if needed
+
+           
+
+            grade_codes = []
+            for row in result:
+                AI_Grading = row['AI_Grading']
+                Jumlah_AI_Grading = row['AI_Janjang']
+
+                SQL_QUERY = """
+                SELECT *
+                FROM MasterGrading_Staging
+                WHERE Ppro_GradeCode = %s
+                """
+                cursor.execute(SQL_QUERY, (AI_Grading,))
+                inner_result = cursor.fetchall()
+
+                inner_data = []
+                for inner_row in inner_result:
+                    # Access and process data from inner_result if necessary
+                    Ppro_GradeName = inner_row['Ppro_GradeDescription']
+                    
+                    inner_data.append({
+                        'nama': Ppro_GradeName,
+                        'jumlah_janjang': Jumlah_AI_Grading,
+                    })
+
+                # Append the inner_data list to the grade_codes list
+                grade_codes.extend(inner_data)
             
+            cursor.close()
+
+            classes_to_find = [ 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
+
+            # Create a dictionary to store the indices and 'jumlah_janjang' values
+            found_classes = {}
+
+            for class_name in classes_to_find:
+                target_index = None
+                target_jumlah_janjang = None
+
+                for index, grade_data in enumerate(grade_codes):
+                    if grade_data['nama'] == class_name:
+                        target_index = index
+                        target_jumlah_janjang = grade_data['jumlah_janjang']
+                        break
+
+                if target_index is not None:
+                    found_classes[class_name] = {
+                        'index': target_index,
+                        'jumlah_janjang': target_jumlah_janjang
+                    }
+
+            newInput = []
+            default_value = 0
+
+            for class_name in classes_to_find:
+                data = found_classes.get(class_name, {'jumlah_janjang': default_value})
+                newInput.append(int(data['jumlah_janjang']))       
+
+            def match_names(classAll, grade_codes):
+                matched_data = {}
+                for class_name in classAll:
+                    if class_name == 'empty_bunch':
+                        empty_bunch_data = None
+                        for grade_data in grade_codes:
+                            if grade_data['nama'].lower() == 'Empty Bunch'.lower():
+                                empty_bunch_data = grade_data
+                                break
+                        
+                        if empty_bunch_data is not None:
+                            matched_data[class_name] = empty_bunch_data
+                        else:
+                            matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
+                    elif class_name == 'long_stalk':
+                        long_stalk_data = None
+                        for grade_data in grade_codes:
+                            if grade_data['nama'].lower() == 'Tangkai Panjang'.lower():
+                                long_stalk_data = grade_data
+                                break
+                        
+                        if long_stalk_data is not None:
+                            matched_data[class_name] = long_stalk_data
+                        else:
+                            matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
+                    else:
+                        for grade_data in grade_codes:
+                            if class_name.lower() in grade_data['nama'].lower():
+                                matched_data[class_name] = grade_data
+                                break
+                        else:
+                            matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
+                
+                return matched_data
+
+            # Call the mapping function to match the data
+            matched_data = match_names(classAll, grade_codes)
+
+            jumlah_janjang_array = [int(grade_data['jumlah_janjang']) for grade_data in matched_data.values()]
+            
+
+
+            total_jumlah_janjang = sum(jumlah_janjang_array)
+
+            jumlah_janjang_array.append('0')
+
+            generate_report(rawData, img_dir,jumlah_janjang_array, total_jumlah_janjang, newInput[0], newInput[1], newInput[2], 1)
+        except Exception as e:
+            messagebox.showinfo("Error", f"An error occurred while fetch data MOPQuality_Staging: {e}")  
+
+        try:
+            # update quality
+            SQL_UPDATE = """
+            UPDATE MOPQuality_Staging
+            SET AI_NoTicket = %(new_AI_NoTicket)s
+            WHERE AI_NoTicket = %(old_AI_NoTicket)s;
+            """
+
+            update_values = {
+                'new_AI_NoTicket': new_tiket_value,  # Join blok values into a single string
+                'old_AI_NoTicket': WBTicketNo
+            }
 
             # Create a cursor and execute the UPDATE statement
             cursor = connection.cursor()
@@ -2474,22 +2489,22 @@ class EditBridgeFrame(tk.Frame):
 
             # Close the cursor and connection
             cursor.close()
-            
-
-            sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-            sqlite_cursor = sqlite_conn.cursor()
-            sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, WBTicketNo))
-            sqlite_conn.commit()
-            sqlite_cursor.close()
-            sqlite_conn.close()
-        
-
+                    
             messagebox.showinfo("Success", "Data Tiket " + new_tiket_value + " Berhasil terupdate")  
             edit_data_overlay.destroy()
             self.master.switch_frame(EditBridgeFrame)
         except Exception as e:
             messagebox.showinfo("Error", f"An error occurred while updating the database MOPQuality_Staging: {e}")  
 
+        # update db lokal table quality
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
+        sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, WBTicketNo))
+        sqlite_conn.commit()
+        sqlite_cursor.close()
+        sqlite_conn.close()
+
+        
         connection.close()
         
 class Frame2(tk.Frame):
