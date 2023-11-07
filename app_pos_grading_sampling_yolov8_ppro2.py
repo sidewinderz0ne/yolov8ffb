@@ -92,16 +92,16 @@ def remove_non_numeric(input_str):
 def create_datetime(date, hour, minute, second):
     return dt(date.year, date.month, date.day, hour, minute, second)
 
-def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, dirt, editData = None):
+def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolBusuk, dirt, editData = None):
 
-    prctgUnripe = 0
-    prctgRipe = 0
-    prctgEmptyBunch = 0
-    prctgOverripe = 0
-    prctgAbnormal = 0
-    prctgKastrasi = 0
-    prctgLongStalk = 0
-    TotalRipeness = 0
+    global totalJjg
+    
+    class_dict = {name: 'Tangkai\nPanjang' if name == 'long_stalk' else 'Empty Bunch' if name == 'empty_bunch' else name.capitalize() for name in class_names}
+    
+    totalJjg = 0
+    for key, value in class_count_dict.items():
+        if key != 'long_stalk':
+            totalJjg += value
 
     try:
         no_tiket = str(raw[1])
@@ -141,41 +141,40 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
 
     dateStart = date_start_conveyor
     dateEnd = date_end_conveyor
-
+    TotalRipeness = 0
     max_widthQr = 140
+
+    
+
     if int(totalJjg) != 0:
         max_widthQr =150
-        prctgUnripe = round((int(class_count[0]) / int(totalJjg)) * 100,2)
-        prctgRipe =  round((int(class_count[1]) / int(totalJjg)) * 100,2)
-        prctgEmptyBunch =  round((int(class_count[2]) / int(totalJjg)) * 100,2)
-        prctgOverripe =  round((int(class_count[3]) / int(totalJjg)) * 100,2)
-        prctgAbnormal =  round((int(class_count[4]) / int(totalJjg)) * 100,2)
-        prctgLongStalk =  round((int(class_count[5]) / int(totalJjg)) * 100,2)
-        prctgKastrasi = round((int(class_count[6]) / int(totalJjg)) * 100,2)
-        
-        TotalRipeness = round((int(class_count[1]) / int(totalJjg)) * 100,2)
+        TabelAtas = [
+            ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
+            ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
+            ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
+            ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
+            ['Status',  str(status)]
+        ]
 
+        colEachTable1 = [1.0 * inch, 2.4 * inch, 0.6 * inch, 0.6 * inch, 0.6 * inch, 1.2 * inch, 1.7 * inch]
+        page_width_points, page_height_points = letter
 
-    TabelAtas = [
-        ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
-        ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
-        ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
-        ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
-        ['Status',  str(status)]
-    ]
+        # Convert the page width from points to inches
+        page_width_inches = page_width_points / inch
+        percentages = [(class_count_dict[class_name] / totalJjg) * 100 for class_name in class_names]
+        formatted_percentages = [f"{percentage:.2f} %" if percentage != 0 else '0 %' for percentage in percentages]
+        prctg_per_class = dict(zip(class_names, formatted_percentages))
 
-    colEachTable1 = [1.0*inch, 2.4*inch,  0.6*inch, 0.6*inch, 0.6*inch, 1.2*inch, 1.6*inch]
+        TabelBawah = [
+            ['Total\nJanjang', class_dict['ripe'], class_dict['unripe'], class_dict['overripe'], class_dict['empty_bunch'],class_dict['abnormal'],class_dict['kastrasi'], class_dict['long_stalk'], 'Total\nRipeness'],
+            [totalJjg, class_count_dict['ripe'], class_count_dict['unripe'], class_count_dict['overripe'], class_count_dict['empty_bunch'], class_count_dict['abnormal'], class_count_dict['kastrasi'],class_count_dict['long_stalk'],prctg_per_class['ripe']],
+            ['',  prctg_per_class['ripe'] , prctg_per_class['unripe'], prctg_per_class['overripe'], prctg_per_class['empty_bunch'],  prctg_per_class['abnormal'],  prctg_per_class['kastrasi'],prctg_per_class['long_stalk'] , prctg_per_class['ripe']]
+        ]
+    
     page_width_points, page_height_points = letter
 
     # Convert the page width from points to inches
     page_width_inches = page_width_points / inch
-
-    # print(f"Page width in inches: {page_width_inches:.2f} inches")
-    TabelBawah = [
-        ['Total\nJanjang', 'Ripe', 'Overripe', 'Unripe', 'Empty\nBunch','Abnormal','Kastrasi','Tangkai\nPanjang', 'Total\nRipeness'],
-        [totalJjg, int(class_count[1]) , int(class_count[2]) , int(class_count[0]) ,int(class_count[3]) , int(class_count[4]) , int(class_count[6]) ,int(class_count[5]) , str(TotalRipeness) + ' % '],
-        ['',  str(prctgRipe) + ' %', str(prctgOverripe)+ ' %', str(prctgUnripe) +' %', str(prctgEmptyBunch) +  ' %',  str(prctgAbnormal)+ ' %',  str(prctgKastrasi)+ ' %',str(prctgLongStalk)+ ' %','']
-    ]
 
     colEachTableInput = [1.3*inch, 1.3*inch, 1.3*inch]
 
@@ -261,12 +260,8 @@ def generate_report(raw, img_dir,class_count, totalJjg, brondol, brondolBusuk, d
 
     name_pdf = str(img_dir) +  '.pdf'
 
-    print(img_dir)
-
     if editData:
         name_pdf = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/' + str(raw[1].replace('/','_')) + '_' + str(raw[4]) + '_' + str(raw[5]) + '.pdf'
-
-    print(name_pdf)
     
     doc = SimpleDocTemplate(name_pdf, pagesize=letter,  topMargin=0)
     
@@ -925,7 +920,7 @@ class Frame1(tk.Frame):
         
         password = self.password_entry.get()
 
-        if password == 'grading':
+        if password == 'f':
             password_overlay.destroy()
             self.master.switch_frame(EditBridgeFrame)
         else:
@@ -1479,7 +1474,7 @@ class Frame3(tk.Frame):
         if status_mode == 'online':
             submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(class_name, counter_per_class, row_values, img_dir))
         else:
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(counter_per_class, row_values[1:-1], row_values, img_dir))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(class_name, counter_per_class, row_values[1:-1], row_values, img_dir))
         
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
@@ -1507,7 +1502,6 @@ class Frame3(tk.Frame):
         connection = connect_to_database()
 
         global WBTicketNo 
-        global totalJjg
  
         # Get the current datetime
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -1558,6 +1552,8 @@ class Frame3(tk.Frame):
 
     def save_and_switch(self, class_name, count_per_class, row_values, img_dir):
         global date_end_conveyor
+        class_count_dict = dict(zip(class_name, count_per_class))
+        
         date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         brondol = self.brondolanEntry.get()
         brondolBusuk = self.brondoalBusukEntry.get()
@@ -1642,7 +1638,7 @@ class Frame3(tk.Frame):
 
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
 
-        generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
+        generate_report(result, img_dir,class_count_dict,class_name, brondol, brondolBusuk, dirt)
 
         threading.Thread(target=self.run_send_pdf_in_background).start()
 
@@ -1708,10 +1704,10 @@ class Frame3(tk.Frame):
         loop.run_until_complete(self.send_pdf_async())
         loop.close()
 
-    def save_offline_and_switch(self, count_per_class, row_values, row_values_full,  img_dir):
+    def save_offline_and_switch(self, class_name, count_per_class, row_values, row_values_full,  img_dir):
         row_values_subset = ';'.join(map(str, row_values))
         
-        # print(row_values)
+        class_count_dict = dict(zip(class_name, count_per_class))
         mill_id = id_mill
         WBTicketNo = row_values[0] if row_values else ''
         VehiclePoliceNO = row_values[1]if row_values else ''
@@ -1722,13 +1718,14 @@ class Frame3(tk.Frame):
         Status = row_values[7]if row_values else ''
         waktu_mulai =  row_values[8]if row_values else ''
         waktu_selesai =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        unripe = count_per_class[0]
-        ripe = count_per_class[1]
-        overripe = count_per_class[2]
-        empty_bunch = count_per_class[3]
-        abnormal = count_per_class[4]
-        kastrasi = count_per_class[5]
-        tp = count_per_class[6]
+        unripe = class_count_dict['unripe']
+        ripe = class_count_dict['ripe']
+        overripe = class_count_dict['overripe']
+        empty_bunch = class_count_dict['empty_bunch']
+        abnormal = class_count_dict['abnormal']
+        tp = class_count_dict['long_stalk']
+        kastrasi = class_count_dict['kastrasi']
+        
 
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
         sqlite_cursor = sqlite_conn.cursor()
@@ -1791,7 +1788,7 @@ class Frame3(tk.Frame):
                 break
         
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
-        generate_report(result, img_dir,count_per_class, totalJjg, brondol, brondolBusuk, dirt)
+        generate_report(result, img_dir,class_count_dict, class_name, brondol, brondolBusuk, dirt)
 
         threading.Thread(target=self.run_send_pdf_in_background).start()
 
@@ -2220,7 +2217,11 @@ class EditBridgeFrame(tk.Frame):
             
     def update_data(self, WBTicketNo, edit_data_overlay):
 
-        classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk']
+        classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi', 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
+
+    
+        class_totals = {class_name: 0 for class_name in classAll}
+
         new_tiket_value = self.tiket_combobox.get()
 
         nopol = self.nopol_val.get()
@@ -2325,8 +2326,7 @@ class EditBridgeFrame(tk.Frame):
         except pymssql.Error as e:
             messagebox.showinfo("Error", f"An error occurred while updating the database MOPweighbridgeTicket_Staging: {e}")  
         
-        #update sql set ai_pull_time old tiket ke null
-        # Connect to the database
+        # update sql set ai_pull_time old tiket ke null
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
         sqlite_cursor = sqlite_conn.cursor()
         # Update the weight_bridge table with AI_pull_time set to NULL for the specified WBTicketNo
@@ -2336,8 +2336,7 @@ class EditBridgeFrame(tk.Frame):
         sqlite_cursor.close()
         sqlite_conn.close()
 
-        #udpate sql wb new tiket new ai_pull_time
-        # Connect to the database
+        # udpate sql wb new tiket new ai_pull_time
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
         sqlite_cursor = sqlite_conn.cursor()
 
@@ -2357,7 +2356,7 @@ class EditBridgeFrame(tk.Frame):
             """
             cursor = connection.cursor()
             cursor.execute(select_query, (WBTicketNo,))
-            result = cursor.fetchall()  # Assuming you expect only one row; use fetchall() for multiple rows if needed
+            result = cursor.fetchall()
 
            
 
@@ -2376,94 +2375,33 @@ class EditBridgeFrame(tk.Frame):
 
                 inner_data = []
                 for inner_row in inner_result:
-                    # Access and process data from inner_result if necessary
                     Ppro_GradeName = inner_row['Ppro_GradeDescription']
                     
-                    inner_data.append({
-                        'nama': Ppro_GradeName,
-                        'jumlah_janjang': Jumlah_AI_Grading,
-                    })
+                    matched_class = None
+                    if "long_stalk" in classAll:
+                        if Ppro_GradeName.lower() == "Tangkai Panjang".lower():
+                            matched_class = "long_stalk"
 
-                # Append the inner_data list to the grade_codes list
-                grade_codes.extend(inner_data)
-            
-            cursor.close()
+                    if "empty_bunch" in classAll:
+                        if Ppro_GradeName.lower() == "Empty Bunch".lower():
+                            matched_class = "empty_bunch"
 
-            classes_to_find = [ 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
+                    if not matched_class:
+                        # Check for other class names in classAll      
+                        matched_class = next((class_name for class_name in classAll if class_name.lower() == Ppro_GradeName.lower()), None)
 
-            # Create a dictionary to store the indices and 'jumlah_janjang' values
-            found_classes = {}
+                    if matched_class:
+        
+                        class_totals[matched_class] += int(Jumlah_AI_Grading)
 
-            for class_name in classes_to_find:
-                target_index = None
-                target_jumlah_janjang = None
+            class_original = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi']
 
-                for index, grade_data in enumerate(grade_codes):
-                    if grade_data['nama'] == class_name:
-                        target_index = index
-                        target_jumlah_janjang = grade_data['jumlah_janjang']
-                        break
+            class_name_values = {}
 
-                if target_index is not None:
-                    found_classes[class_name] = {
-                        'index': target_index,
-                        'jumlah_janjang': target_jumlah_janjang
-                    }
+            for index in class_original:
+                class_name_values[index] = class_totals.get(index, 0)
 
-            newInput = []
-            default_value = 0
-
-            for class_name in classes_to_find:
-                data = found_classes.get(class_name, {'jumlah_janjang': default_value})
-                newInput.append(int(data['jumlah_janjang']))       
-
-            def match_names(classAll, grade_codes):
-                matched_data = {}
-                for class_name in classAll:
-                    if class_name == 'empty_bunch':
-                        empty_bunch_data = None
-                        for grade_data in grade_codes:
-                            if grade_data['nama'].lower() == 'Empty Bunch'.lower():
-                                empty_bunch_data = grade_data
-                                break
-                        
-                        if empty_bunch_data is not None:
-                            matched_data[class_name] = empty_bunch_data
-                        else:
-                            matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
-                    elif class_name == 'long_stalk':
-                        long_stalk_data = None
-                        for grade_data in grade_codes:
-                            if grade_data['nama'].lower() == 'Tangkai Panjang'.lower():
-                                long_stalk_data = grade_data
-                                break
-                        
-                        if long_stalk_data is not None:
-                            matched_data[class_name] = long_stalk_data
-                        else:
-                            matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
-                    else:
-                        for grade_data in grade_codes:
-                            if class_name.lower() in grade_data['nama'].lower():
-                                matched_data[class_name] = grade_data
-                                break
-                        else:
-                            matched_data[class_name] = {'nama': class_name.title(), 'jumlah_janjang': 0.0}
-                
-                return matched_data
-
-            # Call the mapping function to match the data
-            matched_data = match_names(classAll, grade_codes)
-
-            jumlah_janjang_array = [int(grade_data['jumlah_janjang']) for grade_data in matched_data.values()]
-            
-
-
-            total_jumlah_janjang = sum(jumlah_janjang_array)
-
-            jumlah_janjang_array.append('0')
-
-            generate_report(rawData, img_dir,jumlah_janjang_array, total_jumlah_janjang, newInput[0], newInput[1], newInput[2], 1)
+            generate_report(rawData, img_dir,class_name_values, class_original, class_totals['Brondolan'], class_totals['Brondolan Busuk'],class_totals['DIRT/KOTORAN'] ,1)
         except Exception as e:
             messagebox.showinfo("Error", f"An error occurred while fetch data MOPQuality_Staging: {e}")  
 
