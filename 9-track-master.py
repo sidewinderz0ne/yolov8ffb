@@ -44,6 +44,7 @@ parser.add_argument('--pull_data', type=str, default='-')
 parser.add_argument('--mode', type=str, default='sampling')
 parser.add_argument('--save_vid', type=bool, default=False)
 parser.add_argument("--debug", type=bool, default=False, help="Enable debug mode to store everything printed result into txt file")
+parser.add_argument("--tiket", type=str, default='default', help="Enable debug mode to store everything printed result into txt file")
 opt = parser.parse_args()
 yolo_model_str = opt.yolo_model
 source = opt.source
@@ -57,7 +58,7 @@ show = opt.show
 pull_data = opt.pull_data
 save_vid = opt.save_vid
 debug = opt.debug
-no_tiket = ""
+no_tiket = opt.tiket
 TotalJjg = 0
 timer = 25
 stream = None
@@ -260,6 +261,22 @@ def close():
         img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"
         save_txt(data)
+    
+    if mode == 'multi-inference':
+        path_cctv_log = Path(os.getcwd() + '/hasil/' + formatted_date + '/'+ no_tiket + '/result_' + source + '.TXT')
+        if not path_cctv_log.exists():
+            path_cctv_log.touch()
+
+        data = {name: count for name, count in zip(names, class_count)}
+
+        json_data = json.dumps(data)
+        try:
+            with open(path_cctv_log, 'w') as log_file:
+                log_file.write(str(json_data))
+            
+        except Exception as e:
+            print(f"Error saving data to, {save_dir_txt}, : {str(e)}")
+        save_txt(no_tiket)
     
 last_id = 0
 track_idsArr = []

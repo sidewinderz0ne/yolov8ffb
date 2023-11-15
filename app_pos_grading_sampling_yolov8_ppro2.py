@@ -12,6 +12,8 @@ import tkinter.font as tkFont
 import subprocess
 from unicodedata import name
 from unittest import result
+import argparse
+import ast
 import pymssql
 import bcrypt
 import sqlite3
@@ -32,6 +34,10 @@ from reportlab.platypus import Spacer
 from reportlab.lib.units import inch
 from reportlab.lib.pagesizes import letter
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--mode', type=str, default='single-inference')
+opt = parser.parse_args()
+mode_app = opt.mode
 url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
 
 columns = ('no', 'notiket', 'nopol', 'driver', 'b_unit','divisi', 'field', 'bunches', 'ownership', 'pushtime', 'action')
@@ -146,21 +152,27 @@ def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolB
 
     
 
-    if int(totalJjg) != 0:
-        max_widthQr =150
-        TabelAtas = [
+    TabelAtas = [
             ['No Tiket',   str(no_tiket),'','','', 'Waktu Mulai',  str(dateStart)],
             ['Bisnis Unit',  str(bisnis_unit),'','','','Waktu Selesai', str(dateEnd)],
             ['Divisi',   str(divisi),'','','','No. Plat',str(no_plat)],
             ['Blok',  str(blok),'','','','Driver',str(nama_driver)],
             ['Status',  str(status)]
         ]
+    
+    default_value = 0
+    TabelBawah = [
+        ['Total\nJanjang', default_value, default_value, default_value, default_value, default_value, default_value, default_value, 'Total\nRipeness'],
+        [default_value, default_value, default_value, default_value, default_value, default_value, default_value, default_value, '0.00 %'],
+        ['', '0.00 %', '0.00 %', '0.00 %', '0.00 %', '0.00 %', '0.00 %', '0.00 %', '0.00 %']
+    ]
 
-        colEachTable1 = [1.0 * inch, 2.4 * inch, 0.6 * inch, 0.6 * inch, 0.6 * inch, 1.2 * inch, 1.7 * inch]
-        page_width_points, page_height_points = letter
-
-        # Convert the page width from points to inches
-        page_width_inches = page_width_points / inch
+    colEachTable1 = [1.0 * inch, 2.4 * inch, 0.6 * inch, 0.6 * inch, 0.6 * inch, 1.2 * inch, 1.7 * inch]
+    if int(totalJjg) != 0:
+        max_widthQr =150
+        
+        
+       
         percentages = [(class_count_dict[class_name] / totalJjg) * 100 for class_name in class_names]
         formatted_percentages = [f"{percentage:.2f} %" if percentage != 0 else '0 %' for percentage in percentages]
         prctg_per_class = dict(zip(class_names, formatted_percentages))
@@ -170,10 +182,12 @@ def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolB
             [totalJjg, class_count_dict['ripe'], class_count_dict['unripe'], class_count_dict['overripe'], class_count_dict['empty_bunch'], class_count_dict['abnormal'], class_count_dict['kastrasi'],class_count_dict['long_stalk'],prctg_per_class['ripe']],
             ['',  prctg_per_class['ripe'] , prctg_per_class['unripe'], prctg_per_class['overripe'], prctg_per_class['empty_bunch'],  prctg_per_class['abnormal'],  prctg_per_class['kastrasi'],prctg_per_class['long_stalk'] , prctg_per_class['ripe']]
         ]
+
+    
     
     page_width_points, page_height_points = letter
 
-    # Convert the page width from points to inches
+        # Convert the page width from points to inches
     page_width_inches = page_width_points / inch
 
     colEachTableInput = [1.3*inch, 1.3*inch, 1.3*inch]
@@ -258,7 +272,11 @@ def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolB
         ('FONTITALIC', (0, 0), (-1, -1), 1),
     ]))
 
-    name_pdf = str(img_dir) +  '.pdf'
+    if mode_app == 'multi-inference':
+        name_pdf = './hasil/' + formatted_date + '/' + no_tiket.replace('/','-') + '/result_deteksi.pdf'
+    else:
+        name_pdf = str(img_dir) +  '.pdf'
+    
 
     if editData:
         name_pdf = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/' + str(raw[1].replace('/','_')) + '_' + str(raw[4]) + '_' + str(raw[5]) + '.pdf'
@@ -1126,7 +1144,7 @@ class Frame1(tk.Frame):
         record = self.pull_data_ppro(database_connection)
         if status_mode == 'online':
             database_connection.close()
-        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
+        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()} - {mode_app.capitalize()}")
         if status_mode == 'online':
             arr_data = self.process_data(record, master_bunit, master_div, master_block)
 
@@ -1197,13 +1215,23 @@ class Frame1(tk.Frame):
 
 
     def run_script(self, row_item, row_id, row_values):
-
+        
+        if mode_app == 'multi-inference':
+            tiket = row_values[1].replace('/','-')
+            path_avg_cctv = Path(os.getcwd() + '/hasil/' + formatted_date  + '/' + tiket)
+            path_avg_cctv.mkdir(parents=True, exist_ok=True)  # make dir
+        
         global source, date_start_conveyor
         date_start_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         output_inference = None
         try:
-            
-            result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)], 
+            if mode_app == 'multi-inference':
+                result = subprocess.run(['python', 'multiple_inference.py', '--tiket', str(tiket), '--mode', 'multi-inference'], 
+                                capture_output=True, 
+                                text=True, 
+                                check=True)
+            else:
+                result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)], 
                             capture_output=True, 
                             text=True, 
                             check=True)
@@ -1229,25 +1257,40 @@ class Frame3(tk.Frame):
     def __init__(self, master, output_inference, row_values):
         super().__init__(master)
 
-        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
+        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()} - {mode_app.capitalize()}")
 
         counter_per_class = None
         img_dir = None
         raw = None
+        tiket_folder = None
         global WBTicketNo 
         global totalJjg
         
-        with open(save_dir_txt, 'r') as file:
+        with open(save_dir_txt,  'r') as file:
             raw = file.readline()
-    
-        parts = raw.split('$')
+            
 
-        parts = [part.strip() for part in parts]
+        if mode_app == 'multi-inference':
+            tiket_folder = raw
+            folder_inference = Path(os.getcwd() + '/hasil/' + formatted_date + '/' + tiket_folder + '/' + 'result_average_hasil_cctv.TXT')
+            
+            with open(folder_inference, 'r') as file:
+                content = file.read()
 
-        counter_per_class = eval(parts[0])
+            # Use ast.literal_eval to safely parse the content
+            hasil_deteksi = ast.literal_eval(content)    
 
-        class_name = eval(parts[1])
-        img_dir = parts[2]
+            class_name = list(hasil_deteksi.keys())
+            counter_per_class = list(hasil_deteksi.values())   
+        else:
+            parts = raw.split('$')
+
+            parts = [part.strip() for part in parts]
+
+            counter_per_class = eval(parts[0])
+
+            class_name = eval(parts[1])
+            img_dir = parts[2]
 
         filtered_list = [counter_per_class[i] for i in range(len(counter_per_class)) if i != 5]
 
@@ -1847,7 +1890,7 @@ class EditBridgeFrame(tk.Frame):
             record = frame1_instance.pull_data_ppro(connection, date_today)
             connection.close()
 
-            frame1_instance.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()}")
+            frame1_instance.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()} - {mode_app.capitalize()}")
             arr_data = frame1_instance.process_data(record, master_bunit, master_div, master_block)
         else:
             # Connect to the SQLite3 database
