@@ -721,16 +721,35 @@ class RegisterFrame(tk.Frame):
                 self.feedback_label.config(text="Tidak dapat menyimpan User!", fg="red")
 
 def process_data_offline( data):
-        arr_data  = []
+        arr_data = []
         index = 1
-        for line in data:
-            values = line.strip().split(';')
-            values.insert(0, index)
-            arr_data.append(tuple(values))
-            index += 1
+        for item in data:
+            item_dict = eval(item)
+            extracted_data = [
+                index,
+                item_dict.get('no_tiket', ''),
+                item_dict.get('no_plat', ''),
+                item_dict.get('nama_driver', ''),
+                item_dict.get('bunit', ''),
+                item_dict.get('divisi', ''),
+                item_dict.get('blok', ''),
+                item_dict.get('bunches', ''),
+                item_dict.get('ownership', ''),
+                item_dict.get('waktu_input', ''),
+                item_dict.get('status_inference', ''),
+            ]
 
-        sorted_data = sorted(arr_data, key=lambda x: x[9], reverse=True)
+            arr_data.append(extracted_data)
+            index +=1
+        sorted_data = sorted(arr_data, key=lambda x: x[9])
         return sorted_data
+        
+
+def info_truk(tiket, plat, driver, unit, divisi, blok, bunches, ownership,  status_inference):
+    keyInfoTruk =  ['no_tiket', 'no_plat', 'nama_driver', 'bunit','divisi','blok','bunches', 'ownership', 'status_inference']
+    valInfoTruk = [tiket, plat, driver, unit, divisi, blok, bunches, ownership, status_inference]
+
+    return dict(zip(keyInfoTruk, valInfoTruk))
 
 def connect_to_database():
     global status_mode
@@ -758,7 +777,7 @@ def connect_to_database():
             global connection
             try:
                 connection = pymssql.connect(
-                    server=server,
+                    server='asdfd',
                     user=user,
                     password=password,
                     database=database,
@@ -964,22 +983,21 @@ class Frame1(tk.Frame):
         custom_font = tkFont.Font(family="Helvetica", size=11)
         
         for i, data in enumerate(arrData, start=1):
-            # print('lazy')
-            # print(data[-1])
             item = self.tree.insert("", "end", values=data, tags=i)
             self.tree.set(item, "#1", str(i))
             if status_mode == 'offline':
                 self.tree.set(item, "#8", '')
-            if data[-1] == None or data[-1] == 'None':
+
+            if None in data or 'None' in data:
+                # If any element in the data tuple is None, set the value to "READY"
                 self.tree.set(item, "#11", "READY")
-                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)  # Change row color 
+                self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)
             else:
-                self.tree.tag_configure(i, background="#94c281", font=custom_font)  # Set background color to green
-                self.tree.set(item, "#11", "DONE")
+                self.tree.tag_configure(i, background="#94c281", font=custom_font)
+                self.tree.set(item, "#11", "Done")
             self.tree.tag_bind(i, "<Double-Button-1>", lambda event, row_item=item: self.update_row(row_item, event))     
 
     def pull_master(self, connection,  table, code, name, file_name):
-        # connection = connect_to_database()
 
         if isinstance(connection, pymssql.Connection):
             sql_query = f"SELECT {str(code)} , {str(name)}  FROM {str(table)} WHERE AI_pull_time IS NULL"
@@ -1337,6 +1355,9 @@ class Frame3(tk.Frame):
         Bunches = row_values[7]if row_values else ''
         Ownership = row_values[8]if row_values else ''
         push_time = row_values[9]if row_values else ''
+        statusInference = row_values[10]if row_values else ''
+
+        info_truk_dict = info_truk(WBTicketNo, VehiclePoliceNO, DriverName, BUnit, Divisi, Field, Bunches, Ownership, statusInference)
 
         title_label = tk.Label(self, text="Rekap Data Deteksi FFB Grading dengan AI ", font=("Helvetica", 19, "bold"))
         title_label.grid(row=0, column=1, columnspan=5, pady=(100,0))
@@ -1517,7 +1538,7 @@ class Frame3(tk.Frame):
         if status_mode == 'online':
             submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(class_name, counter_per_class, row_values, img_dir))
         else:
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(class_name, counter_per_class, row_values[1:-1], row_values, img_dir))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(class_name, counter_per_class, row_values[1:-1], row_values,info_truk_dict, img_dir))
         
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
@@ -1747,9 +1768,24 @@ class Frame3(tk.Frame):
         loop.run_until_complete(self.send_pdf_async())
         loop.close()
 
-    def save_offline_and_switch(self, class_name, count_per_class, row_values, row_values_full,  img_dir):
+    def save_offline_and_switch(self, class_name, count_per_class, row_values, row_values_full, info_truk_dict, img_dir):
+        global date_end_conveyor
+        brondol = self.brondolanEntry.get()
+        brondolBusuk = self.brondoalBusukEntry.get()
+        dirt = self.dirtEntry.get()
+
+        brondol = remove_non_numeric(brondol)
+        brondolBusuk = remove_non_numeric(brondolBusuk)
+        dirt = remove_non_numeric(dirt)
+
+        if not brondol:
+            brondol = 0
+        if not brondolBusuk:
+            brondolBusuk = 0
+        if not dirt:
+            dirt = 0
+
         row_values_subset = ';'.join(map(str, row_values))
-        
         class_count_dict = dict(zip(class_name, count_per_class))
         mill_id = id_mill
         WBTicketNo = row_values[0] if row_values else ''
@@ -1759,8 +1795,9 @@ class Frame3(tk.Frame):
         Divisi = row_values[4]if row_values else ''
         Field = row_values[5]if row_values else ''
         Status = row_values[7]if row_values else ''
-        waktu_mulai =  row_values[8]if row_values else ''
+        waktu_mulai =  date_start_conveyor
         waktu_selesai =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        date_end_conveyor =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         unripe = class_count_dict['unripe']
         ripe = class_count_dict['ripe']
         overripe = class_count_dict['overripe']
@@ -1769,6 +1806,18 @@ class Frame3(tk.Frame):
         tp = class_count_dict['long_stalk']
         kastrasi = class_count_dict['kastrasi']
         
+        tambahan ={
+            'brondolan' : brondol,
+            'brondolan_busuk' : brondolBusuk,
+            'dirt':dirt,
+            'waktu_mulai':waktu_mulai,
+            'waktu_selesai':waktu_selesai
+        }
+
+        merged_dict = info_truk_dict.copy()  
+        merged_dict.update(class_count_dict) 
+        merged_dict.update(tambahan)
+
 
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
         sqlite_cursor = sqlite_conn.cursor()
@@ -1795,45 +1844,59 @@ class Frame3(tk.Frame):
         except Exception as e:
             print("An error occurred while inserting the record:", str(e))
         
-        brondol = self.brondolanEntry.get()
-        brondolBusuk = self.brondoalBusukEntry.get()
-        dirt = self.dirtEntry.get()
-
-        brondol = remove_non_numeric(brondol)
-        brondolBusuk = remove_non_numeric(brondolBusuk)
-        dirt = remove_non_numeric(dirt)
+       
 
         result = list(row_values_full)
-
-        if not brondol:
-            brondol = 0
-        if not brondolBusuk:
-            brondolBusuk = 0
-        if not dirt:
-            dirt = 0
 
         strInputan = str(brondol) + ';'
         strInputan += str(brondolBusuk) + ';'
         strInputan += str(dirt)
         
-        count_class = ';'.join(map(str, count_per_class)) + ';'
-        with open(offline_log_dir, 'r') as log_file:
-            data = log_file.readlines()
+        # count_class = ';'.join(map(str, count_per_class)) + ';'
+        # with open(offline_log_dir, 'r') as log_file:
+        #     data = log_file.readlines()
 
-        for line_number, line in enumerate(data, start=1):
-            values = line.strip().split(';')
-            tuple_val = tuple(values[:-1]) 
-            #membandingkan row clicked dgn row didalam txt jika sama ubah status None jadi ready
-            if tuple_val == row_values:
-                data[line_number - 1] = row_values_subset + ';READY;' + count_class + strInputan  + '\n'
-                with open(offline_log_dir, 'w') as log_file:
-                    log_file.writelines(data)
-                break
+        # for line_number, line in enumerate(data, start=1):
+        #     values = line.strip().split(';')
+        #     tuple_val = tuple(values[:-1]) 
+        #     #membandingkan row clicked dgn row didalam txt jika sama ubah status None jadi ready
+        #     if tuple_val == row_values:
+        #         data[line_number - 1] = row_values_subset + ';READY;' + count_class + strInputan  + '\n'
+        #         with open(offline_log_dir, 'w') as log_file:
+        #             log_file.writelines(data)
+        #         break
         
+        with open(offline_log_dir, 'r') as file:
+            lines = file.readlines()
+
+        for line_number, line in enumerate(lines):
+            try:
+                # Replace single quotes with double quotes in the line
+                line_with_double_quotes = line.replace("'", "\"")
+
+                # Parse the line as a dictionary using json.loads
+                line_dict = json.loads(line_with_double_quotes)
+
+                # Check if the specified fields match
+                if line_dict.get('no_tiket') == merged_dict['no_tiket'] and line_dict.get('no_plat') == merged_dict['no_plat']:
+
+                    original_waktu_input = line_dict.get('waktu_input')
+                    merged_dict['waktu_input'] = original_waktu_input
+                    lines[line_number] = str(merged_dict) + '\n'
+                    # print(f"Variable replaced with line {line_number}: {line_dict}")
+                    break  # Assuming you want to stop after the first match, remove if you want to continue checking the rest of the lines
+                # else:
+                #     print(f"Fields do not match in line {line_number}")
+            except json.JSONDecodeError:
+                print(f"Error decoding JSON in line {line_number}")
+
+        with open(offline_log_dir, 'w') as file:
+            file.writelines(lines)
+
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
         generate_report(result, img_dir,class_count_dict, class_name, brondol, brondolBusuk, dirt)
 
-        threading.Thread(target=self.run_send_pdf_in_background).start()
+        # threading.Thread(target=self.run_send_pdf_in_background).start()
 
         self.master.switch_frame(Frame1)
 
@@ -2587,13 +2650,16 @@ class Frame2(tk.Frame):
         divisi = str(divisi).replace(' ', '')
         blok = str(blok).replace(' ', '')
         bunches = str(bunches).replace(' ', '')
-        status = str(status)
+        ownership = str(status)
 
-        result = tiket + ';' + plat + ';'+ driver + ';'+ unit + ';'+ divisi  + ';'+ blok +';'+ bunches +';' + status + ';' + current_date.strftime('%Y-%m-%d %H:%M:%S') + ';None'
+        raw = info_truk(tiket, plat, driver, unit, divisi, blok, bunches, ownership,'None')
+        raw['waktu_input'] = current_date.strftime('%Y-%m-%d %H:%M:%S')
 
+        result = tiket + ';' + plat + ';'+ driver + ';'+ unit + ';'+ divisi  + ';'+ blok +';'+ bunches +';' + ownership + ';' + current_date.strftime('%Y-%m-%d %H:%M:%S') + ';None'
+        
         try:
             with open(offline_log_dir, 'a') as file:
-                file.write(result + '\n')
+                file.write(str(raw) + '\n')
         except Exception as e:
             print("Error saving data to", offline_log_dir, ":", str(e))
                 
