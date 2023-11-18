@@ -61,7 +61,7 @@ date_end_conveyor = None
 connection = None 
 accent2 = "#d2d7fc"
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
-
+isClosedFrame3 = False
 id_mill = None
 with open(id_mill_dir, 'r') as z:
     id_mill = z.readline()
@@ -1283,6 +1283,7 @@ class Frame3(tk.Frame):
         tiket_folder = None
         global WBTicketNo 
         global totalJjg
+        self.submit_clicked = False
         
         with open(save_dir_txt,  'r') as file:
             raw = file.readline()
@@ -1542,12 +1543,18 @@ class Frame3(tk.Frame):
         
         submit_button.grid(row=19, column=1, columnspan=4, sticky="ew")
 
-    #     self.master.protocol("WM_DELETE_WINDOW", lambda: self.on_closing())
-    
-    # def on_closing(self):
-    #     messagebox.showinfo("Alert", "Submit Data terlebih dahulu !")  # Show success message
-        
-    #     pass
+        self.bind("<Destroy>", lambda event: self.on_close(event, class_name, counter_per_class, row_values,info_truk_dict, img_dir))
+
+    def on_close(self, event, class_name, counter_per_class, row_values, info_truk_dict,img_dir ):
+        global isClosedFrame3
+
+        isClosedFrame3 = True
+
+        if not self.submit_clicked:
+            if status_mode == 'online':
+                self.save_and_switch(class_name, counter_per_class, row_values, img_dir)
+            else:
+                self.save_offline_and_switch(class_name, counter_per_class, row_values[1:-1], row_values, info_truk_dict, img_dir)
 
     def check_img(self, dir):
         image = None
@@ -1769,21 +1776,31 @@ class Frame3(tk.Frame):
         loop.close()
 
     def save_offline_and_switch(self, class_name, count_per_class, row_values, row_values_full, info_truk_dict, img_dir):
+        self.submit_clicked = True
         global date_end_conveyor
-        brondol = self.brondolanEntry.get()
-        brondolBusuk = self.brondoalBusukEntry.get()
-        dirt = self.dirtEntry.get()
 
-        brondol = remove_non_numeric(brondol)
-        brondolBusuk = remove_non_numeric(brondolBusuk)
-        dirt = remove_non_numeric(dirt)
+        brondol = 0
+        brondolBusuk = 0
+        dirt = 0
+        
+        # Check if the Entry widgets still exist before accessing their values
+        if self.submit_clicked and isClosedFrame3 == False:
+            brondol_input = self.brondolanEntry.get()
+            brondolBusuk_input = self.brondoalBusukEntry.get()
+            dirt_input = self.dirtEntry.get()
 
-        if not brondol:
-            brondol = 0
-        if not brondolBusuk:
-            brondolBusuk = 0
-        if not dirt:
-            dirt = 0
+            # Remove non-numeric characters
+            brondol_input = remove_non_numeric(brondol_input)
+            brondolBusuk_input = remove_non_numeric(brondolBusuk_input)
+            dirt_input = remove_non_numeric(dirt_input)
+
+            # Set values based on user input or keep the default values
+            if brondol_input:
+                brondol = int(brondol_input)
+            if brondolBusuk_input:
+                brondolBusuk = int(brondolBusuk_input)
+            if dirt_input:
+                dirt = int(dirt_input)
 
         row_values_subset = ';'.join(map(str, row_values))
         class_count_dict = dict(zip(class_name, count_per_class))
@@ -1878,7 +1895,7 @@ class Frame3(tk.Frame):
                 line_dict = json.loads(line_with_double_quotes)
 
                 # Check if the specified fields match
-                if line_dict.get('no_tiket') == merged_dict['no_tiket'] and line_dict.get('no_plat') == merged_dict['no_plat']:
+                if line_dict.get('no_tiket') == merged_dict['no_tiket'] and line_dict.get('no_plat') == merged_dict['no_plat'] and line_dict.get('status_inference') != 'READY':
 
                     original_waktu_input = line_dict.get('waktu_input')
                     merged_dict['waktu_input'] = original_waktu_input
@@ -1889,17 +1906,18 @@ class Frame3(tk.Frame):
                 #     print(f"Fields do not match in line {line_number}")
             except json.JSONDecodeError:
                 print(f"Error decoding JSON in line {line_number}")
-
+        
         with open(offline_log_dir, 'w') as file:
             file.writelines(lines)
 
         messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
         generate_report(result, img_dir,class_count_dict, class_name, brondol, brondolBusuk, dirt)
 
-        # threading.Thread(target=self.run_send_pdf_in_background).start()
+        threading.Thread(target=self.run_send_pdf_in_background).start()
 
-        self.master.switch_frame(Frame1)
-
+        if self.submit_clicked:
+            self.master.switch_frame(Frame1)    
+           
 class EditBridgeFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
