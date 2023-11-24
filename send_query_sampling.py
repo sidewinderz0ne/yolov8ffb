@@ -12,7 +12,7 @@ url = 'https://srs-ssms.com/post-py-sampling.php'
 url_list_data = 'https://srs-ssms.com/pdf_grading/get_list_data_sampling.php'
 headers = {"content-type": "application/x-www-form-urlencoded",
           'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36'}
-timer = 10
+timer = 0
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 
 id_mill = None
@@ -65,7 +65,6 @@ def read_text_file(file_path, timestamp):
             content = z.readlines()
 
             ready_lines = [line for line in content if "'status_inference': 'READY'" in line]
-            
             for line in ready_lines:
                 try:
                     if line.strip():
@@ -120,15 +119,15 @@ async def post_count(params):
 
 lastDate = datetime.now(tz=tzInfo)+timedelta(seconds=timer, minutes=0, hours=0)
 
-
+if arr == []:
+    asyncio.get_event_loop().run_until_complete(update_arr_variable())
 while True:
     
     if datetime.now(tz=tzInfo) > lastDate:
-        if arr == []:
-            asyncio.get_event_loop().run_until_complete(update_arr_variable())
-        
-        read_text_file(offline_log_dir,datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S"))
+        print('baru lewat gan')
         asyncio.get_event_loop().run_until_complete(update_arr_variable())
-        lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=timer, minutes=0, hours=0)
+        read_text_file(offline_log_dir,datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S"))
+        
+        lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=timer, minutes=15, hours=0)
 
 
