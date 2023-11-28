@@ -771,13 +771,12 @@ def connect_to_database():
         # server = server.replace('\\\\', '\\')
         # server = r(server)
         
-        timeout = 15
-        
+        timeout = 2
         def try_connect():
             global connection
             try:
                 connection = pymssql.connect(
-                    server='asdfd',
+                    server=server,
                     user=user,
                     password=password,
                     database=database,
@@ -785,8 +784,7 @@ def connect_to_database():
                 )
 
             except Exception as e:
-                # print(f"Error connecting to the database: {str(e)}")
-                print('')
+                print(f"Error connecting to the database: {str(e)}")
                  
         connection_thread = threading.Thread(target=try_connect)
         connection_thread.start()
@@ -981,15 +979,15 @@ class Frame1(tk.Frame):
     def populate_treeview(self, arrData):
         
         custom_font = tkFont.Font(family="Helvetica", size=11)
-        
+        # print(arrData)
         for i, data in enumerate(arrData, start=1):
             item = self.tree.insert("", "end", values=data, tags=i)
             self.tree.set(item, "#1", str(i))
             if status_mode == 'offline':
                 self.tree.set(item, "#8", '')
-
-            if None in data or 'None' in data:
-                # If any element in the data tuple is None, set the value to "READY"
+                
+            status_inference = data[10]
+            if status_inference == None or status_inference == 'None':
                 self.tree.set(item, "#11", "READY")
                 self.tree.tag_configure(i, background="#FFFFFF", font=custom_font)
             else:
@@ -1623,23 +1621,46 @@ class Frame3(tk.Frame):
 
     def save_and_switch(self, class_name, count_per_class, row_values, img_dir):
         global date_end_conveyor
+        self.submit_clicked = True
         class_count_dict = dict(zip(class_name, count_per_class))
         
         date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        brondol = self.brondolanEntry.get()
-        brondolBusuk = self.brondoalBusukEntry.get()
-        dirt = self.dirtEntry.get()
-        
-        brondol = remove_non_numeric(brondol)
-        brondolBusuk = remove_non_numeric(brondolBusuk)
-        dirt = remove_non_numeric(dirt)
 
-        if not brondol:
-            brondol = 0
-        if not brondolBusuk:
-            brondolBusuk = 0
-        if not dirt:
-            dirt = 0
+        brondol = 0
+        brondolBusuk = 0
+        dirt = 0
+        
+        if self.submit_clicked and isClosedFrame3 == False:
+            brondol_input = self.brondolanEntry.get()
+            brondolBusuk_input = self.brondoalBusukEntry.get()
+            dirt_input = self.dirtEntry.get()
+
+            # Remove non-numeric characters
+            brondol_input = remove_non_numeric(brondol_input)
+            brondolBusuk_input = remove_non_numeric(brondolBusuk_input)
+            dirt_input = remove_non_numeric(dirt_input)
+
+            # Set values based on user input or keep the default values
+            if brondol_input:
+                brondol = int(brondol_input)
+            if brondolBusuk_input:
+                brondolBusuk = int(brondolBusuk_input)
+            if dirt_input:
+                dirt = int(dirt_input)
+
+        # brondol = self.brondolanEntry.get()
+        # brondolBusuk = self.brondoalBusukEntry.get()
+        # dirt = self.dirtEntry.get()
+
+        # # Remove non-numeric characters
+        # brondol = remove_non_numeric(brondol)
+        # brondolBusuk = remove_non_numeric(brondolBusuk)
+        # dirt = remove_non_numeric(dirt)
+
+        # # Set default values to 0 if empty
+        # brondol = int(brondol) if brondol else 0
+        # brondolBusuk = int(brondolBusuk) if brondolBusuk else 0
+        # dirt = int(dirt) if dirt else 0
 
         result = ';'.join(map(str, row_values)) + ';'
         result += ';'.join(map(str, count_per_class)) + ';'
@@ -1712,8 +1733,8 @@ class Frame3(tk.Frame):
         generate_report(result, img_dir,class_count_dict,class_name, brondol, brondolBusuk, dirt)
 
         threading.Thread(target=self.run_send_pdf_in_background).start()
-
-        self.master.switch_frame(Frame1)
+        if self.submit_clicked:
+            self.master.switch_frame(Frame1)
 
     def change_push_time(self, raw):
         connection = connect_to_database()
