@@ -743,6 +743,28 @@ def process_data_offline( data):
         sorted_data = sorted(arr_data, key=lambda x: x[9])
         return sorted_data
         
+def copy_img_edit_mode(tiket):
+        path_img = str(Path(os.getcwd() + '/hasil/' + formatted_date + '/'))
+        
+        files = os.listdir(path_img)
+
+        WBTicketNo_modified = tiket.replace('/', '_')
+
+        # Filter out only the image files (you can adjust the list of valid extensions as needed)
+        image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
+
+        # Remove "_best" or "_worst" dynamically while maintaining the original casing
+        cleaned_filenames = [
+            file.rsplit('best', 1)[0].rsplit('worst', 1)[0]  # remove both "best" and "worst"
+            for file in files if any(file.lower().endswith(ext) for ext in image_extensions)
+        ]
+        found_files = [cleaned_file for cleaned_file in cleaned_filenames if WBTicketNo_modified in cleaned_file]
+        img_dir = ''
+        if found_files:
+            for found_file in found_files:
+                img_dir = str(path_img)  + '/' + found_file
+
+        return img_dir
 
 def info_truk(tiket, plat, driver, unit, divisi, blok, bunches, ownership,  status_inference):
     keyInfoTruk =  ['no_tiket', 'no_plat', 'nama_driver', 'bunit','divisi','blok','bunches', 'ownership', 'status_inference']
@@ -2420,14 +2442,7 @@ class EditBridgeFrame(tk.Frame):
         rawData.append(blok_modified)
         rawData.append(ownership)
 
-        with open(save_dir_txt, 'r') as file:
-            raw = file.readline()
-    
-        parts = raw.split('$')
-
-        parts = [part.strip() for part in parts]
-        
-        img_dir = parts[2]
+        img_dir = copy_img_edit_mode(tiket_lama)
 
         class_count = [tic_old['unripe'],tic_old['ripe'],tic_old['overripe'], tic_old['abnormal'],tic_old['empty_bunch'],tic_old['long_stalk'],tic_old['kastrasi']]
         class_name_values = {key: value for key, value in zip(classAll, class_count)}
@@ -2442,7 +2457,6 @@ class EditBridgeFrame(tk.Frame):
 
         classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi', 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
 
-    
         class_totals = {class_name: 0 for class_name in classAll}
 
         new_tiket_value = self.tiket_combobox.get()
@@ -2459,7 +2473,6 @@ class EditBridgeFrame(tk.Frame):
         records = cursor.fetchall()
         rawData = []
         if records:
-            # print(records)
             nopol_values = [record['VehiclePoliceNO'] for record in records]
             driver_names = [record['DriverName'] for record in records]
             bunit_codes = [record['BUnitCode'] for record in records]
@@ -2499,7 +2512,6 @@ class EditBridgeFrame(tk.Frame):
             rawData.append("; ".join(final_bunit))
             rawData.append("; ".join(final_divisi))
             
-            
             if not final_blok:
                 rawData.append("-")
             else:
@@ -2509,17 +2521,8 @@ class EditBridgeFrame(tk.Frame):
         
         rawData.insert(0, "")
 
-        with open(save_dir_txt, 'r') as file:
-            raw = file.readline()
-    
-        parts = raw.split('$')
+        img_dir = copy_img_edit_mode(WBTicketNo)
 
-        parts = [part.strip() for part in parts]
-
-        img_dir = parts[2]
-
-
-        # update wb
         try:
             cursor = connection.cursor()
 
@@ -2545,7 +2548,6 @@ class EditBridgeFrame(tk.Frame):
             cursor.execute(update_new_query, (current_datetime, nopol, driver, new_tiket_value))
             connection.commit()
 
-            # connection.close()
         except pymssql.Error as e:
             messagebox.showinfo("Error", f"An error occurred while updating the database MOPweighbridgeTicket_Staging: {e}")  
         
@@ -2580,8 +2582,6 @@ class EditBridgeFrame(tk.Frame):
             cursor = connection.cursor()
             cursor.execute(select_query, (WBTicketNo,))
             result = cursor.fetchall()
-
-           
 
             grade_codes = []
             for row in result:
