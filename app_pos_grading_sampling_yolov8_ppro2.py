@@ -700,7 +700,6 @@ class RegisterFrame(tk.Frame):
                 conn = sqlite3.connect('./db/grading_sampling.db')
                 cursor = conn.cursor()
 
-                # Check if the username already exists in the database
                 cursor.execute("SELECT user FROM auth WHERE user = ?", (user,))
                 existing_user = cursor.fetchone()
                 if existing_user:
@@ -759,17 +758,9 @@ def connect_to_database():
         cursor = conn.cursor()
         cursor.execute("SELECT server, user, password, database FROM config WHERE id = 1")
         record = cursor.fetchone()
-
         conn.close()
 
-
-
         server, user, password, database = record
-
-        # mencegah sql injection
-        # print(server)
-        # server = server.replace('\\\\', '\\')
-        # server = r(server)
         
         timeout = 2
         def try_connect():
@@ -784,7 +775,9 @@ def connect_to_database():
                 )
 
             except Exception as e:
-                print(f"Error connecting to the database: {str(e)}")
+                # print(f"Error connecting to the database: {str(e)}")
+                print(f"Error connecting to the database")
+                connection = None
                  
         connection_thread = threading.Thread(target=try_connect)
         connection_thread.start()
@@ -1999,9 +1992,6 @@ class EditBridgeFrame(tk.Frame):
             sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
             sqlite_cursor = sqlite_conn.cursor()
 
-            sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-            sqlite_cursor = sqlite_conn.cursor()
-
             # Calculate the start and end datetime objects
             current_date = datetime.datetime.now().date()
             start_time = create_datetime(current_date, 7, 0, 0)
@@ -2145,14 +2135,13 @@ class EditBridgeFrame(tk.Frame):
         else:
             with open(offline_log_dir, 'r') as file:
                     data = file.readlines()
-                    
-                    for line in data:
-                        if "None" in line:
-                            line_parts = line.split(';')
 
-                            if len(line_parts) > 0:
-                                tiket.append(line_parts[0])
-                                
+                    for line in data:
+                        convert_line = eval(line)
+                        status = convert_line['status_inference']
+                        
+                        if str(status) ==  'None':
+                            tiket.append(convert_line['no_tiket'])
                         
         self.tiket_combobox = ttk.Combobox(overlay_frame, values=tiket, width=30)  # Adjust the width value as needed
         self.tiket_combobox.grid(row=1, column=0, padx=10, pady=10, sticky='w')
@@ -2161,7 +2150,6 @@ class EditBridgeFrame(tk.Frame):
         def update_label():
             selected_value = self.tiket_combobox.get()
             connection = connect_to_database()
-
 
             if isinstance(connection, pymssql.Connection):
                 sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s AND AI_pull_time IS NULL"
@@ -2176,6 +2164,7 @@ class EditBridgeFrame(tk.Frame):
                     division_codes = [record['DivisionCode'] for record in records]
                     fields = [record['Field'] for record in records]
                     bunches = [record['Bunches'] for record in records]
+                    ownership = [record['Ownership'] for record in records]
 
                     unique_nopol_values = list(set(nopol_values))
                     unique_driver_names = list(set(driver_names))
@@ -2183,6 +2172,7 @@ class EditBridgeFrame(tk.Frame):
                     unique_division_names = list(set(division_codes))
                     unique_bunches_names = [str(item) for item in list(set(bunches))]
                     unique_field_names = list(set(fields))
+                    unique_ownership_names = list(set(ownership))
                     
                     additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_staging WHERE Ppro_BUnitCode IN %s"
                     cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
@@ -2213,34 +2203,34 @@ class EditBridgeFrame(tk.Frame):
                         blok_val.config(text="-")
                     else:
                         blok_val.config(text="\n".join(final_blok))
+                    ownership_val.config(text=", ".join(unique_ownership_names))
             else:
                 with open(offline_log_dir, 'r') as file:
                     data = file.readlines()
-
-                for line in data:
-                    line_parts = line.split(';')
                     
-                    if len(line_parts) > 0:
-                        tiket = line_parts[0] if line_parts[0] else '-'
-                        nopol = line_parts[1] if line_parts[1] else '-'
-                        driver = line_parts[2] if line_parts[2] else '-'
-                        bunit = line_parts[3] if line_parts[3] else '-'
-                        divisi = line_parts[4] if line_parts[4] else '-'
-                        blok = line_parts[5] if line_parts[5] else '-'
-                        bunches = line_parts[6] if line_parts[6] else '-'
-                        # status = line_parts[7]
-                        
-                        if tiket == selected_value:
+                for line in data:
+                    convert_line = eval(line)
+                    no_tiket_line = convert_line['no_tiket']
+                    if str(no_tiket_line) ==  selected_value:
+                        nopol = convert_line.get('no_plat', '-')
+                        driver = convert_line.get('nama_driver', '-')
+                        bunit = convert_line.get('bunit', '-')
+                        divisi = convert_line.get('divisi', '-')
+                        blok = convert_line.get('blok', '-')
+                        bunches = convert_line.get('bunches','-')
+                        ownership = convert_line.get('ownership', '-')
+                       
                             # bunit_val.config(text=tiket)
-                            self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
-                            self.nopol_val.insert(0, nopol)  # Set the new value
-                            self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
-                            self.driver_val.insert(0, driver)  # Set the new value
-                            bunit_val.config(text=bunit)
-                            divisi_val.config(text=divisi)
-                            blok_val.config(text=blok)
-                            bunches_val.config(text=bunches)
-                            # bunit_val.config(text=status)
+                        self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                        self.nopol_val.insert(0, nopol)  # Set the new value
+                        self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                        self.driver_val.insert(0, driver)  # Set the new value
+                        bunit_val.config(text=bunit)
+                        divisi_val.config(text=divisi)
+                        blok_val.config(text=blok)
+                        bunches_val.config(text=bunches)
+                        ownership_val.config(text=ownership)
+                        # bunit_val.config(text=status)
             
 
             if status_mode == 'online':
@@ -2292,6 +2282,13 @@ class EditBridgeFrame(tk.Frame):
         blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
         blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
 
+
+        owndership_label = ttk.Label(overlay_frame, text="Status")
+        owndership_label.grid(row=6, column=1, padx=10, pady=10, sticky='w')
+
+        ownership_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
+        ownership_val.grid(row=7, column=1, padx=10, pady=10, sticky='w')
+
         # blok_entries = []
         # if '\n' in Field:
         if status_mode == 'online':
@@ -2299,7 +2296,7 @@ class EditBridgeFrame(tk.Frame):
             submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
             submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
         else:
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"), edit_data_overlay))
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"),ownership_val.cget("text"), edit_data_overlay, WBTicketNo))
             submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
 
         # else:
@@ -2318,46 +2315,127 @@ class EditBridgeFrame(tk.Frame):
         #     submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
     
 
-    def update_data_offline(self, nopol, driver, bunit, divisi, blok, edit_data_overlay):
+    def update_data_offline(self, nopol, driver, bunit, divisi, blok, ownership, edit_data_overlay, tiket_lama):
 
-        tiket = self.tiket_combobox.get()
+        classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi']
         
-        print(tiket)
-        print(nopol)
-        print(driver)
-        print(bunit)
-        print(divisi)
-        print(blok)
+        new_tiket = self.tiket_combobox.get()        
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
 
+        current_date = datetime.datetime.now().date()
+        start_time = create_datetime(current_date, 7, 0, 0)
+        end_time = start_time + datetime.timedelta(days=1)
+
+        query = '''
+        UPDATE log_sampling
+        SET 
+            no_tiket = ?,
+            no_plat = ?,
+            nama_driver = ?,
+            bisnis_unit = ?,
+            divisi = ?,
+            blok = ?,
+            status = ?
+        WHERE waktu_mulai >= ? AND waktu_mulai <= ? AND no_tiket = ?
+        '''
+
+        try:
+            sqlite_cursor.execute(query, (new_tiket, nopol, driver, bunit, divisi, blok, ownership, start_time, end_time, tiket_lama))
+
+            rows_affected = sqlite_cursor.rowcount
+
+            sqlite_conn.commit()
+
+            if rows_affected > 0:
+                print(f"Update successful. {rows_affected} row(s) updated.")
+            else:
+                print("No rows were updated. Check if the specified 'no_tiket' exists within the specified time range.")
+
+        except sqlite3.Error as e:
+            print(f"Update failed. Error: {e}")
+
+        finally:
+            sqlite_conn.close()
+
+        tic_old = None
+        tic_new = None
+        line_number_old = None 
+        line_number_new = None 
+
+        with open(offline_log_dir, 'r') as file:
+            data = file.readlines()
+
+            index = 0
+            for line in data:
+                convert_line = eval(line)
+                no_tiket_line = convert_line['no_tiket']
+                if no_tiket_line == tiket_lama:
+                    tic_old = convert_line
+                    line_number_old = index
+
+                if no_tiket_line == new_tiket:
+                    tic_new = convert_line
+                    line_number_new = index
+                index += 1
+
+            tic_new.update({
+                'unripe': tic_old['unripe'],
+                'ripe': tic_old['ripe'],
+                'overripe': tic_old['overripe'],
+                'abnormal': tic_old['abnormal'],
+                'empty_bunch': tic_old['empty_bunch'],
+                'long_stalk': tic_old['long_stalk'],
+                'kastrasi': tic_old['kastrasi'],
+                'brondolan': tic_old['brondolan'],
+                'brondolan_busuk': tic_old['brondolan_busuk'],
+                'dirt': tic_old['dirt'],
+                'waktu_mulai': tic_old['waktu_mulai'],
+                'waktu_selesai': tic_old['waktu_selesai'],
+                'status_inference':'READY'
+            })
+            
+            raw = info_truk(tic_old['no_tiket'], tic_old['no_plat'],tic_old['nama_driver'], tic_old['bunit'],tic_old['divisi'], tic_old['blok'],tic_old['bunches'], tic_old['ownership'],'None')
+            raw['waktu_input'] = tic_old['waktu_input']
+            replacement_line_old = str(raw) + '\n'
         
+            if 0 <= line_number_old <= len(data):
+                data[line_number_old] = replacement_line_old
 
+            if 0 <= line_number_new <= len(data):
+                data[line_number_new] = str(tic_new) + '\n'
 
-        # Connect to the SQLite3 database
-        # sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-        # sqlite_cursor = sqlite_conn.cursor()
-
-        # # Update the specified columns in the database table
-        # update_query = '''
-        # UPDATE log_sampling
-        # SET no_tiket = ?,
-        #     no_plat = ?,
-        #     nama_driver = ?,
-        #     bisnis_unit = ?,
-        #     divisi = ?,
-        #     blok = ?
-        # WHERE id = ?
-        # '''
-        # sqlite_cursor.execute(update_query, (tiket, nopol, driver, bunit, divisi, blok, id))
-
-        # # Commit the changes to the database
-        # sqlite_conn.commit()
-
-        # # Close the database connection
-        # sqlite_conn.close()
+        with open(offline_log_dir, 'w') as file:
+            for line in data:
+                file.write(line)
+            
+        rawData = []
+        rawData.append(new_tiket)
+        rawData.append(nopol)
+        rawData.append(driver)
+        rawData.append(bunit)
+        rawData.append(divisi)
         
-        # messagebox.showinfo("Success", "Data Tiket " + tiket + " Berhasil terupdate")  
-        # edit_data_overlay.destroy()
-        # self.master.switch_frame(EditBridgeFrame)
+        blok_modified = blok.replace(' ', '\n')
+        rawData.append(blok_modified)
+        rawData.append(ownership)
+
+        with open(save_dir_txt, 'r') as file:
+            raw = file.readline()
+    
+        parts = raw.split('$')
+
+        parts = [part.strip() for part in parts]
+        
+        img_dir = parts[2]
+
+        class_count = [tic_old['unripe'],tic_old['ripe'],tic_old['overripe'], tic_old['abnormal'],tic_old['empty_bunch'],tic_old['long_stalk'],tic_old['kastrasi']]
+        class_name_values = {key: value for key, value in zip(classAll, class_count)}
+
+        generate_report(rawData, img_dir,class_name_values, classAll, tic_old['brondolan'],  tic_old['brondolan_busuk'],  tic_old['dirt'] ,1)        
+        messagebox.showinfo("Success", "Data Tiket " + tiket_lama + " Berhasil terupdate")  
+        edit_data_overlay.destroy()
+        self.master.switch_frame(EditBridgeFrame)
         
             
     def update_data(self, WBTicketNo, edit_data_overlay):
