@@ -29,7 +29,11 @@ import subprocess
 import json
 import sys
 from time import time
+import logging
 
+script_directory = os.path.dirname(os.path.abspath(__file__))
+log_file_path = os.path.join(script_directory, 'opencv_log.txt')
+logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
@@ -447,7 +451,6 @@ try:
             except Exception as e:
                 nilai = 0
 
-            # Display the object count on the frame
             TotalJjg = sum(class_count)-int(class_count[5])+int(kastrasi)
             cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (100, 100, 100), 15)
             cv2.putText(annotated_frame, f"TOTAL: {TotalJjg}", (20, 40), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 2)
@@ -526,7 +529,9 @@ try:
         else:
             close()
             break
-        
+except Exception as e:
+    logging.exception(f"An error occurred: {e}") 
+    
 finally:
     cap.release()
     if save_vid:
