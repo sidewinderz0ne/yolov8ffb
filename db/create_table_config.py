@@ -38,8 +38,8 @@ if cursor.execute(create_table_query):
 else:
     print("Table already exists.")
 
-default_record = (1, mill, '192.168.1.254\\DBSTAGING', 'usertesting', 'Qwerty@123', 'skmstagingdb')
-
+# default_record = (1, mill, '192.168.1.254\\DBSTAGING', 'usertesting', 'Qwerty@123', 'skmstagingdb')
+default_record = (1, mill, '10.9.135.41\SCMSTAGING', 'userstaging', 'Qwerty@123', 'SCMSTAGINGDB')
 # Execute an INSERT query to add the default record
 cursor.execute("INSERT INTO config (id, mill, server, user, password, database) VALUES (?, ?, ?, ?, ?, ?)", default_record)
 

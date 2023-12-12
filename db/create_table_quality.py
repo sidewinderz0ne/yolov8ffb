@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS quality (
     id INTEGER PRIMARY KEY,
     AI_NoTicket TEXT,
     AI_JanjangSample TEXT,
-    AI_TotalJanjang TEXT,  -- Change the data type to REAL or appropriate numeric type
+    AI_TotalJanjang TEXT, 
     AI_Janjang REAL,
     AI_push_time DATETIME,
     Ppro_pull_time DATETIME
@@ -22,13 +22,12 @@ sqlite_conn.commit()
 
 # Connect to the SQL Server (pymssql) database
 sql_server_conn = pymssql.connect(
-    server='192.168.1.254\\DBSTAGING',
-    user='usertesting',
+    server='10.9.135.41\SCMSTAGING',
+    user='userstaging',
     password='Qwerty@123',
-    database='skmstagingdb',
+    database='SCMSTAGINGDB',
     as_dict=True
 )
-
 # Query the data from the SQL Server (pymssql) database
 sql_query = "SELECT * FROM MOPQuality_Staging;"
 sql_cursor = sql_server_conn.cursor(as_dict=True)

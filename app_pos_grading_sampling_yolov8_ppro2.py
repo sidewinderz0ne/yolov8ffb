@@ -825,37 +825,7 @@ def connect_to_database():
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
     
-    def make_tree(self):
-        self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
-        self.style = ttk.Style(self)
-        self.row_height = 100  # Set the desired row height
-        self.detail_window = None
-
-        self.style.configure("Treeview", rowheight=self.row_height)
-        self.tree.heading("#1", text="No")
-        self.tree.heading("#2", text="NOMOR TIKET")
-        self.tree.heading("#3", text="NOMOR POLISI")
-        self.tree.heading("#4", text="NAMA DRIVER")
-        self.tree.heading("#5", text="BISNIS UNIT")
-        self.tree.heading("#6", text="DIVISI")
-        self.tree.heading("#7", text="FIELD")
-        self.tree.heading("#8", text="BUNCHES")
-        self.tree.heading("#9", text="OWNERSHIP")
-        self.tree.heading("#10", text="PUSH TIME")
-        self.tree.heading("#11", text="ACTION")
-        
-        # Adjust column widths
-        self.tree.column("no", width=50)         
-        self.tree.column("notiket", width=250) 
-        self.tree.column("nopol", width=100, anchor="center") 
-        self.tree.column("driver") 
-        self.tree.column("b_unit") 
-        self.tree.column("divisi") 
-        self.tree.column("field") 
-        self.tree.column("bunches", width=70) 
-        self.tree.column("ownership", anchor="center") 
-        self.tree.column("pushtime", anchor="center") 
-        self.tree.column("action", anchor="center") 
+   
 
     def __init__(self, master):
         super().__init__(master)
@@ -931,7 +901,38 @@ class Frame1(tk.Frame):
         self.columnconfigure(0, weight=1)
 
         self.running_script = False  # Flag to track if script is running
+
+    def make_tree(self):
+        self.tree = ttk.Treeview(self, columns=columns, selectmode="none", show="headings")
+        self.style = ttk.Style(self)
+        self.row_height = 100  # Set the desired row height
+        self.detail_window = None
+
+        self.style.configure("Treeview", rowheight=self.row_height)
+        self.tree.heading("#1", text="No")
+        self.tree.heading("#2", text="NOMOR TIKET")
+        self.tree.heading("#3", text="NOMOR POLISI")
+        self.tree.heading("#4", text="NAMA DRIVER")
+        self.tree.heading("#5", text="BISNIS UNIT")
+        self.tree.heading("#6", text="DIVISI")
+        self.tree.heading("#7", text="FIELD")
+        self.tree.heading("#8", text="BUNCHES")
+        self.tree.heading("#9", text="OWNERSHIP")
+        self.tree.heading("#10", text="PUSH TIME")
+        self.tree.heading("#11", text="ACTION")
         
+        # Adjust column widths
+        self.tree.column("no", width=50)         
+        self.tree.column("notiket", width=250) 
+        self.tree.column("nopol", width=100, anchor="center") 
+        self.tree.column("driver") 
+        self.tree.column("b_unit") 
+        self.tree.column("divisi") 
+        self.tree.column("field") 
+        self.tree.column("bunches", width=70) 
+        self.tree.column("ownership", anchor="center") 
+        self.tree.column("pushtime", anchor="center") 
+        self.tree.column("action", anchor="center") 
     def password_frame(self):
         
         password_overlay = tk.Toplevel(self.master)
@@ -970,7 +971,7 @@ class Frame1(tk.Frame):
         
         password = self.password_entry.get()
 
-        if password == 'f':
+        if password == 'grading':
             password_overlay.destroy()
             self.master.switch_frame(EditBridgeFrame)
         else:
@@ -1056,10 +1057,10 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self, connection, date_today=None):
-        start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
+        # start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
         current_date = datetime.datetime.now().date()
         start_time = datetime.time(7, 0, 0)
-        #start_date = datetime.datetime.combine(current_date, start_time)
+        start_date = datetime.datetime.combine(current_date, start_time)
         
         end_date = start_date + datetime.timedelta(days=1)
 
@@ -1169,7 +1170,7 @@ class Frame1(tk.Frame):
         self.tree.delete(*self.tree.get_children())
 
         database_connection = connect_to_database()
-        master_bunit = self.pull_master(database_connection, 'MasterBunit_staging', 'Ppro_BUnitCode', 'Ppro_BUnitName', data_bunit)
+        master_bunit = self.pull_master(database_connection, 'MasterBunit_Staging', 'Ppro_BUnitCode', 'Ppro_BUnitName', data_bunit)
         master_div = self.pull_master(database_connection, 'MasterDivisi_Staging', 'Ppro_DivisionCode', 'Ppro_DivisionName', data_div)
         master_block = self.pull_master(database_connection, 'MasterBlock_Staging', 'Ppro_FieldCode', 'Ppro_FieldName', data_block)
         record = self.pull_data_ppro(database_connection)
@@ -1550,7 +1551,7 @@ class Frame3(tk.Frame):
         unit_label.grid(row=18, column=3, sticky="w")
         
         if status_mode == 'online':
-            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(class_name, counter_per_class, row_values, img_dir))
+            submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_and_switch(class_name, counter_per_class, row_values,info_truk_dict, img_dir))
         else:
             submit_button = tk.Button(self, text="SUBMIT", command=lambda: self.save_offline_and_switch(class_name, counter_per_class, row_values[1:-1], row_values,info_truk_dict, img_dir))
         
@@ -1565,7 +1566,7 @@ class Frame3(tk.Frame):
 
         if not self.submit_clicked:
             if status_mode == 'online':
-                self.save_and_switch(class_name, counter_per_class, row_values, img_dir)
+                self.save_and_switch(class_name, counter_per_class, row_values,info_truk_dict, img_dir)
             else:
                 self.save_offline_and_switch(class_name, counter_per_class, row_values[1:-1], row_values, info_truk_dict, img_dir)
 
@@ -1634,13 +1635,14 @@ class Frame3(tk.Frame):
         # Close the database connection
         connection.close()
 
-    def save_and_switch(self, class_name, count_per_class, row_values, img_dir):
+    def save_and_switch(self, class_name, count_per_class, row_values,info_truk_dict, img_dir):
         global date_end_conveyor
         self.submit_clicked = True
         class_count_dict = dict(zip(class_name, count_per_class))
         
         date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
+        waktu_mulai =  date_start_conveyor
+        waktu_selesai =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         brondol = 0
         brondolBusuk = 0
         dirt = 0
@@ -1663,19 +1665,19 @@ class Frame3(tk.Frame):
             if dirt_input:
                 dirt = int(dirt_input)
 
-        # brondol = self.brondolanEntry.get()
-        # brondolBusuk = self.brondoalBusukEntry.get()
-        # dirt = self.dirtEntry.get()
 
-        # # Remove non-numeric characters
-        # brondol = remove_non_numeric(brondol)
-        # brondolBusuk = remove_non_numeric(brondolBusuk)
-        # dirt = remove_non_numeric(dirt)
+        tambahan ={
+            'brondolan' : brondol,
+            'brondolan_busuk' : brondolBusuk,
+            'dirt':dirt,
+            'waktu_mulai':waktu_mulai,
+            'waktu_selesai':waktu_selesai
+        }
 
-        # # Set default values to 0 if empty
-        # brondol = int(brondol) if brondol else 0
-        # brondolBusuk = int(brondolBusuk) if brondolBusuk else 0
-        # dirt = int(dirt) if dirt else 0
+        merged_dict = info_truk_dict.copy()  
+        merged_dict.update(class_count_dict) 
+        merged_dict.update(tambahan)
+
 
         result = ';'.join(map(str, row_values)) + ';'
         result += ';'.join(map(str, count_per_class)) + ';'
@@ -1687,7 +1689,7 @@ class Frame3(tk.Frame):
 
         try:
             with open(log_file_path, 'a') as log_file:
-                log_file.write(result + '\n')  # Append the result to the log file with a newline character
+                log_file.write(str(merged_dict) + '\n')  # Append the result to the log file with a newline character
                 # print("Data saved successfully to", log_file_path)
         except Exception as e:
             print("Error saving data to", log_file_path, ":", str(e))
@@ -2139,10 +2141,10 @@ class EditBridgeFrame(tk.Frame):
 
         tiket = []
         if status_mode == 'online':
-            start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
+            # start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
             current_date = datetime.datetime.now().date()
             start_time = datetime.time(7, 0, 0)
-            #start_date = datetime.datetime.combine(current_date, start_time)
+            start_date = datetime.datetime.combine(current_date, start_time)
             
             end_date = start_date + datetime.timedelta(days=1)
             connection = connect_to_database()
@@ -2489,7 +2491,7 @@ class EditBridgeFrame(tk.Frame):
             unique_field_names = list(set(fields))
             unique_status_names = list(set(status))
             
-            additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_staging WHERE Ppro_BUnitCode IN %s"
+            additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_Staging WHERE Ppro_BUnitCode IN %s"
             cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
             additional_records = cursor.fetchall()
             bunit_name = [record['Ppro_BUnitName'] for record in additional_records]

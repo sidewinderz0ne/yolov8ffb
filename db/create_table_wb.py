@@ -29,10 +29,10 @@ sqlite_conn.commit()
 
 # Connect to the SQL Server (pymssql) database
 sql_server_conn = pymssql.connect(
-    server='192.168.1.254\\DBSTAGING',
-    user='usertesting',
+    server='10.9.135.41\SCMSTAGING',
+    user='userstaging',
     password='Qwerty@123',
-    database='skmstagingdb',
+    database='SCMSTAGINGDB',
     as_dict=True
 )
 
@@ -42,6 +42,8 @@ sql_cursor = sql_server_conn.cursor(as_dict=True)
 sql_cursor.execute(sql_query)
 sql_records = sql_cursor.fetchall()
 
+
+# print(sql_records)
 # Insert the data into the SQLite3 database
 for record in sql_records:
     insert_query = '''
@@ -51,7 +53,7 @@ for record in sql_records:
     sqlite_cursor.execute(insert_query, (
         record['WBTicketNo'], record['VehiclePoliceNO'], record['DriverName'], record['BUnitCode'],
         record['DivisionCode'], record['Field'], record['Bunches'], record['Ownership'],
-        record['Ppro_push_time'], record['AI_pull_time']
+        record['push_time'], record['pull_time']
     ))
 
 # Commit the changes in the SQLite3 database and close the connections
