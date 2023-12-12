@@ -1,10 +1,10 @@
 import pymssql
 
 conn = pymssql.connect(
-    server='192.168.1.254\DBSTAGING',
-    user='usertesting',
+    server='10.9.135.41\SCMSTAGING',
+    user='userstaging',
     password='Qwerty@123',
-    database='skmstagingdb',
+    database='SCMSTAGINGDB',
     as_dict=True
 )
 
