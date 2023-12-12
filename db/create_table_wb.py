@@ -53,7 +53,7 @@ for record in sql_records:
     sqlite_cursor.execute(insert_query, (
         record['WBTicketNo'], record['VehiclePoliceNO'], record['DriverName'], record['BUnitCode'],
         record['DivisionCode'], record['Field'], record['Bunches'], record['Ownership'],
-        record['push_time'], record['pull_time']
+        record['Ppro_push_time'], record['AI_pull_time']
     ))
 
 # Commit the changes in the SQLite3 database and close the connections
