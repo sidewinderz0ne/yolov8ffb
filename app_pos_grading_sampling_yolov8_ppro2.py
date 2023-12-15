@@ -581,7 +581,7 @@ class LoginFrame(tk.Frame):
 
         password_label = tk.Label(self, text="Password:")
         password_label.grid(row=3, column=0, sticky="w")
-        self.password_entry = tk.Entry(self, show="*") 
+        self.password_entry = tk.Entry(self, show="") 
         self.password_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
 
@@ -784,7 +784,8 @@ def connect_to_database():
 
         server, user, password, database = record
         
-        timeout = 2
+        timeout = 30
+        
         def try_connect():
             global connection
             try:
@@ -798,7 +799,7 @@ def connect_to_database():
 
             except Exception as e:
                 # print(f"Error connecting to the database: {str(e)}")
-                print(f"Error connecting to the database")
+                print('     ')
                 connection = None
                  
         connection_thread = threading.Thread(target=try_connect)
@@ -1057,10 +1058,10 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self, connection, date_today=None):
-        # start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
+        start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
         current_date = datetime.datetime.now().date()
         start_time = datetime.time(7, 0, 0)
-        start_date = datetime.datetime.combine(current_date, start_time)
+        # start_date = datetime.datetime.combine(current_date, start_time)
         
         end_date = start_date + datetime.timedelta(days=1)
 
@@ -1168,7 +1169,7 @@ class Frame1(tk.Frame):
 
     def refresh_data(self):
         self.tree.delete(*self.tree.get_children())
-
+        self.compare_staging_and_local_db()
         database_connection = connect_to_database()
         master_bunit = self.pull_master(database_connection, 'MasterBunit_Staging', 'Ppro_BUnitCode', 'Ppro_BUnitName', data_bunit)
         master_div = self.pull_master(database_connection, 'MasterDivisi_Staging', 'Ppro_DivisionCode', 'Ppro_DivisionName', data_div)
@@ -1189,8 +1190,128 @@ class Frame1(tk.Frame):
             self.remove_input_button()
         else:
             arr_data = record
-            self.create_and_grid_input_button()
+            self.create_and_grid_input_button() 
         self.populate_treeview(arr_data)
+
+
+    def compare_staging_and_local_db(self):
+        connection = connect_to_database()
+
+        if isinstance(connection, pymssql.Connection):
+            conn = sqlite3.connect('./db/grading_sampling.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT WBTicketNo FROM weight_bridge WHERE AI_pull_time IS NOT NULL")
+            records_wb_local = [record[0] for record in cursor.fetchall()]        
+            conn.close()
+
+            # print(records_wb_local)
+            sql_query = "SELECT DISTINCT WBTicketNo FROM MOPweighbridgeTicket_Staging WHERE AI_pull_time IS NOT NULL"
+            cursor = connection.cursor()
+            cursor.execute(sql_query)
+            records_wb_staging = [record['WBTicketNo'] for record in cursor.fetchall()]
+            # print(records_wb_staging)
+            main_set = set(records_wb_local)
+            second_set = set(records_wb_staging)
+
+            difference = main_set - second_set
+
+            difference_list_wb = list(difference)
+
+            # update table mopweight_bridge bandingkan notiket lokal  yg punya ai pull time tidak sama dengan none dengan ai pull time di staging
+            if len(difference_list_wb) != 0:
+                for arr in difference_list_wb:
+                    conn = sqlite3.connect('./db/grading_sampling.db')
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT AI_pull_time FROM weight_bridge WHERE WBTicketNo = ?", (arr,))
+                    records = cursor.fetchone()
+                    ai_pull_time = records[0] if records else None
+                    conn.close()
+
+                    print(ai_pull_time)
+                    SQL_UPDATE = """
+                    UPDATE MOPweighbridgeTicket_Staging
+                    SET AI_pull_time = %s
+                    WHERE WBTicketNo = %s;
+                    """
+
+                    try:
+                        cursor = connection.cursor()
+                        cursor.execute(SQL_UPDATE, (ai_pull_time, arr))
+                        connection.commit()
+                        print(f"success update database MOPweighbridgeTicket_Staging untuk tiket {arr}")
+                    except pymssql.Error as ex:
+                        connection.rollback()  
+                        print(f"Error update into the database MOPweighbridgeTicket_Staging untuk tiket {arr}: {ex}")
+
+            # insert ke table quality di staging dari quality lokal jika ada perbedaan antara setiap tiket
+            conn = sqlite3.connect('./db/grading_sampling.db')
+            cursor = conn.cursor()
+            cursor.execute("SELECT DISTINCT AI_NoTicket FROM quality")
+            records_quality_local = [record[0] for record in cursor.fetchall()]   
+
+            conn.close()
+
+            sql_query = "SELECT DISTINCT AI_NoTicket FROM MOPQuality_Staging"
+            cursor = connection.cursor()
+            cursor.execute(sql_query)
+            records_quality_staging = [record['AI_NoTicket'] for record in cursor.fetchall()]
+
+            main_set = set(records_quality_local)
+            second_set = set(records_quality_staging)
+
+            difference = main_set - second_set
+
+            difference_list_quality = list(difference)
+
+            if len(difference_list_quality) != 0:
+                for arr in difference_list_quality:
+                    conn = sqlite3.connect('./db/grading_sampling.db')
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT * FROM quality WHERE AI_NoTicket = ?", (arr,))
+                    records = cursor.fetchall()
+
+                    for arr_tiket in records:
+                        ai_no_ticket = arr_tiket[1]
+                        ai_janjang_sample = arr_tiket[2]
+                        ai_total_janjang = arr_tiket[3]
+                        ai_grading = arr_tiket[4]
+                        ai_janjang = arr_tiket[5]
+                        ai_push_time = arr_tiket[5]
+
+                        new_row = {
+                            'AI_NoTicket': str(ai_no_ticket),
+                            'AI_JanjangSample': str(ai_janjang_sample),
+                            'AI_TotalJanjang': str(ai_total_janjang), 
+                            'AI_Grading': str(ai_grading),
+                            'AI_Janjang': str(ai_janjang),
+                            'AI_push_time': str(ai_push_time)
+                        }
+
+                        SQL_INSERT = """
+                            INSERT INTO MOPQuality_Staging (AI_NoTicket, AI_JanjangSample, AI_TotalJanjang, AI_Grading, AI_Janjang, AI_push_time )
+                            VALUES (%(AI_NoTicket)s, %(AI_JanjangSample)s,  %(AI_TotalJanjang)s, %(AI_Grading)s, %(AI_Janjang)s,GETDATE());
+                            """
+                        try:
+                            cursor = connection.cursor()
+                            cursor.execute(SQL_INSERT, new_row)
+                            connection.commit()
+                            print(f"Success inserting into the database MOPQuality_Staging dengan kode {ai_no_ticket} kode {ai_grading} dengan jumlah {ai_janjang}")
+                        except pymssql.Error as ex:
+                            connection.rollback()
+                            print(f"Error inserting into the database MOPQuality_Staging dengan kode {ai_no_ticket}: {ex}")
+                                
+                                
+                    conn.close()
+            
+        else:
+            print('Terjadi kesalahan koneksi tidak dapat sinkronisasi database lokal dan staging')
+        
+        connection.close()
+
+        
+
+
+        
     
     def update_row(self, row_item, event):
         row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
@@ -1583,57 +1704,78 @@ class Frame3(tk.Frame):
 
         return image
 
-    def push_data(self, intCat,intVal):
-        connection = connect_to_database()
-
+    def push_data(self, intCat,intDesc, intVal):
         global WBTicketNo 
- 
-        # Get the current datetime
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # Values for the new row
+        
         new_row = {
             'AI_NoTicket': str(WBTicketNo),
-            'AI_Grading': str(intCat),
             'AI_JanjangSample': str(totalJjg), 
             'AI_TotalJanjang': str(totalJjg),
+            'AI_Grading': str(intCat),
             'AI_Janjang': str(intVal)
         }
 
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
         sqlite_cursor = sqlite_conn.cursor()
         sqlite_insert_query = '''
-        INSERT INTO quality (AI_NoTicket, AI_JanjangSample, AI_TotalJanjang, AI_Janjang, AI_push_time)
-        VALUES (?, ?, ?, ?, ?)
-        '''
+        INSERT INTO quality (AI_NoTicket, AI_JanjangSample, AI_TotalJanjang, AI_Grading, AI_Janjang, AI_push_time)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''' 
         
-        # Create a cursor and execute the INSERT statement for SQLite
-        sqlite_cursor.execute(sqlite_insert_query, (
-            new_row['AI_NoTicket'], new_row['AI_JanjangSample'], new_row['AI_TotalJanjang'],
-            new_row['AI_Janjang'], current_time
-        ))
-
-         # Commit the changes to the SQLite database
-        sqlite_conn.commit()
-    
-        # Close the cursor (not necessary, but recommended)
+        try:
+            sqlite_cursor.execute(sqlite_insert_query, (
+                new_row['AI_NoTicket'], new_row['AI_JanjangSample'], new_row['AI_TotalJanjang'],new_row['AI_Grading'],
+                new_row['AI_Janjang'], current_time
+            ))
+            sqlite_conn.commit()
+            print(f'success insert ke lokal tabel quality dengan kode {intDesc}')
+                
+        except sqlite3.Error as e:
+            print(f"Error inserting gan ke lokal tabel quality dengan kode {intDesc}: {e}")
+        
         sqlite_cursor.close()
+        sqlite_conn.close()
 
-        # Build the SQL INSERT statement
-        SQL_INSERT = """
-        INSERT INTO MOPQuality_Staging (AI_NoTicket, AI_Grading, AI_JanjangSample, AI_TotalJanjang, AI_push_time, AI_Janjang)
-        VALUES (%(AI_NoTicket)s, %(AI_Grading)s, %(AI_JanjangSample)s, %(AI_TotalJanjang)s, GETDATE(),%(AI_Janjang)s);
-        """
+        connection = connect_to_database()
 
-        # Create a cursor and execute the INSERT statement
-        cursor = connection.cursor()
-        cursor.execute(SQL_INSERT, new_row)
+        if isinstance(connection, pymssql.Connection):
+            SQL_INSERT = """
+            INSERT INTO MOPQuality_Staging (AI_NoTicket, AI_Grading, AI_JanjangSample, AI_TotalJanjang, AI_push_time, AI_Janjang)
+            VALUES (%(AI_NoTicket)s, %(AI_Grading)s, %(AI_JanjangSample)s, %(AI_TotalJanjang)s, GETDATE(),%(AI_Janjang)s);
+            """
+            try:
+                cursor = connection.cursor()
+                cursor.execute(SQL_INSERT, new_row)
+                connection.commit()
+                print(f"Success inserting into the database MOPQuality_Staging dengan kode {intDesc}")
+            except pymssql.Error as ex:
+                connection.rollback() 
+                print(f"Error inserting into the database MOPQuality_Staging dengan kode {intDesc}: {ex}")
+           
+            connection.close()
+        else:
+            print(f'gagal insert gan mopquality_staging dengan kode {intDesc}')
 
-        # Commit the transaction to save the changes to the database
-        connection.commit()
+    def push_quality(self, gradecodes, gradedescriptions, class_name, count_per_class, brondol, brondolBusuk, dirt):
+        for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
+            for index, name in enumerate(class_name):
+                cleaned_description = gradedescription.lower().replace(" ", "_")
+                
+                if cleaned_description == name and int(count_per_class[index]) != 0:
+                    if cleaned_description == "abnormal":
+                        self.push_data(gradecode,gradedescription, int(count_per_class[index]))
+                    else:
+                        self.push_data(gradecode,gradedescription, count_per_class[index])
+                elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(count_per_class[index]) != 0:
+                    self.push_data(gradecode,gradedescription, count_per_class[index])
 
-        # Close the database connection
-        connection.close()
+            if gradedescription == "Brondolan" and brondol != 0:
+                self.push_data(gradecode,gradedescription, brondol)
+            elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
+                self.push_data(gradecode,gradedescription, dirt)
+            elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
+                self.push_data(gradecode, gradedescription, brondolBusuk)
 
     def save_and_switch(self, class_name, count_per_class, row_values,info_truk_dict, img_dir):
         global date_end_conveyor
@@ -1700,53 +1842,49 @@ class Frame3(tk.Frame):
         try:
             connection = connect_to_database()
 
-            sql_query = """
-            SELECT Ppro_GradeCode, Ppro_GradeDescription
-            FROM MasterGrading_Staging;
-            """
+            if isinstance(connection, pymssql.Connection):
 
-            cursor = connection.cursor()
-            cursor.execute(sql_query)
-            
-            gradecodes = []
-            gradedescriptions = []
+                sql_query = """
+                SELECT Ppro_GradeCode, Ppro_GradeDescription
+                FROM MasterGrading_Staging;
+                """
 
-            for row in cursor.fetchall():
-                gradecodes.append(row['Ppro_GradeCode'])
-                gradedescriptions.append(row['Ppro_GradeDescription'])
+                cursor = connection.cursor()
+                cursor.execute(sql_query)
+                
+                gradecodes = []
+                gradedescriptions = []
 
-            for gradedescription, gradecode in zip(gradedescriptions, gradecodes):
-                for index, name in enumerate(class_name):
-                    cleaned_description = gradedescription.lower().replace(" ", "_")
-                    
-                    if cleaned_description == name and int(count_per_class[index]) != 0:
-                        if cleaned_description == "abnormal":
-                            self.push_data(gradecode, int(count_per_class[index]))
-                        else:
-                            self.push_data(gradecode, count_per_class[index])
-                    elif cleaned_description == "tangkai_panjang" and name == "long_stalk" and int(count_per_class[index]) != 0:
-                        self.push_data(gradecode, count_per_class[index])
+                for row in cursor.fetchall():
+                    gradecodes.append(row['Ppro_GradeCode'])
+                    gradedescriptions.append(row['Ppro_GradeDescription'])
 
-                if gradedescription == "Brondolan" and brondol != 0:
-                    self.push_data(gradecode, brondol)
-                elif gradedescription == "DIRT/KOTORAN" and dirt != 0:
-                    self.push_data(gradecode, dirt)
-                elif gradedescription == "Brondolan Busuk" and brondolBusuk != 0:
-                    self.push_data(gradecode, brondolBusuk)
+                self.push_quality(gradecodes,gradedescriptions, class_name, count_per_class,brondol, brondolBusuk, dirt)
 
-            self.change_push_time(row_values)
+                self.change_push_time(row_values)
+            else:
+                conn = sqlite3.connect('./db/grading_sampling.db')
+                cursor = conn.cursor()
+                cursor.execute("SELECT Ppro_GradeCode, Ppro_GradeDescription FROM master_quality")
+                records = cursor.fetchall()
+
+                gradecodes = []
+                gradedescriptions = []
+
+                for row in records:
+                    gradecodes.append(row[0])  # Append Ppro_GradeCode to gradecodes
+                    gradedescriptions.append(row[1])  # Append Ppro_GradeDescription to gradedescriptions
+
+                self.push_quality(gradecodes,gradedescriptions, class_name, count_per_class,brondol, brondolBusuk, dirt)
+
+                self.change_push_time(row_values)
+
+                conn.close()
 
         except Exception as e:
             print(f"Error: {e}")
-        finally:
-            try:
-                connection.close()
-            except Exception as e:
-                # Handle any closing connection exceptions here
-                print(f"Error closing connection: {e}")
-
-        messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
-
+    
+        messagebox.showinfo("Success", f"Data Sukses Tersimpan {row_values[1]}!")
         generate_report(result, img_dir,class_count_dict,class_name, brondol, brondolBusuk, dirt)
 
         threading.Thread(target=self.run_send_pdf_in_background).start()
@@ -1754,39 +1892,47 @@ class Frame3(tk.Frame):
             self.master.switch_frame(Frame1)
 
     def change_push_time(self, raw):
+        notiket = raw[1]
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        sqlite_update_query = '''
+        UPDATE weight_bridge
+        SET AI_pull_time = ?
+        WHERE WBTicketNo = ?;
+        '''
+
+        try:
+            sqlite_cursor.execute(sqlite_update_query, (current_time, notiket))
+            sqlite_conn.commit()
+            print(f'success update ke lokal tabel weight_bridge dengan tiket {notiket}')
+        except sqlite3.Error as e:
+            print(f"Error update  ke lokal tabel weight_bridge: {e}")
+        
+        sqlite_cursor.close()
+        sqlite_conn.close()
         connection = connect_to_database()
 
         if isinstance(connection, pymssql.Connection):    
-            notiket = raw[1]
             cursor = connection.cursor()
-
             SQL_UPDATE = """
             UPDATE MOPweighbridgeTicket_Staging
             SET AI_pull_time = GETDATE()
             WHERE WBTicketNo = %s;
             """
-
-            cursor.execute(SQL_UPDATE, (notiket))
-            connection.commit()
+            try:
+                cursor.execute(SQL_UPDATE, (notiket))
+                connection.commit()
+              
+                print(f'success update ke database MOPweighbridgeTicket_Staging untuk tiket {notiket}')
+            except pymssql.Error as ex:
+                connection.rollback()  # Rollback the transaction if an error occurs
+                print(f"Error update into the database MOPweighbridgeTicket_Staging untuk tiket {notiket}: {ex}")
             connection.close()
-
-            # Update in SQLite
-            sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-            sqlite_cursor = sqlite_conn.cursor()
-            current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-            sqlite_update_query = '''
-            UPDATE weight_bridge
-            SET AI_pull_time = ?
-            WHERE WBTicketNo = ?;
-            '''
-            sqlite_cursor.execute(sqlite_update_query, (current_time, notiket))
-            sqlite_conn.commit()
-            sqlite_conn.close()
-
-            return "Push time changed successfully."
+            print("Push time changed successfully.")
         else:
-            return "Failed to changed time"
+            print("Gagal connect gan ke MOPweighbridgeTicket_Staging")
 
     async def send_pdf_async(self):
         try:
@@ -2001,7 +2147,7 @@ class EditBridgeFrame(tk.Frame):
             master_bunit = frame1_instance.pull_master(connection, 'MasterBunit_staging','Ppro_BUnitCode','Ppro_BUnitName',data_bunit)
             master_div = frame1_instance.pull_master(connection,'MasterDivisi_Staging','Ppro_DivisionCode','Ppro_DivisionName',data_div)
             master_block = frame1_instance.pull_master(connection,'MasterBlock_Staging','Ppro_FieldCode','Ppro_FieldName',data_block)
-            
+            # current_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
             current_date = datetime.datetime.now().date()
 
             start_time = datetime.time(7, 0, 0)
@@ -2141,10 +2287,10 @@ class EditBridgeFrame(tk.Frame):
 
         tiket = []
         if status_mode == 'online':
-            # start_date = datetime.datetime(2023, 10, 30, 7, 0, 0)
+            start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
             current_date = datetime.datetime.now().date()
             start_time = datetime.time(7, 0, 0)
-            start_date = datetime.datetime.combine(current_date, start_time)
+            # start_date = datetime.datetime.combine(current_date, start_time)
             
             end_date = start_date + datetime.timedelta(days=1)
             connection = connect_to_database()
@@ -2468,7 +2614,6 @@ class EditBridgeFrame(tk.Frame):
 
         connection = connect_to_database()
 
-        # raw data untuk pdf
         sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s"
         cursor = connection.cursor()
         cursor.execute(sql_query, (new_tiket_value,))
@@ -2669,6 +2814,9 @@ class EditBridgeFrame(tk.Frame):
 
         
         connection.close()
+      
+
+        
         
 class Frame2(tk.Frame):
     def __init__(self, master):
