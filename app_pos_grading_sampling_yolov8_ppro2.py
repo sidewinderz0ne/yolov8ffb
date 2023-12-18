@@ -610,6 +610,17 @@ class LoginFrame(tk.Frame):
     def config_server(self):
         self.master.switch_frame(ConfigFrame)
 
+    def show_loading_label(self):
+        for widget in self.winfo_children():
+            widget.grid_forget()
+        loading_label = tk.Label(self, text="Loading...", font=("Times New Roman", 12, "italic"))
+        loading_label.grid(row=0, column=0, columnspan=2, pady=(500-40)/2, sticky="nsew")
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        self.update_idletasks()  # Force an update to make sure the label is displayed
+
     def login(self):
         user = self.username_entry.get()
         password = self.password_entry.get()
@@ -626,7 +637,8 @@ class LoginFrame(tk.Frame):
 
             if stored_user == user and bcrypt.checkpw(password.encode('utf-8'), stored_password):
                 print("Login successful. Welcome,", user)
-                self.master.switch_frame(Frame1)
+                self.show_loading_label()
+                self.after(2500, lambda: self.master.switch_frame(Frame1))
             else:
                 print("Login failed. Invalid credentials.")
                 self.feedback_label.config(text="Incorrect password", fg="red")
@@ -825,15 +837,25 @@ def connect_to_database():
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
-    
-   
+    def load_data(self):
+        # Remove the "Loading..." label once data is loaded
+        self.loading_label.destroy()
 
+        # Now, you can proceed with displaying the actual data in the top frame
+        self.refresh_data()
     def __init__(self, master):
         super().__init__(master)
         global source
         self.clicked_buttons = []
         
         self.make_tree()
+
+        # Add a label to display "Loading..."
+        # self.loading_label = tk.Label(self, text="Loading...", font=("Arial", 12))
+        # self.loading_label.grid(row=1, column=0, sticky="nsew")
+
+        # # Schedule the load_data method to run after a delay (in milliseconds)
+        # self.after(3000, self.load_data)
 
         top_frame = ttk.Frame(self)
         top_frame.grid(row=0, column=0, sticky='ew')
@@ -972,7 +994,7 @@ class Frame1(tk.Frame):
         
         password = self.password_entry.get()
 
-        if password == 'grading':
+        if password == 'f':
             password_overlay.destroy()
             self.master.switch_frame(EditBridgeFrame)
         else:
@@ -1169,8 +1191,10 @@ class Frame1(tk.Frame):
 
     def refresh_data(self):
         self.tree.delete(*self.tree.get_children())
-        self.compare_staging_and_local_db()
+        
         database_connection = connect_to_database()
+        if status_mode == 'online':
+            self.compare_staging_and_local_db()
         master_bunit = self.pull_master(database_connection, 'MasterBunit_Staging', 'Ppro_BUnitCode', 'Ppro_BUnitName', data_bunit)
         master_div = self.pull_master(database_connection, 'MasterDivisi_Staging', 'Ppro_DivisionCode', 'Ppro_DivisionName', data_div)
         master_block = self.pull_master(database_connection, 'MasterBlock_Staging', 'Ppro_FieldCode', 'Ppro_FieldName', data_block)
@@ -2328,13 +2352,14 @@ class EditBridgeFrame(tk.Frame):
                 records = cursor.fetchall()
 
                 if records:
-                    nopol_values = [record['VehiclePoliceNO'] for record in records]
-                    driver_names = [record['DriverName'] for record in records]
-                    bunit_codes = [record['BUnitCode'] for record in records]
-                    division_codes = [record['DivisionCode'] for record in records]
-                    fields = [record['Field'] for record in records]
-                    bunches = [record['Bunches'] for record in records]
-                    ownership = [record['Ownership'] for record in records]
+                    nopol_values = [record['VehiclePoliceNO'] if record['VehiclePoliceNO'] is not None else '' for record in records]
+                    driver_names = [record['DriverName'] if record['DriverName'] is not None else '' for record in records]
+                    bunit_codes = [record['BUnitCode'] if record['BUnitCode'] is not None else '' for record in records]
+                    division_codes = [record['DivisionCode'] if record['DivisionCode'] is not None else '' for record in records]
+                    fields = [record['Field'] if record['Field'] is not None else '' for record in records]
+                    bunches = [record['Bunches'] if record['Bunches'] is not None else '' for record in records]
+                    ownership = [record['Ownership'] if record['Ownership'] is not None else '' for record in records]
+
 
                     unique_nopol_values = list(set(nopol_values))
                     unique_driver_names = list(set(driver_names))
@@ -2601,7 +2626,7 @@ class EditBridgeFrame(tk.Frame):
         self.master.switch_frame(EditBridgeFrame)
         
             
-    def update_data(self, WBTicketNo, edit_data_overlay):
+    def update_data(self, old_ticket, edit_data_overlay):
 
         classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi', 'Brondolan', 'Brondolan Busuk','DIRT/KOTORAN']
 
@@ -2612,207 +2637,276 @@ class EditBridgeFrame(tk.Frame):
         nopol = self.nopol_val.get()
         driver = self.driver_val.get()
 
-        connection = connect_to_database()
-
-        sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s"
-        cursor = connection.cursor()
-        cursor.execute(sql_query, (new_tiket_value,))
+        conn = sqlite3.connect('./db/grading_sampling.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT VehiclePoliceNO,DriverName, BUnitCode, DivisionCode, Field,Bunches,Ownership  FROM weight_bridge WHERE WBTicketNo = ?", (old_ticket,))
         records = cursor.fetchall()
-        rawData = []
-        if records:
-            nopol_values = [record['VehiclePoliceNO'] for record in records]
-            driver_names = [record['DriverName'] for record in records]
-            bunit_codes = [record['BUnitCode'] for record in records]
-            division_codes = [record['DivisionCode'] for record in records]
-            fields = [record['Field'] for record in records]
-            bunches = [record['Bunches'] for record in records]
-            status = [record['Ownership'] for record in records]
+        conn.close()
+        
+        connection = connect_to_database()
+        
+        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
+        sqlite_cursor = sqlite_conn.cursor()
 
-            unique_nopol_values = list(set(nopol_values))
-            unique_driver_names = list(set(driver_names))
-            unique_bunit_names = list(set(bunit_codes))
-            unique_division_names = list(set(division_codes))
-            unique_bunches_names = [str(item) for item in list(set(bunches))]
-            unique_field_names = list(set(fields))
-            unique_status_names = list(set(status))
+        success_update_null_wb_lokal_tiket_lama = False
+        success_update_null_wb_staging_tiket_lama = False
+        success_update_wb_lokal_tiket_baru = False
+        success_update_wb_staging_tiket_baru = False
+        success_update_quality_lokal_tiket_baru = False
+        success_update_quality_staging_tiket_baru = False
+
+        if isinstance(connection, pymssql.Connection):
+            cursor = connection.cursor()        
+            rawData = []
+            current_datetime = datetime.datetime.now()
+            unique_values = {
+                'VehiclePoliceNO': set(),
+                'DriverName': set(),
+                'BUnitCode': set(),
+                'DivisionCode': set(),
+                'Field': set(),
+                'Bunches': set(),
+                'Ownership': set()
+            }
+
+            for record in records:
+                unique_values['VehiclePoliceNO'].add(record[0])  # Assuming VehiclePoliceNO is the first element in the tuple
+                unique_values['DriverName'].add(record[1])       # Assuming DriverName is the second element in the tuple
+                unique_values['BUnitCode'].add(record[2])
+                unique_values['DivisionCode'].add(record[3])
+                unique_values['Field'].add(record[4])
+                unique_values['Bunches'].add(record[5])
+                unique_values['Ownership'].add(record[6])
+
             
+            unique_values['VehiclePoliceNO'] = list(unique_values['VehiclePoliceNO'])
+            unique_values['DriverName'] = list(unique_values['DriverName'])
+            unique_values['BUnitCode'] = list(unique_values['BUnitCode'])
+            unique_values['DivisionCode'] = list(unique_values['DivisionCode'])
+            unique_values['Field'] = list(unique_values['Field'])
+            unique_values['Bunches'] = list(unique_values['Bunches'])
+            unique_values['Ownership'] = list(unique_values['Ownership'])
+
+            VehiclePoliceNO = unique_values['VehiclePoliceNO']
+            DriverName = unique_values['DriverName']
+            BUnitCode = unique_values['BUnitCode']
+            DivisionCode = unique_values['DivisionCode']
+            Field = unique_values['Field']
+            Bunches = unique_values['Bunches']
+            Ownership = unique_values['Ownership']
+
             additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_Staging WHERE Ppro_BUnitCode IN %s"
-            cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
+            cursor.execute(additional_sql_query, (BUnitCode,))
             additional_records = cursor.fetchall()
             bunit_name = [record['Ppro_BUnitName'] for record in additional_records]
             final_bunit =  list(set(bunit_name))
 
             additional_sql_query = "SELECT Ppro_DivisionName FROM MasterDivisi_Staging WHERE Ppro_DivisionCode IN %s"
-            cursor.execute(additional_sql_query, (tuple(unique_division_names),))
+            cursor.execute(additional_sql_query, (DivisionCode,))
             additional_records = cursor.fetchall()
             divisi_name = [record['Ppro_DivisionName'] for record in additional_records]
             final_divisi =  list(set(divisi_name))
 
             additional_sql_query = "SELECT Ppro_FieldName FROM MasterBlock_Staging WHERE Ppro_FieldCode IN %s"
-            cursor.execute(additional_sql_query, (tuple(unique_field_names),))
+            cursor.execute(additional_sql_query, (Field,))
             additional_records = cursor.fetchall()
             blok_name = [record['Ppro_FieldName'] for record in additional_records]
             final_blok =  list(set(blok_name))
             rawData.append(new_tiket_value)
-            rawData.append("; ".join(unique_nopol_values))
-            rawData.append("; ".join(unique_driver_names))
-            rawData.append("; ".join(final_bunit))
-            rawData.append("; ".join(final_divisi))
-            
+            rawData.append("; ".join(map(str, VehiclePoliceNO)))
+            rawData.append("; ".join(map(str, DriverName)))
+            rawData.append("; ".join(map(str, final_bunit)))
+            rawData.append("; ".join(map(str, Ownership)))
+
             if not final_blok:
                 rawData.append("-")
             else:
                 rawData.append("\n".join(final_blok))
-            rawData.append("; ".join(unique_bunches_names))
-            rawData.append("; ".join(unique_status_names))
-        
-        rawData.insert(0, "")
 
-        img_dir = copy_img_edit_mode(WBTicketNo)
-
-        try:
-            cursor = connection.cursor()
-
-            # Update the old WBTicketNo
-            update_old_query = """
-            UPDATE MOPweighbridgeTicket_Staging
-            SET AI_pull_time = NULL
-            WHERE WBTicketNo = %s
-            """
-            cursor.execute(update_old_query, (WBTicketNo,))
-            connection.commit()
-
-            # Update the new WBTicketNo with the current date and time
-            current_datetime = datetime.datetime.now()
+            rawData.append("; ".join(map(str, Bunches)))
+            rawData.append("; ".join(map(str, Ownership)))
             
-            update_new_query = """
+            rawData.insert(0, "")
+
+            # Update the old WBTicketNo ke null
+            try:
+                
+                update_old_query = """
                 UPDATE MOPweighbridgeTicket_Staging
-                SET AI_pull_time = %s,
-                    VehiclePoliceNO = %s,
-                    DriverName = %s
+                SET AI_pull_time = NULL
                 WHERE WBTicketNo = %s
-            """
-            cursor.execute(update_new_query, (current_datetime, nopol, driver, new_tiket_value))
-            connection.commit()
-
-        except pymssql.Error as e:
-            messagebox.showinfo("Error", f"An error occurred while updating the database MOPweighbridgeTicket_Staging: {e}")  
-        
-        # update sql set ai_pull_time old tiket ke null
-        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-        sqlite_cursor = sqlite_conn.cursor()
-        # Update the weight_bridge table with AI_pull_time set to NULL for the specified WBTicketNo
-        update_sql = "UPDATE weight_bridge SET AI_pull_time = NULL WHERE WBTicketNo = ?;"
-        sqlite_cursor.execute(update_sql, (WBTicketNo,))
-        sqlite_conn.commit()
-        sqlite_cursor.close()
-        sqlite_conn.close()
-
-        # udpate sql wb new tiket new ai_pull_time
-        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-        sqlite_cursor = sqlite_conn.cursor()
-
-        # Update the weight_bridge table with the new values
-        update_sql = "UPDATE weight_bridge SET AI_pull_time = ?, VehiclePoliceNO = ?, DriverName = ? WHERE WBTicketNo = ?;"
-        sqlite_cursor.execute(update_sql, (current_datetime, nopol, driver, new_tiket_value))
-
-        sqlite_conn.commit()
-        sqlite_cursor.close()
-        sqlite_conn.close()
-
-        try:
-
-            select_query = """
-            SELECT AI_NoTicket, AI_Grading, AI_Janjang  FROM MOPQuality_Staging
-            WHERE AI_NoTicket = %s
-            """
-            cursor = connection.cursor()
-            cursor.execute(select_query, (WBTicketNo,))
-            result = cursor.fetchall()
-
-            grade_codes = []
-            for row in result:
-                AI_Grading = row['AI_Grading']
-                Jumlah_AI_Grading = row['AI_Janjang']
-
-                SQL_QUERY = """
-                SELECT *
-                FROM MasterGrading_Staging
-                WHERE Ppro_GradeCode = %s
                 """
-                cursor.execute(SQL_QUERY, (AI_Grading,))
-                inner_result = cursor.fetchall()
+                cursor.execute(update_old_query, (old_ticket,))
 
-                inner_data = []
-                for inner_row in inner_result:
-                    Ppro_GradeName = inner_row['Ppro_GradeDescription']
-                    
-                    matched_class = None
-                    if "long_stalk" in classAll:
-                        if Ppro_GradeName.lower() == "Tangkai Panjang".lower():
-                            matched_class = "long_stalk"
+                success_update_null_wb_staging_tiket_lama = True
 
-                    if "empty_bunch" in classAll:
-                        if Ppro_GradeName.lower() == "Empty Bunch".lower():
-                            matched_class = "empty_bunch"
+                
+                # connection.commit()
+                print(f'success update database MOPweighbridgeTicket_Staging untuk tiket {old_ticket} ke pull_time null')
+            except pymssql.Error as e:
+                connection.rollback()
+                print(f"An error occurred while updating pull_time to null database MOPweighbridgeTicket_Staging tiket {old_ticket}")
 
-                    if not matched_class:
-                        # Check for other class names in classAll      
-                        matched_class = next((class_name for class_name in classAll if class_name.lower() == Ppro_GradeName.lower()), None)
+            # # Update the new WBTicketNo with the current date and time
+            print(success_update_null_wb_staging_tiket_lama)
+            try:
+                update_new_query = """
+                    UPDATE MOPweighbridgeTicket_Staging
+                    SET AI_pull_time = %s,
+                        VehiclePoliceNO = %s,
+                        DriverName = %s
+                    WHERE WBTicketNo = %s
+                """
+                cursor.execute(update_new_query, (current_datetime, nopol, driver, new_tiket_value))
+                # connection.commit()
+                success_update_wb_staging_tiket_baru = True
+                print(f'success update database MOPweighbridgeTicket_Staging dari tiket {old_ticket} dan tiket {new_tiket_value}')
+            except pymssql.Error as e:
+                connection.rollback()
+                print(f"An error occurred while updating the database MOPweighbridgeTicket_Staging dari tiket {old_ticket} ke tiket {new_tiket_value}")
+                # messagebox.showinfo("Error", f"An error occurred while updating the database MOPweighbridgeTicket_Staging dari tiket {old_ticket} ke tiket {new_tiket_value}: {e}")  
+            
+            
+            # Update the weight_bridge table with AI_pull_time set to NULL for the specified WBTicketNo
+            update_sql = "UPDATE weight_bridge SET AI_pull_time = NULL WHERE WBTicketNo = ?;"
+            try:
+                sqlite_cursor.execute(update_sql, (old_ticket,))
+                # sqlite_conn.commit()
+                success_update_wb_lokal_tiket_baru = True
+                print(f'success update ke lokal tabel weight_bridge dengan tiket {old_ticket} pull_time ke null')
+            except sqlite3.Error as e:
+                print(f"Error update  ke lokal tabel weight_bridge dengan tiket {old_ticket} pull_time null: {e}")
+            
 
-                    if matched_class:
-        
-                        class_totals[matched_class] += int(Jumlah_AI_Grading)
 
-            class_original = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi']
+            # Update the weight_bridge table with the new values
+            update_sql = "UPDATE weight_bridge SET AI_pull_time = ?, VehiclePoliceNO = ?, DriverName = ? WHERE WBTicketNo = ?;"
+            try:
+                sqlite_cursor.execute(update_sql, (current_datetime, nopol, driver, new_tiket_value))
+                # sqlite_conn.commit()
+                success_update_null_wb_lokal_tiket_lama = True
+                print(f'success update ke lokal tabel weight_bridge dengan tiket lama {old_ticket} ke tiket {new_tiket_value}')
+            except sqlite3.Error as e:
+                print(f"Error update  ke lokal tabel weight_bridge: {e}")
+            
 
-            class_name_values = {}
+            try:
+                # print('nais')
+                select_query = """
+                SELECT AI_NoTicket, AI_Grading, AI_Janjang  FROM MOPQuality_Staging
+                WHERE AI_NoTicket = %s
+                """
+                # cursor = connection.cursor()
+                result = []
+                try :
+                    cursor.execute(select_query, (old_ticket,))
+                    result = cursor.fetchall()
+                except pymssql.Error as ex:           
+                    connection.rollback() 
+                    print(f'Tidak ada data quality pada tiket {old_ticket}')
 
-            for index in class_original:
-                class_name_values[index] = class_totals.get(index, 0)
+                grade_codes = []
+                if len(result) > 0:
+                    for row in result:
+                        AI_Grading = row['AI_Grading']
+                        Jumlah_AI_Grading = row['AI_Janjang']
 
-            generate_report(rawData, img_dir,class_name_values, class_original, class_totals['Brondolan'], class_totals['Brondolan Busuk'],class_totals['DIRT/KOTORAN'] ,1)
-        except Exception as e:
-            messagebox.showinfo("Error", f"An error occurred while fetch data MOPQuality_Staging: {e}")  
+                        SQL_QUERY = """
+                        SELECT *
+                        FROM MasterGrading_Staging
+                        WHERE Ppro_GradeCode = %s
+                        """
+                        inner_result = []
+                        try:
+                            cursor.execute(SQL_QUERY, (AI_Grading,))
+                            inner_result = cursor.fetchall()
+                        except pymssql.Error as e:
+                            print('Gagal fetch data master quality')
+                        inner_data = []
+                        if len(inner_result) > 0:
+                            for inner_row in inner_result:
+                                Ppro_GradeName = inner_row['Ppro_GradeDescription']
+                                
+                                matched_class = None
+                                if "long_stalk" in classAll:
+                                    if Ppro_GradeName.lower() == "Tangkai Panjang".lower():
+                                        matched_class = "long_stalk"
 
-        try:
-            # update quality
-            SQL_UPDATE = """
-            UPDATE MOPQuality_Staging
-            SET AI_NoTicket = %(new_AI_NoTicket)s
-            WHERE AI_NoTicket = %(old_AI_NoTicket)s;
-            """
+                                if "empty_bunch" in classAll:
+                                    if Ppro_GradeName.lower() == "Empty Bunch".lower():
+                                        matched_class = "empty_bunch"
 
-            update_values = {
-                'new_AI_NoTicket': new_tiket_value,  # Join blok values into a single string
-                'old_AI_NoTicket': WBTicketNo
-            }
+                                if not matched_class:
+                                    matched_class = next((class_name for class_name in classAll if class_name.lower() == Ppro_GradeName.lower()), None)
 
-            # Create a cursor and execute the UPDATE statement
-            cursor = connection.cursor()
-            cursor.execute(SQL_UPDATE, update_values)
+                                if matched_class:
+                                    class_totals[matched_class] += int(Jumlah_AI_Grading)
 
-            # Commit the changes to the database
-            connection.commit()
+                    class_original = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi']
 
-            # Close the cursor and connection
-            cursor.close()
-                    
-            messagebox.showinfo("Success", "Data Tiket " + new_tiket_value + " Berhasil terupdate")  
-            edit_data_overlay.destroy()
-            self.master.switch_frame(EditBridgeFrame)
-        except Exception as e:
-            messagebox.showinfo("Error", f"An error occurred while updating the database MOPQuality_Staging: {e}")  
+                    class_name_values = {}
 
-        # update db lokal table quality
-        sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
-        sqlite_cursor = sqlite_conn.cursor()
-        sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, WBTicketNo))
-        sqlite_conn.commit()
+                    for index in class_original:
+                        class_name_values[index] = class_totals.get(index, 0)
+                img_dir = copy_img_edit_mode(old_ticket)
+                
+            except Exception as e:
+                messagebox.showinfo("Error", f"Gagal generate pdf: {e}")  
+
+            # update db lokal table quality
+           
+            try:
+                sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, old_ticket))
+                # sqlite_conn.commit()
+                success_update_quality_lokal_tiket_baru = True
+                print(f'success update ke lokal tabel quality dengan tiket lama {old_ticket} ke tiket baru {new_tiket_value}')
+            except sqlite3.Error as e:
+                print(f"Error update  ke lokal tabel quality dengan tiket lama {old_ticket} ke tiket baru {new_tiket_value}: {e}")
+            
+
+            try:
+                # update quality
+                SQL_UPDATE = """
+                UPDATE MOPQuality_Staging
+                SET AI_NoTicket = %(new_AI_NoTicket)s
+                WHERE AI_NoTicket = %(old_AI_NoTicket)s;
+                """
+
+                update_values = {
+                    'new_AI_NoTicket': new_tiket_value,
+                    'old_AI_NoTicket': old_ticket
+                }
+
+                # cursor = connection.cursor()
+                try:
+                    cursor.execute(SQL_UPDATE, update_values)
+                    # connection.commit()
+                    success_update_quality_staging_tiket_baru = True
+                    print(f'Berhasil update quality stagings dari tiket {old_ticket} ke tiket {new_tiket_value}')
+                except pymssql.Error as ex:
+                    print('nais')
+                print(f'Terjadi kesalahan dalam update quality dari tiket {old_ticket} ke tiket {new_tiket_value}')
+                
+                if success_update_null_wb_staging_tiket_lama and success_update_null_wb_staging_tiket_lama and success_update_wb_staging_tiket_baru and success_update_wb_lokal_tiket_baru and success_update_quality_lokal_tiket_baru and success_update_quality_staging_tiket_baru:
+                    sqlite_conn.commit()
+                    connection.commit()
+                # generate_report(rawData, img_dir,class_name_values, class_original, class_totals['Brondolan'], class_totals['Brondolan Busuk'],class_totals['DIRT/KOTORAN'] ,1)
+                messagebox.showinfo("Success", "Data Tiket terbaru " + new_tiket_value + " Berhasil terupdate")  
+                
+                edit_data_overlay.destroy()
+                self.master.switch_frame(EditBridgeFrame)
+            except Exception as e:
+                connection.rollback()
+                # messagebox.showinfo("Error", f"An error occurred while updating the database MOPQuality_Staging: {e}")  
+                print(f"Terjadi kesalahan update dari db quality dari tiket {old_ticket} ke {new_tiket_value}")
+            # messagebox.showinfo("Success",f"Berhasil update data dari tiket {old_ticket} ke tiket baru {new_tiket_value}")  
+            
+        else:
+            messagebox.showinfo("Error",f"Terjadi kesalahan koneksi pada saat update data dari tiket {old_ticket} ke tiket baru {new_tiket_value}")  
+      
+        cursor.close()
         sqlite_cursor.close()
         sqlite_conn.close()
-
-        
         connection.close()
       
 
