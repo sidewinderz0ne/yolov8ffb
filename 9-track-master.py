@@ -371,7 +371,7 @@ try:
         if datetime.now(tz=tzInfo) > lastDate:
             dateNow = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
             update_date(dateNow, 1)
-            lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=7, minutes=0, hours=0)
+            lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=0, minutes=5, hours=0)
             
         success, frame = cap.read()
         if success:
