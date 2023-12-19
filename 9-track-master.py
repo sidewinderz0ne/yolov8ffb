@@ -8,7 +8,7 @@ from ultralytics import YOLO
 import datetime
 import os
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import date
 import pytz
 from pathlib import Path
@@ -30,7 +30,10 @@ import json
 import sys
 from time import time
 import logging
+import asyncio
+import aiohttp
 
+url = 'https://srs-ssms.com/grading_ai/post_updated_grading_machine.php'
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_file_path = os.path.join(script_directory, 'opencv_log.txt')
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
@@ -68,6 +71,12 @@ timer = 25
 stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 connection = None
+
+id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
+id_mill = 1
+
+with open(id_mill_dir, 'r') as z:
+    id_mill = z.readline()
 
 def contains_video_keywords(file_path):
     # Define a list of keywords that are commonly found in video file names
@@ -326,17 +335,50 @@ if debug:
     sys.stdout = save_debug
     sys.stderr = save_debug
 
+async def post_count_async(date, id_mill):
+    try:
+        async with aiohttp.ClientSession() as session:
+            params = {'id_mill': str(id_mill), 'timestamp': str(date)}
+            async with session.post(url, data=params) as resp:
+                response_text = await resp.text()
+                print("PHP Response: " + response_text)
+                response = resp.status
+    except Exception as e:
+        print("Error: " + str(e))
+        response = 99999
+    return response
+
+def post_count(date, id_mill):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        code = loop.run_until_complete(post_count_async(date, id_mill))
+        print("Status: " + str(code) + " " + date + ".")
+    except Exception as e:
+        print("Error: " + str(e))
+    finally:
+        loop.close()
+
+def update_date(date, id_mill):
+    threading.Thread(target=post_count, args=(date, id_mill)).start()
+
+lastDate = datetime.now(tz=tzInfo)+timedelta(seconds=0, minutes=0, hours=0)
 try:
 
     while cap.isOpened():
-        # Read a frame from the video
+        # update grading machine timestamp
+        if datetime.now(tz=tzInfo) > lastDate:
+            dateNow = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
+            update_date(dateNow, 1)
+            lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=7, minutes=0, hours=0)
+            
         success, frame = cap.read()
         if success:
             # Start the timer
             start_time = time()
 
-            # Run YOLOv8 tracking on the frame, persisting tracks between frames
-            results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False)
+            results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
             
             # Stop the timer
             end_time = time()
@@ -529,6 +571,9 @@ try:
         else:
             close()
             break
+
+
+
 except Exception as e:
     logging.exception(f"An error occurred: {e}") 
     
