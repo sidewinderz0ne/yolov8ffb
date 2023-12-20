@@ -47,5 +47,5 @@ if __name__ == "__main__":
 
             subprocess.run(subprocess_args)
 
-        time.sleep(60)
+        time.sleep(3)
 
