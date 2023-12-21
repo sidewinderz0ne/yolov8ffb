@@ -11,7 +11,7 @@ tzInfo = pytz.timezone('Asia/Bangkok')
 url = 'https://srs-ssms.com/post-py-total.php'
 headers = {"content-type": "application/x-www-form-urlencoded",
           'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36'}
-timer = 20
+timer = 5
 log_dir = Path(os.getcwd() + '/hasil/grading_total_log.TXT')
 id_mill_dir = Path(os.getcwd() + 'config/id_mill.TXT')
 
