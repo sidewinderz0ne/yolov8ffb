@@ -1,7 +1,7 @@
 from itertools import count
 import tkinter as tk
 from tkinter import ttk
-from tkinter import messagebox
+from tkinter import messagebox, Toplevel
 from tkinter.messagebox import YES, showinfo
 import os
 from pathlib import Path
@@ -85,6 +85,47 @@ if not log_dir.exists():
     os.makedirs(log_folder, exist_ok=True)
     log_dir.touch()
 
+database_file = './hasil/' + str(formatted_date) + '/log_' + str(formatted_date)+  '.db'
+
+if not os.path.exists(database_file):
+    # Database file doesn't exist, so create it
+    conn = sqlite3.connect(database_file)
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS log_sampling (
+            id INTEGER PRIMARY KEY,
+            mill_id TEXT,
+            waktu_mulai DATETIME,
+            waktu_selesai DATETIME,
+            no_tiket TEXT,
+            no_plat TEXT,
+            nama_driver TEXT,
+            bisnis_unit TEXT,
+            divisi TEXT,
+            blok TEXT,
+            status TEXT,
+            unripe TEXT,
+            ripe TEXT,
+            overripe TEXT,
+            empty_bunch TEXT,
+            abnormal TEXT,
+            kastrasi TEXT,
+            tp TEXT
+        )
+    ''')
+
+    # Commit the changes and close the connection
+    conn.commit()
+    conn.close()
+
+    # Print a message indicating that the database file and table have been created
+    print(f"Database file '{database_file}' and table 'log_sampling' have been created.")
+else:
+    # Database file exists, so connect to it
+    conn = sqlite3.connect(database_file)
+    cursor = conn.cursor()
+
 offline_log_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/offline_log.TXT')
 
 if not offline_log_dir.exists():
@@ -101,7 +142,7 @@ def create_datetime(date, hour, minute, second):
 def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolBusuk, dirt, editData = None):
 
     global totalJjg
-    
+
     class_dict = {name: 'Tangkai\nPanjang' if name == 'long_stalk' else 'Empty Bunch' if name == 'empty_bunch' else name.capitalize() for name in class_names}
     
     totalJjg = 0
@@ -620,7 +661,7 @@ class LoginFrame(tk.Frame):
         self.grid_columnconfigure(0, weight=1)
 
         self.update_idletasks()  # Force an update to make sure the label is displayed
-
+    
     def login(self):
         user = self.username_entry.get()
         password = self.password_entry.get()
@@ -636,9 +677,8 @@ class LoginFrame(tk.Frame):
             stored_password = stored_password.encode('utf-8')
 
             if stored_user == user and bcrypt.checkpw(password.encode('utf-8'), stored_password):
-                print("Login successful. Welcome,", user)
-                self.show_loading_label()
-                self.after(2500, lambda: self.master.switch_frame(Frame1))
+                print("Login successful. Welcome,", user)                
+                self.master.switch_frame(Frame1)
             else:
                 print("Login failed. Invalid credentials.")
                 self.feedback_label.config(text="Incorrect password", fg="red")
@@ -837,25 +877,13 @@ def connect_to_database():
 
 source = None  # Initialize source to None initially
 class Frame1(tk.Frame):
-    def load_data(self):
-        # Remove the "Loading..." label once data is loaded
-        self.loading_label.destroy()
 
-        # Now, you can proceed with displaying the actual data in the top frame
-        self.refresh_data()
     def __init__(self, master):
         super().__init__(master)
         global source
         self.clicked_buttons = []
         
         self.make_tree()
-
-        # Add a label to display "Loading..."
-        # self.loading_label = tk.Label(self, text="Loading...", font=("Arial", 12))
-        # self.loading_label.grid(row=1, column=0, sticky="nsew")
-
-        # # Schedule the load_data method to run after a delay (in milliseconds)
-        # self.after(3000, self.load_data)
 
         top_frame = ttk.Frame(self)
         top_frame.grid(row=0, column=0, sticky='ew')
@@ -890,9 +918,6 @@ class Frame1(tk.Frame):
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
 
-        # self.mode_label = tk.Label(top_frame, text="", font=("Helvetica", 16, "bold"))
-        # self.mode_label.grid(row=0, column=3)
-
         self.refresh_button = ttk.Checkbutton(top_frame, text="EDIT DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
         self.refresh_button.grid(row=0, column=5)
         
@@ -905,6 +930,11 @@ class Frame1(tk.Frame):
         # self.button_input = ttk.Button(top_frame, text="Input Data Truk", style="Accent.TButton", command=self.switch_frame2)
         # self.button_input.grid(row=0, column=5)
         
+        vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        vsb.grid(row=1, column=7, sticky="ns")  # Adjust the column number based on your layout
+        
+        # Configure treeview to use the scrollbar
+        self.tree.configure(yscrollcommand=vsb.set)
 
         self.tree.grid(row=1, column=0, columnspan=6, sticky="nsew")  # Use columnspan to span all columns
 
@@ -956,6 +986,7 @@ class Frame1(tk.Frame):
         self.tree.column("ownership", anchor="center") 
         self.tree.column("pushtime", anchor="center") 
         self.tree.column("action", anchor="center") 
+
     def password_frame(self):
         
         password_overlay = tk.Toplevel(self.master)
@@ -1190,32 +1221,53 @@ class Frame1(tk.Frame):
         self.button_input.grid(row=0, column=4)
 
     def refresh_data(self):
+
+        loading_window = tk.Toplevel(self.master)
+        loading_window.title("Loading...")
+        loading_label = ttk.Label(loading_window, text="Fetching data. Please wait...")
+        loading_label.pack(padx=20, pady=20)
+        loading_window.update()
+
+        # Refresh data
         self.tree.delete(*self.tree.get_children())
-        
         database_connection = connect_to_database()
-        if status_mode == 'online':
-            self.compare_staging_and_local_db()
-        master_bunit = self.pull_master(database_connection, 'MasterBunit_Staging', 'Ppro_BUnitCode', 'Ppro_BUnitName', data_bunit)
-        master_div = self.pull_master(database_connection, 'MasterDivisi_Staging', 'Ppro_DivisionCode', 'Ppro_DivisionName', data_div)
-        master_block = self.pull_master(database_connection, 'MasterBlock_Staging', 'Ppro_FieldCode', 'Ppro_FieldName', data_block)
-        record = self.pull_data_ppro(database_connection)
-        if status_mode == 'online':
-            database_connection.close()
-        self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()} - {mode_app.capitalize()}")
-        if status_mode == 'online':
-            arr_data = self.process_data(record, master_bunit, master_div, master_block)
 
-            self.refresh_button = ttk.Checkbutton(self.top_frame, text="EDIT DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
-            self.refresh_button.grid(row=0, column=5)
-            
-            self.refresh_button = ttk.Checkbutton(self.top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
-            self.refresh_button.grid(row=0, column=6)
+        try:
+            if status_mode == 'online':
+                self.compare_staging_and_local_db()
 
-            self.remove_input_button()
-        else:
-            arr_data = record
-            self.create_and_grid_input_button() 
-        self.populate_treeview(arr_data)
+            master_bunit = self.pull_master(database_connection, 'MasterBunit_Staging', 'Ppro_BUnitCode', 'Ppro_BUnitName', data_bunit)
+            master_div = self.pull_master(database_connection, 'MasterDivisi_Staging', 'Ppro_DivisionCode', 'Ppro_DivisionName', data_div)
+            master_block = self.pull_master(database_connection, 'MasterBlock_Staging', 'Ppro_FieldCode', 'Ppro_FieldName', data_block)
+            record = self.pull_data_ppro(database_connection)
+
+            if status_mode == 'online':
+                database_connection.close()
+
+            self.master.title(f"Sistem Aplikasi Pos Grading - {status_mode.capitalize()} - {mode_app.capitalize()}")
+
+            # Process data
+            if status_mode == 'online':
+                arr_data = self.process_data(record, master_bunit, master_div, master_block)
+
+                # Add/Edit buttons
+                self.refresh_button = ttk.Checkbutton(self.top_frame, text="EDIT DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
+                self.refresh_button.grid(row=0, column=5)
+                
+                self.refresh_button = ttk.Checkbutton(self.top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
+                self.refresh_button.grid(row=0, column=6)
+
+                self.remove_input_button()
+            else:
+                arr_data = record
+                self.create_and_grid_input_button() 
+            self.populate_treeview(arr_data)
+        except Exception as e:
+            # Handle errors, e.g., show a messagebox
+            messagebox.showinfo("Error", f"Failed to refresh data: {e}")
+        finally:
+            # Close loading window after processing
+            loading_window.destroy()
 
 
     def compare_staging_and_local_db(self):
@@ -1348,7 +1400,7 @@ class Frame1(tk.Frame):
         #print(self.clicked_buttons)
         for cb in self.clicked_buttons:
             
-            self.tree.tag_configure(cb, background="#ffffff")  # Change row color
+            self.tree.tag_configure(cb, background="#3c3248")  # Change row color
             self.clicked_buttons.remove(cb)
         
         #print("column:" + str(column) + "|columns:"+ str(len(columns)))
@@ -1393,30 +1445,40 @@ class Frame1(tk.Frame):
 
     def run_script(self, row_item, row_id, row_values):
         
+        loading_window = tk.Toplevel(self.master)
+        loading_window.title("Loading...")
+        loading_label = ttk.Label(loading_window, text="Running script. Please wait...")
+        loading_label.pack(padx=20, pady=20)
+        loading_window.update()
+
         if mode_app == 'multi-inference':
-            tiket = row_values[1].replace('/','-')
-            path_avg_cctv = Path(os.getcwd() + '/hasil/' + formatted_date  + '/' + tiket)
+            tiket = row_values[1].replace('/', '-')
+            path_avg_cctv = Path(os.getcwd() + '/hasil/' + formatted_date + '/' + tiket)
             path_avg_cctv.mkdir(parents=True, exist_ok=True)  # make dir
-        
+
         global source, date_start_conveyor
         date_start_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         output_inference = None
+
         try:
             if mode_app == 'multi-inference':
-                result = subprocess.run(['python', 'multiple_inference.py', '--tiket', str(tiket), '--mode', 'multi-inference'], 
-                                capture_output=True, 
-                                text=True, 
-                                check=True)
+                result = subprocess.run(['python', 'multiple_inference.py', '--tiket', str(tiket), '--mode', 'multi-inference'],
+                                        capture_output=True,
+                                        text=True,
+                                        check=True)
             else:
-                result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)], 
-                            capture_output=True, 
-                            text=True, 
-                            check=True)
+                result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)],
+                                        capture_output=True,
+                                        text=True,
+                                        check=True)
 
             output_inference = result.stdout
-     
-        except subprocess.CalledProcessError as e:
-            print("Error running other_script.py:", str(e))
+        except Exception as e:
+            # Handle errors, e.g., show a messagebox
+            messagebox.showinfo("Error", f"Failed to run script: {e}")
+        finally:
+            # Close loading window after processing
+            loading_window.destroy()
 
         if output_inference:
             self.master.switch_frame(Frame3, output_inference, row_values)
@@ -1802,118 +1864,195 @@ class Frame3(tk.Frame):
                 self.push_data(gradecode, gradedescription, brondolBusuk)
 
     def save_and_switch(self, class_name, count_per_class, row_values,info_truk_dict, img_dir):
+
         global date_end_conveyor
-        self.submit_clicked = True
-        class_count_dict = dict(zip(class_name, count_per_class))
-        
-        date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        waktu_mulai =  date_start_conveyor
-        waktu_selesai =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        brondol = 0
-        brondolBusuk = 0
-        dirt = 0
-        
-        if self.submit_clicked and isClosedFrame3 == False:
-            brondol_input = self.brondolanEntry.get()
-            brondolBusuk_input = self.brondoalBusukEntry.get()
-            dirt_input = self.dirtEntry.get()
+        loading_window = Toplevel(self)
+        loading_window.title("Loading...")
+        loading_label = ttk.Label(loading_window, text="Saving data to the database. Please wait...")
+        loading_label.pack(padx=20, pady=20)
 
-            # Remove non-numeric characters
-            brondol_input = remove_non_numeric(brondol_input)
-            brondolBusuk_input = remove_non_numeric(brondolBusuk_input)
-            dirt_input = remove_non_numeric(dirt_input)
-
-            # Set values based on user input or keep the default values
-            if brondol_input:
-                brondol = int(brondol_input)
-            if brondolBusuk_input:
-                brondolBusuk = int(brondolBusuk_input)
-            if dirt_input:
-                dirt = int(dirt_input)
-
-
-        tambahan ={
-            'brondolan' : brondol,
-            'brondolan_busuk' : brondolBusuk,
-            'dirt':dirt,
-            'waktu_mulai':waktu_mulai,
-            'waktu_selesai':waktu_selesai
-        }
-
-        merged_dict = info_truk_dict.copy()  
-        merged_dict.update(class_count_dict) 
-        merged_dict.update(tambahan)
-
-
-        result = ';'.join(map(str, row_values)) + ';'
-        result += ';'.join(map(str, count_per_class)) + ';'
-        result += str(brondol) + ';'
-        result += str(brondolBusuk ) + ';'
-        result += str(dirt)
-        
-        log_file_path = log_dir  
+        loading_window.update()
 
         try:
-            with open(log_file_path, 'a') as log_file:
-                log_file.write(str(merged_dict) + '\n')  # Append the result to the log file with a newline character
-                # print("Data saved successfully to", log_file_path)
-        except Exception as e:
-            print("Error saving data to", log_file_path, ":", str(e))
+            self.submit_clicked = True
+            class_count_dict = dict(zip(class_name, count_per_class))
+            
+            date_end_conveyor = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            waktu_mulai =  date_start_conveyor
+            waktu_selesai =  datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            brondol = 0
+            brondolBusuk = 0
+            dirt = 0
+            
+            if self.submit_clicked and isClosedFrame3 == False:
+                brondol_input = self.brondolanEntry.get()
+                brondolBusuk_input = self.brondoalBusukEntry.get()
+                dirt_input = self.dirtEntry.get()
 
-        #convert data dari string ke array
-        result = result.split(";")
-        
-        try:
-            connection = connect_to_database()
+                # Remove non-numeric characters
+                brondol_input = remove_non_numeric(brondol_input)
+                brondolBusuk_input = remove_non_numeric(brondolBusuk_input)
+                dirt_input = remove_non_numeric(dirt_input)
 
-            if isinstance(connection, pymssql.Connection):
+                # Set values based on user input or keep the default values
+                if brondol_input:
+                    brondol = int(brondol_input)
+                if brondolBusuk_input:
+                    brondolBusuk = int(brondolBusuk_input)
+                if dirt_input:
+                    dirt = int(dirt_input)
 
-                sql_query = """
-                SELECT Ppro_GradeCode, Ppro_GradeDescription
-                FROM MasterGrading_Staging;
-                """
 
-                cursor = connection.cursor()
-                cursor.execute(sql_query)
-                
-                gradecodes = []
-                gradedescriptions = []
+            tambahan ={
+                'brondolan' : brondol,
+                'brondolan_busuk' : brondolBusuk,
+                'dirt':dirt,
+                'waktu_mulai':waktu_mulai,
+                'waktu_selesai':waktu_selesai
+            }
 
-                for row in cursor.fetchall():
-                    gradecodes.append(row['Ppro_GradeCode'])
-                    gradedescriptions.append(row['Ppro_GradeDescription'])
+            merged_dict = info_truk_dict.copy()  
+            merged_dict.update(class_count_dict) 
+            merged_dict.update(tambahan)
 
-                self.push_quality(gradecodes,gradedescriptions, class_name, count_per_class,brondol, brondolBusuk, dirt)
+            id_mill_value = 1
+            if id_mill_dir.is_file():
+                with open(id_mill_dir, 'r') as file:
+                    id_mill_value = file.read()
+            
+            result = ';'.join(map(str, row_values)) + ';'
+            result += ';'.join(map(str, count_per_class)) + ';'
+            result += str(brondol) + ';'
+            result += str(brondolBusuk ) + ';'
+            result += str(dirt)
 
-                self.change_push_time(row_values)
-            else:
-                conn = sqlite3.connect('./db/grading_sampling.db')
-                cursor = conn.cursor()
-                cursor.execute("SELECT Ppro_GradeCode, Ppro_GradeDescription FROM master_quality")
-                records = cursor.fetchall()
+            conn = sqlite3.connect(database_file)
+            cursor = conn.cursor()
 
-                gradecodes = []
-                gradedescriptions = []
+            try :
+                cursor.execute('''
+                    SELECT id FROM log_sampling
+                    WHERE no_tiket = ? AND no_plat = ? AND nama_driver = ? AND bisnis_unit = ?
+                        AND divisi = ? AND blok = ?
+                ''', (
+                    merged_dict['no_tiket'],
+                    merged_dict['no_plat'],
+                    merged_dict['nama_driver'],
+                    merged_dict['bunit'],
+                    merged_dict['divisi'],
+                    merged_dict['blok']
+                ))
 
-                for row in records:
-                    gradecodes.append(row[0])  # Append Ppro_GradeCode to gradecodes
-                    gradedescriptions.append(row[1])  # Append Ppro_GradeDescription to gradedescriptions
+                existing_record = cursor.fetchone()
 
-                self.push_quality(gradecodes,gradedescriptions, class_name, count_per_class,brondol, brondolBusuk, dirt)
-
-                self.change_push_time(row_values)
-
+                if not existing_record:
+                    cursor.execute('''
+                        INSERT INTO log_sampling (
+                            mill_id, waktu_mulai, waktu_selesai, no_tiket, no_plat, nama_driver,
+                            bisnis_unit, divisi, blok, status, unripe, ripe, overripe, empty_bunch,
+                            abnormal, kastrasi, tp
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ''', (
+                        id_mill_value,
+                        merged_dict.get('waktu_mulai', ''),
+                        merged_dict.get('waktu_selesai', ''),
+                        merged_dict.get('no_tiket', ''),
+                        merged_dict.get('no_plat', ''),
+                        merged_dict.get('nama_driver', ''),
+                        merged_dict.get('bunit', ''),
+                        merged_dict.get('divisi', ''),
+                        merged_dict.get('blok', ''),
+                        merged_dict.get('ownership', ''),
+                        merged_dict.get('unripe', ''),
+                        merged_dict.get('ripe', ''),
+                        merged_dict.get('overripe', ''),
+                        merged_dict.get('empty_bunch', ''),
+                        merged_dict.get('abnormal', ''),
+                        merged_dict.get('kastrasi', ''),
+                        merged_dict.get('long_stalk', ''),
+                    ))
+                    
+                    try:
+                        conn.commit()
+                        print(f'Berhasil push data inference ke database lokal log_sampling')
+                    except sqlite3.Error as e:
+                        conn.close()
+                        print(f'Gagal push data inference ke database lokal log_sampling {e} ')
+                else:
+                    print(f'Tidak dapat push karena sama dengan data yang lama')
+            except sqlite3.Error as e:
                 conn.close()
+                print(f'Gagal push data inference ke database lokal log_sampling')
 
+            result = result.split(";")
+            
+            try:
+                connection = connect_to_database()
+
+                if isinstance(connection, pymssql.Connection):
+
+                    sql_query = """
+                    SELECT Ppro_GradeCode, Ppro_GradeDescription
+                    FROM MasterGrading_Staging;
+                    """
+
+                    cursor = connection.cursor()
+                    cursor.execute(sql_query)
+                    
+                    gradecodes = []
+                    gradedescriptions = []
+
+                    for row in cursor.fetchall():
+                        gradecodes.append(row['Ppro_GradeCode'])
+                        gradedescriptions.append(row['Ppro_GradeDescription'])
+
+                    self.push_quality(gradecodes,gradedescriptions, class_name, count_per_class,brondol, brondolBusuk, dirt)
+
+                    self.change_push_time(row_values)
+                else:
+                    conn = sqlite3.connect('./db/grading_sampling.db')
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT Ppro_GradeCode, Ppro_GradeDescription FROM master_quality")
+                    records = cursor.fetchall()
+
+                    gradecodes = []
+                    gradedescriptions = []
+
+                    for row in records:
+                        gradecodes.append(row[0])  # Append Ppro_GradeCode to gradecodes
+                        gradedescriptions.append(row[1])  # Append Ppro_GradeDescription to gradedescriptions
+
+                    self.push_quality(gradecodes,gradedescriptions, class_name, count_per_class,brondol, brondolBusuk, dirt)
+
+                    self.change_push_time(row_values)
+
+                    conn.close()
+
+            except Exception as e:
+                print(f"Error: {e}")
+        
+            messagebox.showinfo("Success", f"Data Sukses Tersimpan {row_values[1]}!")
+            generate_report(result, img_dir,class_count_dict,class_name, brondol, brondolBusuk, dirt)
+
+            # threading.Thread(target=self.run_send_pdf_in_background).start()
+            if self.submit_clicked:
+                self.master.switch_frame(Frame1)
+            # Show the success message in the loading window
+            # loading_label.config(text=f"Data successfully saved: {row_values[1]}!")
+            # loading_window.update()
         except Exception as e:
-            print(f"Error: {e}")
-    
-        messagebox.showinfo("Success", f"Data Sukses Tersimpan {row_values[1]}!")
-        generate_report(result, img_dir,class_count_dict,class_name, brondol, brondolBusuk, dirt)
+            # Handle exceptions and show an error message
 
-        threading.Thread(target=self.run_send_pdf_in_background).start()
-        if self.submit_clicked:
-            self.master.switch_frame(Frame1)
+            messagebox.showinfo("Error", f"Gagal Menyimpan ke databse  Sukses Tersimpan: {e}")
+            # loading_label.config(text=f"Error: {e}")
+            # loading_window.update()
+
+        # Close the loading window after the database commit is complete
+        # loading_window.after(0, loading_window.destroy)
+
+
+            
+       
 
     def change_push_time(self, raw):
         notiket = raw[1]
@@ -2342,96 +2481,109 @@ class EditBridgeFrame(tk.Frame):
         self.tiket_combobox.bind("<<ComboboxSelected>>", lambda event=None: update_label())
  
         def update_label():
-            selected_value = self.tiket_combobox.get()
-            connection = connect_to_database()
+            loading_window = Toplevel(self.master)
+            loading_window.title("Loading...")
+            loading_label = ttk.Label(loading_window, text="Fetching data. Please wait...")
+            loading_label.pack(padx=20, pady=20)
+            loading_window.update()
 
-            if isinstance(connection, pymssql.Connection):
-                sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s AND AI_pull_time IS NULL"
-                cursor = connection.cursor()
-                cursor.execute(sql_query, (selected_value,))
-                records = cursor.fetchall()
+            try:
+                selected_value = self.tiket_combobox.get()
+                connection = connect_to_database()
 
-                if records:
-                    nopol_values = [record['VehiclePoliceNO'] if record['VehiclePoliceNO'] is not None else '' for record in records]
-                    driver_names = [record['DriverName'] if record['DriverName'] is not None else '' for record in records]
-                    bunit_codes = [record['BUnitCode'] if record['BUnitCode'] is not None else '' for record in records]
-                    division_codes = [record['DivisionCode'] if record['DivisionCode'] is not None else '' for record in records]
-                    fields = [record['Field'] if record['Field'] is not None else '' for record in records]
-                    bunches = [record['Bunches'] if record['Bunches'] is not None else '' for record in records]
-                    ownership = [record['Ownership'] if record['Ownership'] is not None else '' for record in records]
+                if isinstance(connection, pymssql.Connection):
+                    sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging WHERE WBTicketNo = %s AND AI_pull_time IS NULL"
+                    cursor = connection.cursor()
+                    cursor.execute(sql_query, (selected_value,))
+                    records = cursor.fetchall()
+
+                    if records:
+                        nopol_values = [record['VehiclePoliceNO'] if record['VehiclePoliceNO'] is not None else '' for record in records]
+                        driver_names = [record['DriverName'] if record['DriverName'] is not None else '' for record in records]
+                        bunit_codes = [record['BUnitCode'] if record['BUnitCode'] is not None else '' for record in records]
+                        division_codes = [record['DivisionCode'] if record['DivisionCode'] is not None else '' for record in records]
+                        fields = [record['Field'] if record['Field'] is not None else '' for record in records]
+                        bunches = [record['Bunches'] if record['Bunches'] is not None else '' for record in records]
+                        ownership = [record['Ownership'] if record['Ownership'] is not None else '' for record in records]
 
 
-                    unique_nopol_values = list(set(nopol_values))
-                    unique_driver_names = list(set(driver_names))
-                    unique_bunit_names = list(set(bunit_codes))
-                    unique_division_names = list(set(division_codes))
-                    unique_bunches_names = [str(item) for item in list(set(bunches))]
-                    unique_field_names = list(set(fields))
-                    unique_ownership_names = list(set(ownership))
-                    
-                    additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_staging WHERE Ppro_BUnitCode IN %s"
-                    cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
-                    additional_records = cursor.fetchall()
-                    bunit_name = [record['Ppro_BUnitName'] for record in additional_records]
-                    final_bunit =  list(set(bunit_name))
+                        unique_nopol_values = list(set(nopol_values))
+                        unique_driver_names = list(set(driver_names))
+                        unique_bunit_names = list(set(bunit_codes))
+                        unique_division_names = list(set(division_codes))
+                        unique_bunches_names = [str(item) for item in list(set(bunches))]
+                        unique_field_names = list(set(fields))
+                        unique_ownership_names = list(set(ownership))
+                        
+                        additional_sql_query = "SELECT Ppro_BUnitName FROM MasterBunit_staging WHERE Ppro_BUnitCode IN %s"
+                        cursor.execute(additional_sql_query, (tuple(unique_bunit_names),))
+                        additional_records = cursor.fetchall()
+                        bunit_name = [record['Ppro_BUnitName'] for record in additional_records]
+                        final_bunit =  list(set(bunit_name))
 
-                    additional_sql_query = "SELECT Ppro_DivisionName FROM MasterDivisi_Staging WHERE Ppro_DivisionCode IN %s"
-                    cursor.execute(additional_sql_query, (tuple(unique_division_names),))
-                    additional_records = cursor.fetchall()
-                    divisi_name = [record['Ppro_DivisionName'] for record in additional_records]
-                    final_divisi =  list(set(divisi_name))
+                        additional_sql_query = "SELECT Ppro_DivisionName FROM MasterDivisi_Staging WHERE Ppro_DivisionCode IN %s"
+                        cursor.execute(additional_sql_query, (tuple(unique_division_names),))
+                        additional_records = cursor.fetchall()
+                        divisi_name = [record['Ppro_DivisionName'] for record in additional_records]
+                        final_divisi =  list(set(divisi_name))
 
-                    additional_sql_query = "SELECT Ppro_FieldName FROM MasterBlock_Staging WHERE Ppro_FieldCode IN %s"
-                    cursor.execute(additional_sql_query, (tuple(unique_field_names),))
-                    additional_records = cursor.fetchall()
-                    blok_name = [record['Ppro_FieldName'] for record in additional_records]
-                    final_blok =  list(set(blok_name))
+                        additional_sql_query = "SELECT Ppro_FieldName FROM MasterBlock_Staging WHERE Ppro_FieldCode IN %s"
+                        cursor.execute(additional_sql_query, (tuple(unique_field_names),))
+                        additional_records = cursor.fetchall()
+                        blok_name = [record['Ppro_FieldName'] for record in additional_records]
+                        final_blok =  list(set(blok_name))
 
-                    self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
-                    self.nopol_val.insert(0, ", ".join(unique_nopol_values))  # Set the new value
-                    self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
-                    self.driver_val.insert(0, ", ".join(unique_driver_names))  # Set the new value
-                    bunit_val.config(text=", ".join(final_bunit))
-                    divisi_val.config(text=", ".join(final_divisi))
-                    bunches_val.config(text=", ".join(unique_bunches_names))
-                    if not final_blok:
-                        blok_val.config(text="-")
-                    else:
-                        blok_val.config(text="\n".join(final_blok))
-                    ownership_val.config(text=", ".join(unique_ownership_names))
-            else:
-                with open(offline_log_dir, 'r') as file:
-                    data = file.readlines()
-                    
-                for line in data:
-                    convert_line = eval(line)
-                    no_tiket_line = convert_line['no_tiket']
-                    if str(no_tiket_line) ==  selected_value:
-                        nopol = convert_line.get('no_plat', '-')
-                        driver = convert_line.get('nama_driver', '-')
-                        bunit = convert_line.get('bunit', '-')
-                        divisi = convert_line.get('divisi', '-')
-                        blok = convert_line.get('blok', '-')
-                        bunches = convert_line.get('bunches','-')
-                        ownership = convert_line.get('ownership', '-')
-                       
-                            # bunit_val.config(text=tiket)
                         self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
-                        self.nopol_val.insert(0, nopol)  # Set the new value
+                        self.nopol_val.insert(0, ", ".join(unique_nopol_values))  # Set the new value
                         self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
-                        self.driver_val.insert(0, driver)  # Set the new value
-                        bunit_val.config(text=bunit)
-                        divisi_val.config(text=divisi)
-                        blok_val.config(text=blok)
-                        bunches_val.config(text=bunches)
-                        ownership_val.config(text=ownership)
-                        # bunit_val.config(text=status)
-            
+                        self.driver_val.insert(0, ", ".join(unique_driver_names))  # Set the new value
+                        bunit_val.config(text=", ".join(final_bunit))
+                        divisi_val.config(text=", ".join(final_divisi))
+                        bunches_val.config(text=", ".join(unique_bunches_names))
+                        if not final_blok:
+                            blok_val.config(text="-")
+                        else:
+                            blok_val.config(text="\n".join(final_blok))
+                        ownership_val.config(text=", ".join(unique_ownership_names))
+                        
+                else:
+                    with open(offline_log_dir, 'r') as file:
+                        data = file.readlines()
+                        
+                    for line in data:
+                        convert_line = eval(line)
+                        no_tiket_line = convert_line['no_tiket']
+                        if str(no_tiket_line) ==  selected_value:
+                            nopol = convert_line.get('no_plat', '-')
+                            driver = convert_line.get('nama_driver', '-')
+                            bunit = convert_line.get('bunit', '-')
+                            divisi = convert_line.get('divisi', '-')
+                            blok = convert_line.get('blok', '-')
+                            bunches = convert_line.get('bunches','-')
+                            ownership = convert_line.get('ownership', '-')
+                        
+                                # bunit_val.config(text=tiket)
+                            self.nopol_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                            self.nopol_val.insert(0, nopol)  # Set the new value
+                            self.driver_val.delete(0, "end")  # Clear the existing value in the Entry widget
+                            self.driver_val.insert(0, driver)  # Set the new value
+                            bunit_val.config(text=bunit)
+                            divisi_val.config(text=divisi)
+                            blok_val.config(text=blok)
+                            bunches_val.config(text=bunches)
+                            ownership_val.config(text=ownership)
+                            # bunit_val.config(text=status)
+                
 
-            if status_mode == 'online':
-                connection.close()
+                if status_mode == 'online':
+                    connection.close()
+                loading_window.destroy()
+                return selected_value
+            except Exception as e:
+                loading_window.destroy()
+                
+                messagebox.showinfo("Error", f"Failed to fetch data: {e}")
             
-            return selected_value
 
         
 
@@ -2654,6 +2806,7 @@ class EditBridgeFrame(tk.Frame):
         success_update_wb_staging_tiket_baru = False
         success_update_quality_lokal_tiket_baru = False
         success_update_quality_staging_tiket_baru = False
+        success_update_log_sampling_tiket_baru = False
 
         if isinstance(connection, pymssql.Connection):
             cursor = connection.cursor()        
@@ -2716,7 +2869,7 @@ class EditBridgeFrame(tk.Frame):
             rawData.append("; ".join(map(str, VehiclePoliceNO)))
             rawData.append("; ".join(map(str, DriverName)))
             rawData.append("; ".join(map(str, final_bunit)))
-            rawData.append("; ".join(map(str, Ownership)))
+            rawData.append("; ".join(map(str, final_divisi)))
 
             if not final_blok:
                 rawData.append("-")
@@ -2725,7 +2878,8 @@ class EditBridgeFrame(tk.Frame):
 
             rawData.append("; ".join(map(str, Bunches)))
             rawData.append("; ".join(map(str, Ownership)))
-            
+
+            WBTicketNo, VehiclePoliceNO, DriverName, BUnitCode, DivisionCode, Field = rawData[0:6]
             rawData.insert(0, "")
 
             # Update the old WBTicketNo ke null
@@ -2741,14 +2895,13 @@ class EditBridgeFrame(tk.Frame):
                 success_update_null_wb_staging_tiket_lama = True
 
                 
-                # connection.commit()
+                connection.commit()
                 print(f'success update database MOPweighbridgeTicket_Staging untuk tiket {old_ticket} ke pull_time null')
             except pymssql.Error as e:
                 connection.rollback()
                 print(f"An error occurred while updating pull_time to null database MOPweighbridgeTicket_Staging tiket {old_ticket}")
 
             # # Update the new WBTicketNo with the current date and time
-            print(success_update_null_wb_staging_tiket_lama)
             try:
                 update_new_query = """
                     UPDATE MOPweighbridgeTicket_Staging
@@ -2758,7 +2911,7 @@ class EditBridgeFrame(tk.Frame):
                     WHERE WBTicketNo = %s
                 """
                 cursor.execute(update_new_query, (current_datetime, nopol, driver, new_tiket_value))
-                # connection.commit()
+                connection.commit()
                 success_update_wb_staging_tiket_baru = True
                 print(f'success update database MOPweighbridgeTicket_Staging dari tiket {old_ticket} dan tiket {new_tiket_value}')
             except pymssql.Error as e:
@@ -2771,7 +2924,7 @@ class EditBridgeFrame(tk.Frame):
             update_sql = "UPDATE weight_bridge SET AI_pull_time = NULL WHERE WBTicketNo = ?;"
             try:
                 sqlite_cursor.execute(update_sql, (old_ticket,))
-                # sqlite_conn.commit()
+                sqlite_conn.commit()
                 success_update_wb_lokal_tiket_baru = True
                 print(f'success update ke lokal tabel weight_bridge dengan tiket {old_ticket} pull_time ke null')
             except sqlite3.Error as e:
@@ -2783,7 +2936,7 @@ class EditBridgeFrame(tk.Frame):
             update_sql = "UPDATE weight_bridge SET AI_pull_time = ?, VehiclePoliceNO = ?, DriverName = ? WHERE WBTicketNo = ?;"
             try:
                 sqlite_cursor.execute(update_sql, (current_datetime, nopol, driver, new_tiket_value))
-                # sqlite_conn.commit()
+                sqlite_conn.commit()
                 success_update_null_wb_lokal_tiket_lama = True
                 print(f'success update ke lokal tabel weight_bridge dengan tiket lama {old_ticket} ke tiket {new_tiket_value}')
             except sqlite3.Error as e:
@@ -2853,11 +3006,9 @@ class EditBridgeFrame(tk.Frame):
             except Exception as e:
                 messagebox.showinfo("Error", f"Gagal generate pdf: {e}")  
 
-            # update db lokal table quality
-           
             try:
                 sqlite_cursor.execute("UPDATE quality SET AI_NoTicket = ? WHERE AI_NoTicket = ?;", (new_tiket_value, old_ticket))
-                # sqlite_conn.commit()
+                sqlite_conn.commit()
                 success_update_quality_lokal_tiket_baru = True
                 print(f'success update ke lokal tabel quality dengan tiket lama {old_ticket} ke tiket baru {new_tiket_value}')
             except sqlite3.Error as e:
@@ -2880,17 +3031,42 @@ class EditBridgeFrame(tk.Frame):
                 # cursor = connection.cursor()
                 try:
                     cursor.execute(SQL_UPDATE, update_values)
-                    # connection.commit()
+                    connection.commit()
                     success_update_quality_staging_tiket_baru = True
                     print(f'Berhasil update quality stagings dari tiket {old_ticket} ke tiket {new_tiket_value}')
                 except pymssql.Error as ex:
-                    print('nais')
-                print(f'Terjadi kesalahan dalam update quality dari tiket {old_ticket} ke tiket {new_tiket_value}')
+                    print(f'Terjadi kesalahan dalam update quality stagings dari tiket {old_ticket} ke tiket {new_tiket_value}')
+
+                sqlite_update_query = '''
+                    UPDATE log_sampling
+                    SET no_tiket = ?,
+                    no_plat = ? , 
+                    nama_driver = ?,
+                    bisnis_unit = ?,
+                    divisi = ?,
+                    blok = ?
+                    WHERE no_tiket = ?;
+                    '''
                 
-                if success_update_null_wb_staging_tiket_lama and success_update_null_wb_staging_tiket_lama and success_update_wb_staging_tiket_baru and success_update_wb_lokal_tiket_baru and success_update_quality_lokal_tiket_baru and success_update_quality_staging_tiket_baru:
+                
+                conn_wb_lokal = sqlite3.connect(database_file)
+                cursor_wb_lokal = conn_wb_lokal.cursor()
+                try: 
+                    cursor_wb_lokal.execute(sqlite_update_query, (WBTicketNo,VehiclePoliceNO, DriverName, BUnitCode, DivisionCode, Field, old_ticket))
+                    success_update_log_sampling_tiket_baru = True
+                    print(f'success update ke lokal tabel log_sampling dengan tiket lama {old_ticket} ke tiketbaru{new_tiket_value}')
+                except sqlite3.Error as e:
+                    print(f"Error update  ke lokal tabel log_sampling: {e}")
+                
+                
+                if success_update_null_wb_lokal_tiket_lama and success_update_log_sampling_tiket_baru and  success_update_null_wb_staging_tiket_lama and success_update_null_wb_staging_tiket_lama and success_update_wb_staging_tiket_baru and success_update_wb_lokal_tiket_baru and success_update_quality_lokal_tiket_baru and success_update_quality_staging_tiket_baru:
                     sqlite_conn.commit()
                     connection.commit()
-                # generate_report(rawData, img_dir,class_name_values, class_original, class_totals['Brondolan'], class_totals['Brondolan Busuk'],class_totals['DIRT/KOTORAN'] ,1)
+                    conn_wb_lokal.commit()
+                    
+                cursor_wb_lokal.close()                    
+                conn_wb_lokal.close()
+                generate_report(rawData, img_dir,class_name_values, class_original, class_totals['Brondolan'], class_totals['Brondolan Busuk'],class_totals['DIRT/KOTORAN'] ,1)
                 messagebox.showinfo("Success", "Data Tiket terbaru " + new_tiket_value + " Berhasil terupdate")  
                 
                 edit_data_overlay.destroy()
