@@ -72,6 +72,9 @@ stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 connection = None
 
+
+file_name_without_extension = os.path.splitext(os.path.basename(source))[0]
+
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 id_mill = 1
 
@@ -589,7 +592,7 @@ finally:
             '-pix_fmt', 'yuv420p',
             '-r', str(fpsVideoCap),
             '-s', f'{frame_width}x{frame_height}',
-            str(date_start) + '_exported.mp4'
+            str(file_name_without_extension) + '_' + str(date_start) + '_exported.mp4'
         ]
     cv2.destroyAllWindows()
     if save_vid :
