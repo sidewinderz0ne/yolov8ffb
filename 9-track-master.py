@@ -73,6 +73,10 @@ ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 connection = None
 
 
+avgfps = 0
+counter = 1
+minfps = 1000
+maxfps = 0
 file_name_without_extension = os.path.splitext(os.path.basename(source))[0]
 
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
@@ -250,7 +254,12 @@ def save_log(result, path, time):
         print(f"Error saving data to {path}: {str(e)}")
 
 def close():
-    global prefix
+    global prefix, minfps , maxfps, avgfps
+    
+    minfps = round(minfps,2)
+    maxfps = round(maxfps,2)
+    avgfps = round(avgfps,2)
+
     class_count.append(kastrasi)
     file_path = str(log_inference) + '/' + formatted_date + '_log.TXT'
     
@@ -272,7 +281,7 @@ def close():
     names.append('kastrasi')
 
     date_end = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(iou_thres) +"," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg))
+    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(iou_thres) +"," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg)+ "," + str(minfps)+ "," + str(maxfps)+ "," + str(avgfps))
     if mode == 'sampling':
         img_dir = str(Path(os.getcwd() + '/hasil/')) + '/' + str(formatted_date)   + '/' + prefix 
         data = f"{class_count}${names}${img_dir}"
@@ -373,23 +382,30 @@ try:
         # update grading machine timestamp
         if datetime.now(tz=tzInfo) > lastDate:
             dateNow = datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S")
-            update_date(dateNow, id_mill)
+            if mode == 'total':
+                update_date(dateNow, id_mill)
             lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=0, minutes=5, hours=0)
             
         success, frame = cap.read()
         if success:
-            # Start the timer
             start_time = time()
 
             results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
             
-            # Stop the timer
             end_time = time()
-
-            # Calculate the FPS
             fps = 1 / (end_time - start_time)
+            fps_now = fps
 
-            # Get the boxes and track IDs
+            if avgfps == 0:
+                avgfps = fps_now
+            else:
+                avgfps = (avgfps*(counter-1)+fps_now)/counter
+
+            if fps_now < minfps and fps_now >20:
+                minfps = fps_now
+            if fps_now > maxfps:
+                maxfps = fps_now
+            
             boxes = results[0].boxes.xywh.cpu()
                 
             try:
@@ -411,7 +427,7 @@ try:
             skorTotal = 0
             countOnFrame = 0
             nilai = 0
-
+            counter += 1
             track_idsArr.append(track_ids)
             # Plot the tracks and count objects passing the line
             for box, track_id, cl in zip(boxes, track_ids, clss):

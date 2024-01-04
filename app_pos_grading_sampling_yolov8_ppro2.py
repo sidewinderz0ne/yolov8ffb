@@ -1111,10 +1111,10 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self, connection, date_today=None):
-        start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
+        # start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
         current_date = datetime.datetime.now().date()
         start_time = datetime.time(7, 0, 0)
-        # start_date = datetime.datetime.combine(current_date, start_time)
+        start_date = datetime.datetime.combine(current_date, start_time)
         
         end_date = start_date + datetime.timedelta(days=1)
 
