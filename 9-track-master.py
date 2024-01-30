@@ -33,19 +33,29 @@ import logging
 import asyncio
 import aiohttp
 
+username_os = os.path.basename(os.path.expanduser("~"))
+local_weights_folder = f'/home/{username_os}/weights'
+local_file_path_model = f'{local_weights_folder}/model.pt'
+
+if not os.path.exists(local_weights_folder):
+    os.makedirs(local_weights_folder)
+if not os.path.exists(local_file_path_model):
+    subprocess.run(["python", "compare_model_local_server.py"])
+
 url = 'https://srs-ssms.com/grading_ai/post_updated_grading_machine.php'
 script_directory = os.path.dirname(os.path.abspath(__file__))
 log_file_path = os.path.join(script_directory, 'opencv_log.txt')
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
-parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help='source')  # file/folder, 0 for webcam
+parser.add_argument('--yolo_model', type=str, default=local_file_path_model, help='model.pt path')
+parser.add_argument('--source', type=str, default='/home/grading/sampel_video_sampling/Merge_Grading_23_jan_OA.mp4', help='source')
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
-parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
+parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
 parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
-parser.add_argument('--roi', type=float, default=0.43, help='line height')
+parser.add_argument('--roi', type=float, default=0.3, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
 parser.add_argument('--mode', type=str, default='sampling')
@@ -86,19 +96,13 @@ with open(id_mill_dir, 'r') as z:
     id_mill = z.readline()
 
 def contains_video_keywords(file_path):
-    # Define a list of keywords that are commonly found in video file names
     video_keywords = ['avi', 'mp4', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v']
-
-    # Convert the file path to lowercase for case-insensitive matching
     file_path_lower = file_path.lower()
-
-    # Check if any of the video keywords are present in the file path
     for keyword in video_keywords:
         if keyword in file_path_lower:
             return True
 
     return False
-# Use regular expression to find the IP address in the source string
 ip_match = re.search(ip_pattern, source)
 
 if ip_match:

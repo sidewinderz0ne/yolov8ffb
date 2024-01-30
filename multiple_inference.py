@@ -72,8 +72,8 @@ path_avg_result_cctv = Path(os.getcwd() + '/hasil/' + formatted_date  + '/' + no
 if not path_avg_result_cctv.exists():
     path_avg_result_cctv.touch()
 
-cctv_ip = 'asdf'
-cctv2_ip = '10.9.116.171'
+cctv_ip = '192.168.3.64'
+cctv2_ip = '192.168.99.2'
 
 program1_command = ['python', '9-track-master.py','--tiket', no_tiket, '--source', cctv_ip, '--mode', mode]
 program2_command = ['python', '9-track-master.py','--tiket', no_tiket, '--source', cctv2_ip, '--mode', mode]

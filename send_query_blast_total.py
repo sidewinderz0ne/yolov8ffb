@@ -1,6 +1,7 @@
 import os
 import aiohttp
 import asyncio
+import subprocess
 from datetime import datetime, timedelta
 import pytz
 from pathlib import Path
@@ -78,6 +79,7 @@ async def main():
 
     while True:
         if datetime.now(tz=tzInfo) > lastDate:
+            subprocess.run(["python", "compare_model_local_server.py"]) 
             await read_and_send_lines(log_dir)
             lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=timer, minutes=0, hours=0)
         await asyncio.sleep(1)
