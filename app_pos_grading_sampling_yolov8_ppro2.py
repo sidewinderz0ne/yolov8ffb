@@ -836,7 +836,7 @@ def connect_to_database():
 
         server, user, password, database = record
         
-        timeout = 30
+        timeout = 5
         
         def try_connect():
             global connection

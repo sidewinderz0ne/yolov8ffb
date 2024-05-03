@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import pytz
 import json
+import requests
 from urllib.request import urlopen
 
 tzInfo = pytz.timezone('Asia/Bangkok')
@@ -29,8 +30,9 @@ arr = []
 async def fetch_server_data():
     try:
         # store the response of URL
-        response = urlopen(url_list_data)
-        return json.loads(response.read())
+        # response = urlopen(url_list_data)
+        response = requests.get(url_list_data)
+        return response.json()
     except Exception as e:
         print("An error occurred while fetching the server data:", str(e))
         return None
@@ -71,10 +73,10 @@ def read_text_file(file_path, timestamp):
                         line = line.replace("'", "\"")
                         line_dict = json.loads(line)
 
-                        
                         key_mapping = {'no_tiket': 'no_tiket', 'no_plat': 'no_plat', 'nama_driver': 'nama_driver', 'bisnis_unit': 'bunit', 'divisi':'divisi','blok':'blok','status':'ownership','unripe':'unripe','ripe':'ripe','overripe':'overripe','empty_bunch':'empty_bunch','abnormal':'abnormal','kastrasi':'kastrasi','tp':'long_stalk','waktu_mulai':'waktu_mulai','waktu_selesai':'waktu_selesai'}
                         matching_data = [data for data in arr if compare_dicts(data, line_dict, key_mapping)]
 
+                        print("no_tiket:", line_dict.get('no_tiket'))
                         if not matching_data:
                             new_key_value_pairs = {'id_mill': id_mill}
                             line_dict.update(new_key_value_pairs)
@@ -107,6 +109,9 @@ def read_text_file(file_path, timestamp):
                 except Exception as e:
                     print("Error:", str(e))
 
+
+                
+
 async def post_count(params):
     print('sudah di store gan')
     try:
@@ -124,10 +129,9 @@ if arr == []:
 while True:
     
     if datetime.now(tz=tzInfo) > lastDate:
-        print('baru lewat gan')
         asyncio.get_event_loop().run_until_complete(update_arr_variable())
         read_text_file(offline_log_dir,datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S"))
-        
-        lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=timer, minutes=15, hours=0)
+        print('Sudah selesai eksekusi semua line txt')
+        lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=10, minutes=0, hours=0)
 
 
