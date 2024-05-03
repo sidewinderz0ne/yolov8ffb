@@ -5,12 +5,12 @@ conn = sqlite3.connect('grading_sampling.db')
 cursor = conn.cursor()
 
 # List all tables in the database
-cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+cursor.execute("SELECT * FROM weight_bridge;")
 tables = cursor.fetchall()
 
 print("\nList of Tables:")
 for table in tables:
-    print(table[0])
+    print(table)
 
 # Close the connection
 conn.close()

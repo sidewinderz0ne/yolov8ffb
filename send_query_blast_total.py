@@ -12,7 +12,7 @@ headers = {
     "content-type": "application/x-www-form-urlencoded",
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36'
 }
-timer = 20
+timer = 10
 log_dir = Path(os.getcwd() + '/hasil/grading_total_log.TXT')
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 
@@ -79,7 +79,8 @@ async def main():
 
     while True:
         if datetime.now(tz=tzInfo) > lastDate:
-            subprocess.run(["python", "compare_model_local_server.py"]) 
+            result = subprocess.run(["python", "compare_model_local_server.py"], capture_output=True, text=True)
+            # print(result.stdout.strip())
             await read_and_send_lines(log_dir)
             lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=timer, minutes=0, hours=0)
         await asyncio.sleep(1)

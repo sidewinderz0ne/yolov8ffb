@@ -1,0 +1,947 @@
+2023-11-29 07:37:38,729 - ERROR - An error occurred: cannot access local variable 'kastrasi' where it is not associated with a value
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 565, in <module>
+    main(opt)
+  File "/home/grading/yolov8ffb/9-track-master.py", line 460, in main
+    TotalJjg = sum(class_count)-int(class_count[5])+int(kastrasi)
+                                                        ^^^^^^^^
+UnboundLocalError: cannot access local variable 'kastrasi' where it is not associated with a value
+2023-11-29 07:39:09,603 - ERROR - An error occurred: cannot access local variable 'kastrasi' where it is not associated with a value
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 565, in <module>
+    main(opt)
+  File "/home/grading/yolov8ffb/9-track-master.py", line 460, in main
+    TotalJjg = sum(class_count)-int(class_count[5])+int(kastrasi)
+                                                        ^^^^^^^^
+UnboundLocalError: cannot access local variable 'kastrasi' where it is not associated with a value
+2023-12-19 08:30:47,971 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:31:20,851 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:31:55,654 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:34:59,358 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:35:06,386 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:35:13,391 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:35:20,411 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:35:32,190 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:35:39,206 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:35:46,240 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:44:30,213 - DEBUG - Using selector: EpollSelector
+2023-12-19 08:44:37,244 - DEBUG - Using selector: EpollSelector
+2023-12-19 10:23:35,836 - DEBUG - Using selector: EpollSelector
+2023-12-19 12:19:33,556 - DEBUG - Using selector: EpollSelector
+2023-12-19 14:28:27,584 - DEBUG - Using selector: EpollSelector
+2023-12-20 10:13:58,228 - DEBUG - Using selector: EpollSelector
+2023-12-20 10:37:58,002 - DEBUG - Using selector: EpollSelector
+2023-12-20 10:59:48,224 - DEBUG - Using selector: EpollSelector
+2023-12-20 11:04:48,273 - DEBUG - Using selector: EpollSelector
+2023-12-20 11:17:33,179 - DEBUG - Using selector: EpollSelector
+2023-12-20 11:30:23,398 - DEBUG - Using selector: EpollSelector
+2023-12-20 16:36:38,767 - DEBUG - Using selector: EpollSelector
+2023-12-20 16:41:29,512 - DEBUG - Using selector: EpollSelector
+2023-12-20 16:43:17,728 - DEBUG - Using selector: EpollSelector
+2023-12-20 16:48:15,866 - DEBUG - Using selector: EpollSelector
+2023-12-20 17:18:45,241 - DEBUG - Using selector: EpollSelector
+2023-12-21 09:44:36,447 - DEBUG - Using selector: EpollSelector
+2023-12-22 07:52:07,492 - DEBUG - Using selector: EpollSelector
+2023-12-22 09:14:54,213 - DEBUG - Using selector: EpollSelector
+2023-12-22 10:57:45,589 - DEBUG - Using selector: EpollSelector
+2023-12-22 16:51:47,565 - DEBUG - Using selector: EpollSelector
+2023-12-22 16:56:51,988 - DEBUG - Using selector: EpollSelector
+2023-12-22 17:01:43,268 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:09:30,296 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:10:21,782 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:11:42,384 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:12:30,834 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:13:48,165 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:15:19,314 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:31:38,841 - DEBUG - Using selector: EpollSelector
+2023-12-23 11:34:25,001 - DEBUG - Using selector: EpollSelector
+2023-12-26 07:30:29,579 - DEBUG - Using selector: EpollSelector
+2023-12-26 07:37:33,475 - DEBUG - Using selector: EpollSelector
+2023-12-26 07:38:08,086 - DEBUG - Using selector: EpollSelector
+2023-12-26 08:03:47,559 - DEBUG - Using selector: EpollSelector
+2024-01-04 09:22:07,601 - ERROR - An error occurred: bad operand type for unary +: 'str'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 585, in <module>
+    close()
+  File "/home/grading/yolov8ffb/9-track-master.py", line 280, in close
+    append_hasil(str(date_start) + "," + yolo_model_str + "," + str(imgsz) + "," +  str(roi) + "," + str(conf_thres)+ "," + str(iou_thres) +"," + str(class_count[0])+ "," + str(class_count[1])+ "," + str(class_count[2])+ "," + str(class_count[3])+ "," + str(class_count[4])+ "," + str(class_count[5])+ "," + str(kastrasi)+ "," + str(TotalJjg), + "," + str(minfps),+ "," + str(maxfps),+ "," + str(avgfps))
+                                                                                                                                                                                                                                                                                                                                                        ^^^^^
+TypeError: bad operand type for unary +: 'str'
+2024-01-05 07:53:46,488 - DEBUG - Using selector: EpollSelector
+2024-01-05 07:57:00,322 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:10:18,446 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:10:31,499 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:22:03,059 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:09,511 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:20,399 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:25,176 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:29,693 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:35,265 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:41,226 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:49,116 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:54,291 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:23:59,404 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:24:04,450 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:24:09,346 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:24:17,283 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:24:26,869 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:24:32,597 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:25:58,877 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:26:09,664 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:26:45,800 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:27:02,432 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:27:07,525 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:27:15,706 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:30:05,499 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:30:25,382 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:32:26,069 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:35:36,486 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:35:42,591 - DEBUG - Using selector: EpollSelector
+2024-01-05 09:39:27,150 - DEBUG - Using selector: EpollSelector
+2024-01-15 15:44:03,222 - DEBUG - Using selector: EpollSelector
+2024-01-15 15:59:01,190 - DEBUG - Using selector: EpollSelector
+2024-01-20 08:44:58,388 - DEBUG - Using selector: EpollSelector
+2024-01-20 08:49:58,424 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:00:42,429 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:05:42,452 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:06:47,436 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:11:47,476 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:12:44,159 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:17:50,194 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:22:53,323 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:27:53,359 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:28:42,966 - DEBUG - Using selector: EpollSelector
+2024-01-25 10:33:42,981 - DEBUG - Using selector: EpollSelector
+2024-03-27 13:11:00,731 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:11:06,780 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:11:12,958 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:11:19,087 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:11:42,124 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:11:48,227 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:12:44,954 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:12:51,038 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:12:57,296 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 114, in __init__
+    model = weights.to(device)
+            ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1160, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 177, in _apply
+    self = super()._apply(fn)
+           ^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 810, in _apply
+    module._apply(fn)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 833, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1158, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:15:37,790 - ERROR - An error occurred: CUDA out of memory. Tried to allocate 118.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 302.00 MiB memory in use. Of the allocated memory 74.69 MiB is allocated by PyTorch, and 15.31 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 478, in warmup
+    im = torch.empty(*imgsz, dtype=torch.half if self.fp16 else torch.float, device=self.device)  # input
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 118.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 302.00 MiB memory in use. Of the allocated memory 74.69 MiB is allocated by PyTorch, and 15.31 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+2024-03-27 13:15:56,731 - ERROR - An error occurred: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 480, in warmup
+    self.forward(im)  # warmup
+    ^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 347, in forward
+    y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+                                                                                          ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 42, in forward
+    return self.predict(x, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 59, in predict
+    return self._predict_once(x, profile, visualize)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 79, in _predict_once
+    x = m(x)  # run
+        ^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/modules/conv.py", line 40, in forward_fuse
+    return self.act(self.conv(x))
+                    ^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
+2024-03-27 13:16:09,439 - ERROR - An error occurred: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 480, in warmup
+    self.forward(im)  # warmup
+    ^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 347, in forward
+    y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+                                                                                          ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 42, in forward
+    return self.predict(x, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 59, in predict
+    return self._predict_once(x, profile, visualize)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 79, in _predict_once
+    x = m(x)  # run
+        ^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/modules/conv.py", line 40, in forward_fuse
+    return self.act(self.conv(x))
+                    ^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR
+2024-03-27 13:16:25,059 - ERROR - An error occurred: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 232, in predict
+    self.predictor.setup_model(model=self.model, verbose=is_cli)
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 315, in setup_model
+    self.model = AutoBackend(model or self.args.model,
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 115, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 115, in __init__
+    model = model.fuse(verbose=verbose) if fuse else model
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 129, in fuse
+    m.conv = fuse_conv_and_bn(m.conv, m.bn)  # update conv
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/utils/torch_utils.py", line 171, in fuse_conv_and_bn
+    w_bn = torch.diag(bn.weight.div(torch.sqrt(bn.eps + bn.running_var)))
+                                               ~~~~~~~^~~~~~~~~~~~~~~~
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+2024-03-27 13:16:34,662 - ERROR - An error occurred: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 480, in warmup
+    self.forward(im)  # warmup
+    ^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 347, in forward
+    y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+                                                                                          ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 42, in forward
+    return self.predict(x, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 59, in predict
+    return self._predict_once(x, profile, visualize)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 79, in _predict_once
+    x = m(x)  # run
+        ^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/modules/conv.py", line 40, in forward_fuse
+    return self.act(self.conv(x))
+                    ^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+2024-03-27 13:16:50,072 - ERROR - An error occurred: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 71.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 480, in warmup
+    self.forward(im)  # warmup
+    ^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 347, in forward
+    y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+                                                                                          ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 42, in forward
+    return self.predict(x, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 59, in predict
+    return self._predict_once(x, profile, visualize)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 79, in _predict_once
+    x = m(x)  # run
+        ^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/modules/conv.py", line 40, in forward_fuse
+    return self.act(self.conv(x))
+                    ^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 71.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+2024-03-27 13:17:05,642 - ERROR - An error occurred: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 71.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 480, in warmup
+    self.forward(im)  # warmup
+    ^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 347, in forward
+    y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+                                                                                          ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 42, in forward
+    return self.predict(x, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 59, in predict
+    return self._predict_once(x, profile, visualize)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 79, in _predict_once
+    x = m(x)  # run
+        ^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/modules/conv.py", line 40, in forward_fuse
+    return self.act(self.conv(x))
+                    ^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 71.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+2024-03-27 13:17:18,765 - ERROR - An error occurred: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 259, in track
+    return self.predict(source=source, stream=stream, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/model.py", line 239, in predict
+    return self.predictor.predict_cli(source=source) if is_cli else self.predictor(source=source, stream=stream)
+                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 198, in __call__
+    return list(self.stream_inference(source, model, *args, **kwargs))  # merge list of Result into one
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 35, in generator_context
+    response = gen.send(None)
+               ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/predictor.py", line 246, in stream_inference
+    self.model.warmup(imgsz=(1 if self.model.pt or self.model.triton else self.dataset.bs, 3, *self.imgsz))
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 480, in warmup
+    self.forward(im)  # warmup
+    ^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/autobackend.py", line 347, in forward
+    y = self.model(im, augment=augment, visualize=visualize) if augment or visualize else self.model(im)
+                                                                                          ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 42, in forward
+    return self.predict(x, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 59, in predict
+    return self._predict_once(x, profile, visualize)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/tasks.py", line 79, in _predict_once
+    x = m(x)  # run
+        ^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/nn/modules/conv.py", line 40, in forward_fuse
+    return self.act(self.conv(x))
+                    ^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1518, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1527, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 460, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/torch/nn/modules/conv.py", line 456, in _conv_forward
+    return F.conv2d(input, weight, bias, self.stride,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

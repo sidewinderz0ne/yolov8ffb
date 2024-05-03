@@ -23,6 +23,7 @@ import socket
 from urllib.request import urlopen
 import json
 import hashlib
+import requests
 import asyncio
 from PIL import Image, ImageTk, ImageOps
 from reportlab.pdfgen import canvas
@@ -405,10 +406,8 @@ def get_list_mill(dir_mill, flag):
 
     if len(mill_names) == 0:
         try:
-            response = urlopen(url)
-            get_mill_arr = json.loads(response.read())
-
-            print(get_mill_arr)
+            response = requests.get(url)
+            get_mill_arr = response.json()
             mill_names = [f"{data['mill']};{data['ip']}" for data in get_mill_arr]
         except Exception as e:
             print("An error occurred while fetching the server data:", str(e))
@@ -553,8 +552,9 @@ class ConfigFrame(tk.Frame):
 
                 arr = None
                 try:
-                    response = urlopen(url)
-                    arr = json.loads(response.read())
+                    
+                    response = requests.get(url)
+                    arr = response.json()
                 except Exception as e:
                     print("Anda membutuhkan internet untuk fetching ID mill dari server")
 
@@ -1467,7 +1467,7 @@ class Frame1(tk.Frame):
                                         text=True,
                                         check=True)
             else:
-                result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--source', str(source)],
+                result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source)],
                                         capture_output=True,
                                         text=True,
                                         check=True)
@@ -1531,7 +1531,7 @@ class Frame3(tk.Frame):
 
             class_name = eval(parts[1])
             img_dir = parts[2]
-
+        
         filtered_list = [counter_per_class[i] for i in range(len(counter_per_class)) if i != 5]
 
         totalJjg = sum(filtered_list)
@@ -2257,7 +2257,7 @@ class Frame3(tk.Frame):
         with open(offline_log_dir, 'w') as file:
             file.writelines(lines)
 
-        messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message
+        messagebox.showinfo("Success", "Data Sukses Tersimpan !")  # Show success message\
         generate_report(result, img_dir,class_count_dict, class_name, brondol, brondolBusuk, dirt)
 
         threading.Thread(target=self.run_send_pdf_in_background).start()

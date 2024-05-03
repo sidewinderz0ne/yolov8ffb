@@ -1,17 +1,18 @@
 import sqlite3
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 import json
 
 url = "https://srs-ssms.com/grading_ai/get_list_mill.php"
 
-arr = None
 try:
-    # store the response of URL
-    response = urlopen(url)
-    arr = json.loads(response.read())
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+    request = Request(url, headers=headers)
+    
+    with urlopen(request) as response:
+        arr = json.loads(response.read())
+
 except Exception as e:
     print("An error occurred while fetching the server data:", str(e))
-
 
 mill = arr[0]['mill']
 
@@ -38,8 +39,8 @@ if cursor.execute(create_table_query):
 else:
     print("Table already exists.")
 
-# default_record = (1, mill, '192.168.1.254\\DBSTAGING', 'usertesting', 'Qwerty@123', 'skmstagingdb')
-default_record = (1, mill, '10.9.135.41\SCMSTAGING', 'userstaging', 'Qwerty@123', 'SCMSTAGINGDB')
+default_record = (1, mill, '192.168.1.254\\DBSTAGING', 'usertesting', 'Qwerty@123', 'skmstagingdb')
+# default_record = (1, mill, r'10.9.135.41\SCMSTAGING', 'userstaging', 'Qwerty@123', 'SCMSTAGINGDB')
 # Execute an INSERT query to add the default record
 cursor.execute("INSERT INTO config (id, mill, server, user, password, database) VALUES (?, ?, ?, ?, ?, ?)", default_record)
 

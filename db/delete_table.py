@@ -19,8 +19,9 @@ if all_tables:
 
     for table_info in tables:
         table_name = table_info[0]
-        cursor.execute(f"DROP TABLE {table_name}")
-        print(f"Table '{table_name}' has been deleted.")
+        if table_name != 'log_sampling':
+            cursor.execute(f"DROP TABLE {table_name}")
+            print(f"Table '{table_name}' has been deleted.")
 
 else:
     # Delete the specified table

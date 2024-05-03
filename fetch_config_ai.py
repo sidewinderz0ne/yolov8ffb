@@ -26,7 +26,6 @@ current_date = datetime.now(tz=tzInfo).strftime("%Y-%m-%d")
 formatted_date = current_date
 offline_log_dir = Path(os.getcwd() + '/hasil/' + formatted_date  + '/offline_log.TXT')
 
-
 with open(id_mill_dir, 'r') as z:
     id_mill = z.readline()
 

@@ -58,7 +58,7 @@ parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytet
 parser.add_argument('--roi', type=float, default=0.3, help='line height')
 parser.add_argument('--show', type=bool, default=True, help='line height')
 parser.add_argument('--pull_data', type=str, default='-')
-parser.add_argument('--mode', type=str, default='sampling')
+parser.add_argument('--mode', type=str, default='testing')
 parser.add_argument('--save_vid', type=bool, default=False)
 parser.add_argument("--debug", type=bool, default=False, help="Enable debug mode to store everything printed result into txt file")
 parser.add_argument("--tiket", type=str, default='default', help="Enable debug mode to store everything printed result into txt file")
@@ -112,6 +112,7 @@ elif contains_video_keywords(source):
     stream = source
 else:
     stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
+    # stream = '/home/grading/bebasam/20220822_124512.jpg'
     
 def print_debug(str):
     if debug == True:
@@ -434,9 +435,8 @@ try:
             counter += 1
             track_idsArr.append(track_ids)
             # Plot the tracks and count objects passing the line
-            for box, track_id, cl in zip(boxes, track_ids, clss):
+            for box, track_id, name, cl in zip(boxes, track_ids, names, clss):
                 x, y, w, h = box
-                # print(int(w), int(h))
                 
                 wideArea = int(w) * int(h)
 
