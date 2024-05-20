@@ -1045,7 +1045,6 @@ class Frame1(tk.Frame):
         # Update 'source' to the current combobox value
         source = selected_value
 
-
     def populate_treeview(self, arrData):
         
         custom_font = tkFont.Font(family="Helvetica", size=11)
@@ -1467,7 +1466,7 @@ class Frame1(tk.Frame):
                                         text=True,
                                         check=True)
             else:
-                result = subprocess.run(['python', '9-track-master.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source)],
+                result = subprocess.run(['python', '11-track-master.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source)],
                                         capture_output=True,
                                         text=True,
                                         check=True)
