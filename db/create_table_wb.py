@@ -25,7 +25,7 @@ try:
         database=config_data['nama_database'],
         as_dict=True
     )
-    print(f"Connected to SQL Server at {config_data['Servername']}")
+    print(f"Connected to SQL Server at {config_data['servername']}")
 except pymssql.Error as e:
     print(f"SQL Server connection error: {e}")
     exit(1)
