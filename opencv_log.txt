@@ -945,3 +945,363 @@ Traceback (most recent call last):
     return F.conv2d(input, weight, bias, self.stride,
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 50.00 MiB. GPU 0 has a total capacty of 7.77 GiB of which 79.75 MiB is free. Process 2236665 has 6.87 GiB memory in use. Including non-PyTorch memory, this process has 322.00 MiB memory in use. Of the allocated memory 93.44 MiB is allocated by PyTorch, and 16.56 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF
+2024-05-13 17:03:33,462 - ERROR - An error occurred: Results.plot() got an unexpected keyword argument 'bbox'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    annotated_frame = results[0].plot(conf=False, bbox=None)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Results.plot() got an unexpected keyword argument 'bbox'
+2024-05-13 17:04:51,314 - ERROR - An error occurred: Results.plot() got an unexpected keyword argument 'bbox'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    annotated_frame = results[0].plot(conf=False, bbox=None)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Results.plot() got an unexpected keyword argument 'bbox'
+2024-05-13 17:04:57,447 - ERROR - An error occurred: Results.plot() got an unexpected keyword argument 'bbox'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    annotated_frame = results[0].plot(conf=False, bbox=None)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Results.plot() got an unexpected keyword argument 'bbox'
+2024-05-13 17:05:03,478 - ERROR - An error occurred: Results.plot() got an unexpected keyword argument 'bbox'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    annotated_frame = results[0].plot(conf=False, bbox=None)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Results.plot() got an unexpected keyword argument 'bbox'
+2024-05-13 17:05:09,531 - ERROR - An error occurred: Results.plot() got an unexpected keyword argument 'bbox'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    annotated_frame = results[0].plot(conf=False, bbox=None)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Results.plot() got an unexpected keyword argument 'bbox'
+2024-05-13 17:05:15,696 - ERROR - An error occurred: Results.plot() got an unexpected keyword argument 'bbox'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    annotated_frame = results[0].plot(conf=False)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Results.plot() got an unexpected keyword argument 'bbox'
+2024-05-13 17:21:25,302 - ERROR - An error occurred: not enough values to unpack (expected 4, got 2)
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    x, y, w, h = box
+    ^^^^^^^^^^
+ValueError: not enough values to unpack (expected 4, got 2)
+2024-05-13 17:22:08,102 - ERROR - An error occurred: not enough values to unpack (expected 4, got 2)
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 425, in <module>
+    x, y, w, h = box
+    ^^^^^^^^^^
+ValueError: not enough values to unpack (expected 4, got 2)
+2024-05-13 17:22:51,869 - ERROR - An error occurred: name 'annotated_frame' is not defined
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 434, in <module>
+    cv2.line(annotated_frame, (0, int(middle_y)), (annotated_frame.shape[1], int(middle_y)), (0, 255, 0), 2)  # Green line
+             ^^^^^^^^^^^^^^^
+NameError: name 'annotated_frame' is not defined
+2024-05-13 17:22:58,103 - ERROR - An error occurred: name 'annotated_frame' is not defined
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/10-track-master.py", line 434, in <module>
+    counter += 1
+             ^^^^
+NameError: name 'annotated_frame' is not defined
+2024-05-14 07:36:03,467 - ERROR - An error occurred: not enough values to unpack (expected 4, got 2)
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 426, in <module>
+    x, y, w, h = box
+    ^^^^^^^^^^
+ValueError: not enough values to unpack (expected 4, got 2)
+2024-05-14 07:40:48,223 - ERROR - An error occurred: not enough values to unpack (expected 4, got 2)
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 428, in <module>
+    x, y, w, h = box
+    ^^^^^^^^^^
+ValueError: not enough values to unpack (expected 4, got 2)
+2024-05-14 07:41:05,665 - ERROR - An error occurred: not enough values to unpack (expected 4, got 2)
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 428, in <module>
+    x, y, w, h = box
+    ^^^^^^^^^^
+ValueError: not enough values to unpack (expected 4, got 2)
+2024-05-14 07:43:18,433 - ERROR - An error occurred: not enough values to unpack (expected 4, got 1)
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 429, in <module>
+    x, y, w, h = box
+    ^^^^^^^^^^
+ValueError: not enough values to unpack (expected 4, got 1)
+2024-05-14 08:25:32,575 - ERROR - An error occurred: 'numpy.ndarray' object has no attribute 'plot'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 439, in <module>
+    print(annotated_frame.plot())
+          ^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'numpy.ndarray' object has no attribute 'plot'
+2024-05-14 11:42:02,581 - ERROR - An error occurred: index 1 is out of bounds for dimension 0 with size 1
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 529, in <module>
+    annotated_frame = results[0][1].plot(conf=False)
+                      ~~~~~~~~~~^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/results.py", line 126, in __getitem__
+    return self._apply("__getitem__", idx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/results.py", line 163, in _apply
+    setattr(r, k, getattr(v, fn)(*args, **kwargs))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/results.py", line 63, in __getitem__
+    return self.__class__(self.data[idx], self.orig_shape)
+                          ~~~~~~~~~^^^^^
+IndexError: index 1 is out of bounds for dimension 0 with size 1
+2024-05-14 11:43:10,957 - ERROR - An error occurred: index 0 is out of bounds for dimension 0 with size 0
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 528, in <module>
+    annotated_frame = results[0][0].plot(conf=False)
+                      ~~~~~~~~~~^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/results.py", line 126, in __getitem__
+    return self._apply("__getitem__", idx)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/results.py", line 163, in _apply
+    setattr(r, k, getattr(v, fn)(*args, **kwargs))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/engine/results.py", line 63, in __getitem__
+    return self.__class__(self.data[idx], self.orig_shape)
+                          ~~~~~~~~~^^^^^
+IndexError: index 0 is out of bounds for dimension 0 with size 0
+2024-05-14 12:00:58,499 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 531, in <module>
+    annotated_frame = printBoxes[0].plot(conf=False)
+                      ~~~~~~~~~~^^^
+IndexError: list index out of range
+2024-05-14 12:02:13,942 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 526, in <module>
+    annotated_frame = printBoxes[0].plot(conf=False)
+                      ~~~~~~~~~~^^^
+IndexError: list index out of range
+2024-05-14 12:02:48,175 - ERROR - An error occurred: 'list' object has no attribute 'plot'
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 526, in <module>
+    annotated_frame = printBoxes.plot(conf=False)
+                      ^^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'plot'
+2024-05-14 12:09:45,161 - ERROR - An error occurred: 'Results' object has no attribute 'pop'. See valid attributes below.
+
+    A class for storing and manipulating inference results.
+
+    Attributes:
+        orig_img (numpy.ndarray): Original image as a numpy array.
+        orig_shape (tuple): Original image shape in (height, width) format.
+        boxes (Boxes, optional): Object containing detection bounding boxes.
+        masks (Masks, optional): Object containing detection masks.
+        probs (Probs, optional): Object containing class probabilities for classification tasks.
+        keypoints (Keypoints, optional): Object containing detected keypoints for each object.
+        speed (dict): Dictionary of preprocess, inference, and postprocess speeds (ms/image).
+        names (dict): Dictionary of class names.
+        path (str): Path to the image file.
+
+    Methods:
+        update(boxes=None, masks=None, probs=None, obb=None): Updates object attributes with new detection results.
+        cpu(): Returns a copy of the Results object with all tensors on CPU memory.
+        numpy(): Returns a copy of the Results object with all tensors as numpy arrays.
+        cuda(): Returns a copy of the Results object with all tensors on GPU memory.
+        to(*args, **kwargs): Returns a copy of the Results object with tensors on a specified device and dtype.
+        new(): Returns a new Results object with the same image, path, and names.
+        plot(...): Plots detection results on an input image, returning an annotated image.
+        show(): Show annotated results to screen.
+        save(filename): Save annotated results to file.
+        verbose(): Returns a log string for each task, detailing detections and classifications.
+        save_txt(txt_file, save_conf=False): Saves detection results to a text file.
+        save_crop(save_dir, file_name=Path("im.jpg")): Saves cropped detection images.
+        tojson(normalize=False): Converts detection results to JSON format.
+    
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 453, in <module>
+    printBoxes.pop(idx)
+    ^^^^^^^^^^^^^^
+  File "/home/grading/yolov8/lib/python3.11/site-packages/ultralytics/utils/__init__.py", line 157, in __getattr__
+    raise AttributeError(f"'{name}' object has no attribute '{attr}'. See valid attributes below.\n{self.__doc__}")
+AttributeError: 'Results' object has no attribute 'pop'. See valid attributes below.
+
+    A class for storing and manipulating inference results.
+
+    Attributes:
+        orig_img (numpy.ndarray): Original image as a numpy array.
+        orig_shape (tuple): Original image shape in (height, width) format.
+        boxes (Boxes, optional): Object containing detection bounding boxes.
+        masks (Masks, optional): Object containing detection masks.
+        probs (Probs, optional): Object containing class probabilities for classification tasks.
+        keypoints (Keypoints, optional): Object containing detected keypoints for each object.
+        speed (dict): Dictionary of preprocess, inference, and postprocess speeds (ms/image).
+        names (dict): Dictionary of class names.
+        path (str): Path to the image file.
+
+    Methods:
+        update(boxes=None, masks=None, probs=None, obb=None): Updates object attributes with new detection results.
+        cpu(): Returns a copy of the Results object with all tensors on CPU memory.
+        numpy(): Returns a copy of the Results object with all tensors as numpy arrays.
+        cuda(): Returns a copy of the Results object with all tensors on GPU memory.
+        to(*args, **kwargs): Returns a copy of the Results object with tensors on a specified device and dtype.
+        new(): Returns a new Results object with the same image, path, and names.
+        plot(...): Plots detection results on an input image, returning an annotated image.
+        show(): Show annotated results to screen.
+        save(filename): Save annotated results to file.
+        verbose(): Returns a log string for each task, detailing detections and classifications.
+        save_txt(txt_file, save_conf=False): Saves detection results to a text file.
+        save_crop(save_dir, file_name=Path("im.jpg")): Saves cropped detection images.
+        tojson(normalize=False): Converts detection results to JSON format.
+    
+2024-05-14 12:11:16,803 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 444, in <module>
+    printBoxes[0].append(results[0])
+    ~~~~~~~~~~^^^
+IndexError: list index out of range
+2024-05-17 08:51:17,147 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 08:52:17,455 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 08:56:34,964 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 08:56:44,850 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 08:57:00,362 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 09:00:24,577 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 09:01:08,891 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 09:01:54,069 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-17 09:04:47,911 - ERROR - An error occurred: list index out of range
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 556, in <module>
+    cv2.putText(annotated_frame, f"kastrasi: {kastrasi}", (20, ((len(class_count) + 2) * 40)), font, fontRipeness, bgr_colors[len(class_count)], 2)
+                                                                                                                   ~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+IndexError: list index out of range
+2024-05-20 14:23:31,542 - ERROR - An error occurred: No module named 'lap'
+Traceback (most recent call last):
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 10, in <module>
+    import lap  # for linear_assignment
+    ^^^^^^^^^^
+ModuleNotFoundError: No module named 'lap'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/engine/model.py", line 487, in track
+    from ultralytics.trackers import register_tracker
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/__init__.py", line 3, in <module>
+    from .bot_sort import BOTSORT
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/bot_sort.py", line 8, in <module>
+    from .byte_tracker import BYTETracker, STrack
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/byte_tracker.py", line 8, in <module>
+    from .utils import matching
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 17, in <module>
+    import lap
+ModuleNotFoundError: No module named 'lap'
+2024-05-20 14:24:26,741 - ERROR - An error occurred: No module named 'lap'
+Traceback (most recent call last):
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 10, in <module>
+    import lap  # for linear_assignment
+    ^^^^^^^^^^
+ModuleNotFoundError: No module named 'lap'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 400, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/engine/model.py", line 487, in track
+    from ultralytics.trackers import register_tracker
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/__init__.py", line 3, in <module>
+    from .bot_sort import BOTSORT
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/bot_sort.py", line 8, in <module>
+    from .byte_tracker import BYTETracker, STrack
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/byte_tracker.py", line 8, in <module>
+    from .utils import matching
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 17, in <module>
+    import lap
+ModuleNotFoundError: No module named 'lap'
+2024-05-20 14:26:03,601 - ERROR - An error occurred: No module named 'lap'
+Traceback (most recent call last):
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 10, in <module>
+    import lap  # for linear_assignment
+    ^^^^^^^^^^
+ModuleNotFoundError: No module named 'lap'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/11-track-master.py", line 400, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/engine/model.py", line 487, in track
+    from ultralytics.trackers import register_tracker
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/__init__.py", line 3, in <module>
+    from .bot_sort import BOTSORT
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/bot_sort.py", line 8, in <module>
+    from .byte_tracker import BYTETracker, STrack
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/byte_tracker.py", line 8, in <module>
+    from .utils import matching
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 17, in <module>
+    import lap
+ModuleNotFoundError: No module named 'lap'
+2024-05-20 14:26:40,690 - ERROR - An error occurred: No module named 'lap'
+Traceback (most recent call last):
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 10, in <module>
+    import lap  # for linear_assignment
+    ^^^^^^^^^^
+ModuleNotFoundError: No module named 'lap'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/grading/yolov8ffb/9-track-master.py", line 398, in <module>
+    results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/engine/model.py", line 487, in track
+    from ultralytics.trackers import register_tracker
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/__init__.py", line 3, in <module>
+    from .bot_sort import BOTSORT
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/bot_sort.py", line 8, in <module>
+    from .byte_tracker import BYTETracker, STrack
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/byte_tracker.py", line 8, in <module>
+    from .utils import matching
+  File "/home/grading/yolov8_new_env/lib/python3.12/site-packages/ultralytics/trackers/utils/matching.py", line 17, in <module>
+    import lap
+ModuleNotFoundError: No module named 'lap'

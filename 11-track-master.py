@@ -160,8 +160,6 @@ skor_terendah = 1000
 object_ids_passed = []
 object_ids_not_passed = []
 baseScore = [0,3,2,0,2,1]
-
-print(model.names.values())
 names = list(model.names.values())
 class_count = [0] * len(names)
 class_count_reset = [0] * len(names)
@@ -341,7 +339,7 @@ cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
 
 if cap.isOpened() and save_vid == True:
     output_file = str(date_start) + '.mp4'
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # Codec (choose the appropriate one for your system)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # Codec (choose the appropriate one for your system)
     fpsVideoCap = 30.0  # Frames per second
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -634,24 +632,24 @@ except Exception as e:
     
 finally:
     cap.release()
-    if save_vid:
-        out.release()
-        cmd = [
-            'ffmpeg',
-            '-i', str(output_file),
-            '-c:v', 'libx265',
-            '-crf', '23',  
-            '-pix_fmt', 'yuv420p',
-            '-r', str(fpsVideoCap),
-            '-s', f'{frame_width}x{frame_height}',
-            str(file_name_without_extension) + '_' + str(date_start) + '_exported.mp4'
-        ]
+    # if save_vid:
+    #     out.release()
+    #     cmd = [
+    #         'ffmpeg',
+    #         '-i', str(output_file),
+    #         '-c:v', 'libx265',
+    #         '-crf', '23',  
+    #         '-pix_fmt', 'yuv420p',
+    #         '-r', str(fpsVideoCap),
+    #         '-s', f'{frame_width}x{frame_height}',
+    #         str(file_name_without_extension) + '_' + str(date_start) + '_exported.mp4'
+    #     ]
     cv2.destroyAllWindows()
-    if save_vid :
-        subprocess.run(cmd)
+    # if save_vid :
+    #     subprocess.run(cmd)
 
-        if os.path.exists(output_file):
-            os.remove(output_file)
+        # if os.path.exists(output_file):
+        #     os.remove(output_file)
     
     if debug:
         save_debug.close()

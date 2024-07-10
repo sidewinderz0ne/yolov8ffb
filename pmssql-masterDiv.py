@@ -8,6 +8,14 @@ conn = pymssql.connect(
     as_dict=True
 )
 
+conn = pymssql.connect(
+    server='10.9.115.115\\NBMSTAGING',
+    user='userstaging',
+    password='Qwerty@123',
+    database='NBMSTAGING',
+    as_dict=True
+)
+
 SQL_QUERY = """
 SELECT *
 FROM MasterDivisi_Staging;

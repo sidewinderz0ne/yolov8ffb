@@ -132,6 +132,6 @@ while True:
         asyncio.get_event_loop().run_until_complete(update_arr_variable())
         read_text_file(offline_log_dir,datetime.now(tz=tzInfo).strftime("%Y-%m-%d %H:%M:%S"))
         print('Sudah selesai eksekusi semua line txt')
-        lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=10, minutes=0, hours=0)
+        lastDate = datetime.now(tz=tzInfo) + timedelta(seconds=0, minutes=2, hours=0)
 
 

@@ -12,7 +12,7 @@ headers = {
     "content-type": "application/x-www-form-urlencoded",
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36'
 }
-timer = 10
+timer = 12
 log_dir = Path(os.getcwd() + '/hasil/grading_total_log.TXT')
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 
@@ -30,8 +30,8 @@ async def read_and_send_lines(file_path):
                         print("No data in the file. Skipping sending.")
                         return
 
-                    lines_to_send = lines[:25]
-                    lines_left = lines[25:]
+                    lines_to_send = lines[:40]
+                    lines_left = lines[40:]
 
                 tasks = [post_count(line.strip()) for line in lines_to_send]
                 results = await asyncio.gather(*tasks)

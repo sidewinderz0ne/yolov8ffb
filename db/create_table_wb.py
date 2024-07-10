@@ -1,9 +1,45 @@
 import sqlite3
 import pymssql
+import json
+
+def read_config(config_file_path):
+    try:
+        with open(config_file_path, 'r') as file:
+            json_data = file.read()
+        config_data = json.loads(json_data)
+        return config_data
+    except Exception as e:
+        print(f"An error occurred while reading the configuration file: {e}")
+        exit(1)
+
+# Read the JSON data from the .txt file for database configuration
+config_file_path = 'config_pks_ppro.txt'
+config_data = read_config(config_file_path)
+
+# Connect to the SQL Server (pymssql) database
+try:
+    sql_server_conn = pymssql.connect(
+        server=config_data['servername'],
+        user=config_data['username'],
+        password=config_data['password'],
+        database=config_data['nama_database'],
+        as_dict=True
+    )
+    print(f"Connected to SQL Server at {config_data['Servername']}")
+except pymssql.Error as e:
+    print(f"SQL Server connection error: {e}")
+    exit(1)
 
 # Connect to the SQLite3 database (grading_sampling.db)
-sqlite_conn = sqlite3.connect('grading_sampling.db')
-sqlite_cursor = sqlite_conn.cursor()
+sqlite_db_path = 'grading_sampling.db'
+
+try:
+    sqlite_conn = sqlite3.connect(sqlite_db_path)
+    sqlite_cursor = sqlite_conn.cursor()
+    print(f"Connected to SQLite database at {sqlite_db_path}")
+except sqlite3.Error as e:
+    print(f"SQLite connection error: {e}")
+    exit(1)
 
 # Create tables in the SQLite3 database if they don't exist
 create_weight_bridge_query = '''
@@ -27,23 +63,12 @@ CREATE TABLE IF NOT EXISTS weight_bridge (
 sqlite_cursor.execute(create_weight_bridge_query)
 sqlite_conn.commit()
 
-# Connect to the SQL Server (pymssql) database
-sql_server_conn = pymssql.connect(
-    server='10.9.135.41\SCMSTAGING',
-    user='userstaging',
-    password='Qwerty@123',
-    database='SCMSTAGINGDB',
-    as_dict=True
-)
-
 # Query the data from the SQL Server (pymssql) database
 sql_query = "SELECT * FROM MOPweighbridgeTicket_Staging;"
 sql_cursor = sql_server_conn.cursor(as_dict=True)
 sql_cursor.execute(sql_query)
 sql_records = sql_cursor.fetchall()
 
-
-# print(sql_records)
 # Insert the data into the SQLite3 database
 for record in sql_records:
     insert_query = '''
@@ -60,3 +85,5 @@ for record in sql_records:
 sqlite_conn.commit()
 sqlite_conn.close()
 sql_server_conn.close()
+
+print("Operation complete.")

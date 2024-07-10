@@ -1,0 +1,6 @@
+{
+    "username": "userstaging",
+    "password": "Qwerty@123",
+    "servername": "10.9.115.115\\PKSNBMSTAGING2",
+    "nama_database": "PKSNBMSTAGING2"
+}
