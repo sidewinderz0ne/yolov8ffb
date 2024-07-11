@@ -32,13 +32,25 @@ from time import time
 import logging
 import asyncio
 import aiohttp
+import glob
 
 username_os = os.path.basename(os.path.expanduser("~"))
 local_weights_folder = f'/home/{username_os}/weights'
 local_file_path_model = f'{local_weights_folder}/model.pt'
+current_folder = os.path.dirname(os.path.abspath(__file__))
 
+default_source = os.path.join(current_folder, 'video', 'Sampel_Video_Scm.mp4')
 if not os.path.exists(local_weights_folder):
     os.makedirs(local_weights_folder)
+# Find all 'model.pt' files inside the weights folder and its subfolders
+model_files = glob.glob(f'{local_weights_folder}/**/model.pt', recursive=True)
+
+
+if model_files:
+    model_file = model_files[0]
+else:
+    model_file = None
+
 if not os.path.exists(local_file_path_model):
     subprocess.run(["python", "compare_model_local_server.py"])
 
@@ -47,10 +59,9 @@ script_directory = os.path.dirname(os.path.abspath(__file__))
 log_file_path = os.path.join(script_directory, 'opencv_log.txt')
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
-
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default="/home/grading/yolov8/weight/2024-03-15-14-31_yolov5su_1280_total_revisi_dan_sampling/train/weights/best.pt", help='model.pt path')
-parser.add_argument('--source', type=str, default='/home/grading/sampel_video_sampling/Merge_Grading_23_jan_OA.mp4', help='source')
+parser.add_argument('--yolo_model', type=str, default=model_file, help='model.pt path')
+parser.add_argument('--source', type=str, default=default_source, help='source')
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
