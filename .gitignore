@@ -8,6 +8,6 @@ qr.png
 /hasil/temp.TXT
 id_mill.txt
 /config
-# /video
+/video
 /__pycache__
 /db/grading_sampling.db
