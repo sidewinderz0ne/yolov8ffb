@@ -1466,11 +1466,15 @@ class Frame1(tk.Frame):
                                         text=True,
                                         check=True)
             else:
+
+                print(source)
                 result = subprocess.run(['python', '11-track-master.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source)],
                                         capture_output=True,
                                         text=True,
                                         check=True)
 
+
+            print(result.stdout)
             output_inference = result.stdout
         except Exception as e:
             # Handle errors, e.g., show a messagebox
@@ -1479,6 +1483,8 @@ class Frame1(tk.Frame):
             # Close loading window after processing
             loading_window.destroy()
 
+
+        print(output_inference)
         if output_inference:
             self.master.switch_frame(Frame3, output_inference, row_values)
         else:
@@ -2391,7 +2397,7 @@ class EditBridgeFrame(tk.Frame):
         self.last_update_model = tk.Frame(self)
         self.last_update_model.grid(row=2, column=0, columnspan=3, sticky="nw", pady=10)  # Use columnspan to span all columns
 
-        last_model = tk.Label(self.last_update_model, text="Tanggal Update Model AI : 08 Agustus 2023",font=("Helvetica", 12, "italic"))
+        last_model = tk.Label(self.last_update_model, text="Tanggal Update Model AI : 10 Mei 2024",font=("Helvetica", 12, "italic"))
         last_model.pack()
                 
         self.rowconfigure(1, weight=1)

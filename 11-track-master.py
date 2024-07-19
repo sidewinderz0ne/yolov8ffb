@@ -60,8 +60,8 @@ log_file_path = os.path.join(script_directory, 'opencv_log.txt')
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default=model_file, help='model.pt path')
-parser.add_argument('--source', type=str, default=default_source, help='source')
+parser.add_argument('--yolo_model', type=str, default="/home/grading/weights/nama_folder/model.pt", help='model.pt path')
+parser.add_argument('--source', type=str, default="/home/grading/yolov8ffb/video/Sampel_Video_Scm.mp4", help='source')
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
@@ -116,13 +116,16 @@ def contains_video_keywords(file_path):
     return False
 ip_match = re.search(ip_pattern, source)
 
+
+print('test bro')
+print(source)
 if ip_match:
     extracted_ip = ip_match.group(1)
     stream = f'rtsp://admin:gr4d!ngs@{extracted_ip}/video'
 elif contains_video_keywords(source):
     stream = source
 else:
-    stream = str(Path(os.getcwd() + '/video/Sampel Scm.mp4'))
+    stream = source
     
 # def print_debug(str):
 #     if debug == True:
@@ -530,13 +533,15 @@ try:
                         except Exception as e:
                             print("error cannot remove track_id:" + str(e))
                         last_id = track_id
-                        if int(cl) != len(class_count)-1:
-                            if wideArea < max_area and wideArea > min_area:
-                                kastrasi += 1
-                                kas_reset += 1
-                            else:
-                                class_count[int(cl)] += 1 
-                                class_count_reset[int(cl)] += 1 
+
+                        
+                        # if int(cl) != len(class_count)-1:
+                        if wideArea < max_area and int(cl) != len(class_count)-1 and wideArea > min_area:
+                            kastrasi += 1
+                            kas_reset += 1
+                        else:
+                            class_count[int(cl)] += 1 
+                            class_count_reset[int(cl)] += 1 
                     
                         if wideArea < max_area and wideArea > min_area:
                             skorTotal += baseScore[-1]

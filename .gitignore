@@ -4,10 +4,12 @@
 /user
 /sampel_scm
 /default-img/qr.png
+/opencv_log.txt
 qr.png
 /hasil/temp.TXT
-id_mill.txt
 /config
+/config/id_mill.TXT
+/model
 /video
 /__pycache__
 /db/grading_sampling.db
