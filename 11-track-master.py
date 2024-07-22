@@ -39,17 +39,13 @@ local_weights_folder = f'/home/{username_os}/weights'
 local_file_path_model = f'{local_weights_folder}/model.pt'
 current_folder = os.path.dirname(os.path.abspath(__file__))
 
+model_files = glob.glob(os.path.join(current_folder, 'model', '*.pt'))
+
+default_model_source = model_files[0] if model_files else None
 default_source = os.path.join(current_folder, 'video', 'Sampel_Video_Scm.mp4')
 if not os.path.exists(local_weights_folder):
     os.makedirs(local_weights_folder)
-# Find all 'model.pt' files inside the weights folder and its subfolders
-model_files = glob.glob(f'{local_weights_folder}/**/model.pt', recursive=True)
 
-
-if model_files:
-    model_file = model_files[0]
-else:
-    model_file = None
 
 if not os.path.exists(local_file_path_model):
     subprocess.run(["python", "compare_model_local_server.py"])
@@ -60,8 +56,8 @@ log_file_path = os.path.join(script_directory, 'opencv_log.txt')
 logging.basicConfig(filename=log_file_path, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--yolo_model', type=str, default="/home/grading/weights/nama_folder/model.pt", help='model.pt path')
-parser.add_argument('--source', type=str, default="/home/grading/yolov8ffb/video/Sampel_Video_Scm.mp4", help='source')
+parser.add_argument('--yolo_model', type=str, default=default_model_source, help='model.pt path')
+parser.add_argument('--source', type=str, default=default_source, help='source')
 parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
 parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
 parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
@@ -648,8 +644,8 @@ except Exception as e:
     
 finally:
     cap.release()
-    # if save_vid:
-    #     out.release()
+    if save_vid:
+        out.release()
     #     cmd = [
     #         'ffmpeg',
     #         '-i', str(output_file),
