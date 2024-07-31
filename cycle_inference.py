@@ -11,17 +11,17 @@ def is_process_running(process_name):
 
 def execute_script(args):
     # Your main script logic here (formerly track_master_main)
-    print("9-track-master.py is running.")
+    print("11-track-master.py is running.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cycle Program")
     parser.add_argument('--yolo_model', type=str, default='./model/best.pt', help='model.pt path')
     parser.add_argument('--source', type=str, default='./video/Sampel Scm.mp4', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=1280, help='inference size h,w')
-    parser.add_argument('--conf_thres', type=float, default=0.05, help='object confidence threshold')
+    parser.add_argument('--conf_thres', type=float, default=0.2, help='object confidence threshold')
     parser.add_argument('--iou_thres', type=float, default=0.5, help='IOU threshold for NMS')
     parser.add_argument('--tracker', type=str, default='bytetrack.yaml', help='bytetrack.yaml or botsort.yaml')
-    parser.add_argument('--roi', type=float, default=0.43, help='line height')
+    parser.add_argument('--roi', type=float, default=0.3, help='line height')
     # parser.add_argument('--show', type=bool, default=True, help='line height')
     parser.add_argument('--pull_data', type=str, default='-')
     parser.add_argument('--mode', type=str, default='sampling')
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     # parser.add_argument("--tiket", type=str, default='default', help="Enable debug mode to store everything printed result into txt file")
     cycle_args = parser.parse_args()
 
-    process_name = "9-track-master.py"
+    process_name = "11-track-master.py"
 
     while True:
         if is_process_running(process_name):
