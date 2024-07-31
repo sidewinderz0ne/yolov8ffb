@@ -5,6 +5,13 @@ import subprocess
 from datetime import datetime, timedelta
 import pytz
 from pathlib import Path
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--script_dir', type=str, default=os.getcwd(), help='Path to the script directory')
+args = parser.parse_args()
+
+script_dir = args.script_dir
 
 tzInfo = pytz.timezone('Asia/Bangkok')
 url = 'https://srs-ssms.com/post-py-total.php'
@@ -13,8 +20,8 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36'
 }
 timer = 12
-log_dir = Path(os.getcwd() + '/hasil/grading_total_log.TXT')
-id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
+log_dir = Path(os.path.join(script_dir, 'hasil', 'grading_total_log.TXT'))
+id_mill_dir = Path(os.path.join(script_dir, 'config', 'id_mill.TXT'))
 
 with open(id_mill_dir, 'r') as z:
     id_mill = z.readline()
