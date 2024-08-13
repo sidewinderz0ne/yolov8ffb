@@ -88,7 +88,7 @@ timer = 25
 stream = None
 ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
 connection = None
-
+extracted_ip = None
 
 avgfps = 0
 counter = 1
@@ -113,8 +113,6 @@ def contains_video_keywords(file_path):
 ip_match = re.search(ip_pattern, source)
 
 
-print('test bro')
-print(source)
 if ip_match:
     extracted_ip = ip_match.group(1)
     stream = f'rtsp://admin:gr4d!ngs@{extracted_ip}/video'
@@ -148,7 +146,16 @@ def append_hasil(apStr):
         except:
             print("error append!")   
     else:
-        print("The source is not a video file.")
+        if(ip_match):
+            save_dir= Path(os.getcwd() + '/hasil/')
+            formatted_ip = extracted_ip.replace('.', '_')
+            output_path = os.path.join(save_dir, str(formatted_ip + '_' + formatted_date_seconds) + ".txt")
+            with open(output_path, 'a') as file:
+                line_to_append = apStr
+                # Append the line with a newline character
+                file.write(line_to_append + '\n')
+        else:
+            print("The source is not a video file.")
 
 # Load the YOLOv8 model
 model = YOLO(yolo_model_str)
@@ -194,6 +201,7 @@ log_inference = Path(os.getcwd() + '/log_inference_sampling')
 tzInfo = pytz.timezone('Asia/Bangkok')
 current_date = datetime.now()
 formatted_date = current_date.strftime('%Y-%m-%d')
+formatted_date_seconds = current_date.strftime('%Y-%m-%d_%H-%M-%S')
 log_inference.mkdir(parents=True, exist_ok=True)  # make dir
 save_dir_txt = Path(os.getcwd() + '/hasil/temp.TXT')
 if not save_dir_txt.exists():
@@ -596,13 +604,14 @@ try:
 
             elapsed_time = datetime.now(tz=tzInfo) - timer_start
             
+            
             if elapsed_time.total_seconds() > timer and mode != 'sampling' and mode != 'testing':
-                
+                print('aksjdfkl')
                 current_state = list(class_count_reset)
                 kastrasi_int = int(kas_reset)
                 current_state.append(kastrasi_int) 
                 timer_start = datetime.now(tz=tzInfo)
-                save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
+                # save_log(current_state, grading_total_dir, timer_start.strftime("%Y-%m-%d %H:%M:%S"))
 
                 kas_reset = 0
                 class_count_reset = [0] * len(names)
