@@ -480,6 +480,7 @@ try:
                 if len(track) > 10:  # retain 10 tracks for 10 frames
                     track.pop(0)
                 
+                
                 if wideArea < max_area and int(cl) < (int(len(class_count)-1)) and wideArea > min_area:
                     text = "kastrasi"
                     text_size, _ = cv2.getTextSize(text, font, fontRipeness, 2)
@@ -496,7 +497,7 @@ try:
                     points = np.hstack(track).astype(np.int32).reshape((-1, 1, 2))
                     cv2.polylines(annotated_frame, [points], isClosed=False, color=(230, 230, 230), thickness=10)
 
-                elif wideArea < min_area:
+                elif wideArea < min_area and int(cl) != 5:
                     text = "invalid_object"
                     text_size, _ = cv2.getTextSize(text, font, fontRipeness, 2)
 
