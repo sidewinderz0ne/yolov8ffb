@@ -622,7 +622,7 @@ class LoginFrame(tk.Frame):
 
         password_label = tk.Label(self, text="Password:")
         password_label.grid(row=3, column=0, sticky="w")
-        self.password_entry = tk.Entry(self, show="") 
+        self.password_entry = tk.Entry(self, show="*") 
         self.password_entry.grid(row=3, column=1, pady=5, sticky="ew")
 
 
@@ -976,13 +976,13 @@ class Frame1(tk.Frame):
         
         # Adjust column widths
         self.tree.column("no", width=50)         
-        self.tree.column("notiket", width=250) 
+        self.tree.column("notiket", width=250, anchor="center") 
         self.tree.column("nopol", width=100, anchor="center") 
-        self.tree.column("driver") 
-        self.tree.column("b_unit") 
-        self.tree.column("divisi") 
-        self.tree.column("field") 
-        self.tree.column("bunches", width=70) 
+        self.tree.column("driver", anchor="center") 
+        self.tree.column("b_unit", anchor="center") 
+        self.tree.column("divisi", anchor="center") 
+        self.tree.column("field", anchor="center") 
+        self.tree.column("bunches", width=70, anchor="center") 
         self.tree.column("ownership", anchor="center") 
         self.tree.column("pushtime", anchor="center") 
         self.tree.column("action", anchor="center") 
@@ -1110,8 +1110,9 @@ class Frame1(tk.Frame):
             return connection
 
     def pull_data_ppro(self, connection, date_today=None):
-        # start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
+        # start_date = datetime.datetime(2024, 8, 20, 7, 0, 0)
         current_date = datetime.datetime.now().date()
+
         start_time = datetime.time(7, 0, 0)
         start_date = datetime.datetime.combine(current_date, start_time)
         
@@ -1141,6 +1142,8 @@ class Frame1(tk.Frame):
     def process_data(self, record, master_bunit, master_div, master_block):
         arr_data = []
         for index, data in enumerate(record):
+
+            print(data)
 
             bunit = data['BUnitCode']
             if bunit != 'None':
@@ -1187,14 +1190,14 @@ class Frame1(tk.Frame):
             if not found:
                 arr_data.append([
                     str(index+1),
-                    data['WBTicketNo'],
-                    data['VehiclePoliceNO'],
-                    data['DriverName'],
+                    data['WBTicketNo'] if data['WBTicketNo'] != '' else '-',
+                    data['VehiclePoliceNO'] if data['VehiclePoliceNO'] != '' else '-',
+                    data['DriverName'] if data['DriverName'] != '' else '-',
                     ppro_bunit_name,
                     ppro_div_name,
                     ppro_block_name,
-                    data['Bunches'],
-                    data['Ownership'],
+                    data['Bunches'] if data['Bunches'] != '' else '-',
+                    data['Ownership'] if data['Ownership'] != '' else '-',
                     output_datetime_str,
                     ai_pull_time
                 ])
