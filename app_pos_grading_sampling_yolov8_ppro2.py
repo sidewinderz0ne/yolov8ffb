@@ -670,16 +670,14 @@ class LoginFrame(tk.Frame):
     def login(self):
         user = self.username_entry.get()
         password = self.password_entry.get()
+        script_dir = Path(__file__).parent
+        db_directory = script_dir / 'db'
+        db_path = db_directory / 'grading_sampling.db'
 
-        db_path = './db/grading_sampling.db'
-        db_directory = './db'
-
-        # Check if the database file exists
-        if not os.path.exists(db_path):
+        if not db_path.exists():
             print(f"Database '{db_path}' does not exist. Running migration script...")
 
             # Change the working directory to the db folder
-            original_dir = os.getcwd()
             os.chdir(db_directory)
 
             try:
@@ -687,13 +685,12 @@ class LoginFrame(tk.Frame):
             except subprocess.CalledProcessError as e:
                 print(f"Error executing migrate_all_table.py: {e}")
                 self.feedback_label.config(text="Database creation failed.", fg="red")
-                os.chdir(original_dir)  # Change back to the original directory
                 return
             finally:
-                os.chdir(original_dir)  # Change back to the original directory
+                os.chdir(script_dir)  # Change back to the original directory
 
             # Re-check if the database was created
-            if not os.path.exists(db_path):
+            if not db_path.exists():
                 print(f"Failed to create the database '{db_path}'.")
                 self.feedback_label.config(text="Database creation failed.", fg="red")
                 return
@@ -721,10 +718,9 @@ class LoginFrame(tk.Frame):
                 print(f"Error executing migrate_all_table.py: {e}")
                 self.feedback_label.config(text="Table creation failed.", fg="red")
                 conn.close()
-                os.chdir(original_dir)  # Change back to the original directory
                 return
             finally:
-                os.chdir(original_dir)  # Change back to the original directory
+                os.chdir(script_dir)  # Change back to the original directory
 
             # Re-check if the table exists after migration
             cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth';")
