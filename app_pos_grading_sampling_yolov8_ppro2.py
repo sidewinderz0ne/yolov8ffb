@@ -61,6 +61,10 @@ date_start_conveyor = None
 date_end_conveyor = None
 connection = None 
 accent2 = "#d2d7fc"
+
+script_dir = Path(__file__).parent
+os.chdir(script_dir)
+
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 isClosedFrame3 = False
 id_mill = None
@@ -396,8 +400,11 @@ def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolB
     doc.build(elements)
 
 def get_list_mill(dir_mill, flag):
-
     mill_names = []
+
+    # Ensure the directory exists
+    dir_mill.parent.mkdir(parents=True, exist_ok=True)
+
     if not dir_mill.exists():
         dir_mill.touch()
 
@@ -411,7 +418,6 @@ def get_list_mill(dir_mill, flag):
             mill_names = [f"{data['mill']};{data['ip']}" for data in get_mill_arr]
         except Exception as e:
             print("An error occurred while fetching the server data:", str(e))
-       
     
         with open(dir_mill, 'w') as file:
             for data in mill_names:
@@ -422,9 +428,8 @@ def get_list_mill(dir_mill, flag):
         return mill_names
     
     mill_names = [entry.split(';')[0] for entry in mill_names]
-
-
     mill_names = list(set(mill_names))
+    
     return mill_names
 
 def get_mill_ip():
@@ -666,9 +671,74 @@ class LoginFrame(tk.Frame):
         user = self.username_entry.get()
         password = self.password_entry.get()
 
-        conn = sqlite3.connect('./db/grading_sampling.db')
+        db_path = './db/grading_sampling.db'
+        db_directory = './db'
+
+        # Check if the database file exists
+        if not os.path.exists(db_path):
+            print(f"Database '{db_path}' does not exist. Running migration script...")
+
+            # Change the working directory to the db folder
+            original_dir = os.getcwd()
+            os.chdir(db_directory)
+
+            try:
+                subprocess.run(["python", "migrate_all_table.py"], check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error executing migrate_all_table.py: {e}")
+                self.feedback_label.config(text="Database creation failed.", fg="red")
+                os.chdir(original_dir)  # Change back to the original directory
+                return
+            finally:
+                os.chdir(original_dir)  # Change back to the original directory
+
+            # Re-check if the database was created
+            if not os.path.exists(db_path):
+                print(f"Failed to create the database '{db_path}'.")
+                self.feedback_label.config(text="Database creation failed.", fg="red")
+                return
+            else:
+                print("Database created successfully.")
+
+        # Connect to the database
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 
+        # Check if the 'auth' table exists
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth';")
+        table_exists = cursor.fetchone()
+
+        # If 'auth' table doesn't exist, run migrate_all_table.py again
+        if not table_exists:
+            print("The 'auth' table does not exist. Running migration script...")
+
+            # Change the working directory to the db folder
+            os.chdir(db_directory)
+
+            try:
+                subprocess.run(["python", "migrate_all_table.py"], check=True)
+            except subprocess.CalledProcessError as e:
+                print(f"Error executing migrate_all_table.py: {e}")
+                self.feedback_label.config(text="Table creation failed.", fg="red")
+                conn.close()
+                os.chdir(original_dir)  # Change back to the original directory
+                return
+            finally:
+                os.chdir(original_dir)  # Change back to the original directory
+
+            # Re-check if the table exists after migration
+            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='auth';")
+            table_exists = cursor.fetchone()
+
+            if not table_exists:
+                print("Migration failed. The 'auth' table still does not exist.")
+                self.feedback_label.config(text="Migration failed. 'auth' table not found.", fg="red")
+                conn.close()
+                return
+            else:
+                print("Migration successful. 'auth' table created.")
+
+        # Proceed with the login logic if the table exists
         cursor.execute("SELECT user, password FROM auth WHERE user = ?", (user,))
         user_data = cursor.fetchone()
 
@@ -677,7 +747,7 @@ class LoginFrame(tk.Frame):
             stored_password = stored_password.encode('utf-8')
 
             if stored_user == user and bcrypt.checkpw(password.encode('utf-8'), stored_password):
-                print("Login successful. Welcome,", user)                
+                print("Login successful. Welcome,", user)
                 self.master.switch_frame(Frame1)
             else:
                 print("Login failed. Invalid credentials.")
@@ -685,8 +755,8 @@ class LoginFrame(tk.Frame):
         else:
             print("User not found.")
             self.feedback_label.config(text="User not found", fg="red")
-        conn.close()
 
+        conn.close()
         self.after(3000, self.clear_feedback)
 
 
@@ -1470,14 +1540,11 @@ class Frame1(tk.Frame):
                                         check=True)
             else:
 
-                print(source)
                 result = subprocess.run(['python', '11-track-master.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source)],
                                         capture_output=True,
                                         text=True,
                                         check=True)
 
-
-            print(result.stdout)
             output_inference = result.stdout
         except Exception as e:
             # Handle errors, e.g., show a messagebox

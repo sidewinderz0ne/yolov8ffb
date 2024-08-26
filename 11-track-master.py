@@ -34,21 +34,21 @@ import asyncio
 import aiohttp
 import glob
 
-username_os = os.path.basename(os.path.expanduser("~"))
-local_weights_folder = f'/home/{username_os}/weights'
-local_file_path_model = f'{local_weights_folder}/model.pt'
+# username_os = os.path.basename(os.path.expanduser("~"))
+# local_weights_folder = f'/home/{username_os}/weights'
+# local_file_path_model = f'{local_weights_folder}/model.pt'
 current_folder = os.path.dirname(os.path.abspath(__file__))
 
 model_files = glob.glob(os.path.join(current_folder, 'model', '*.pt'))
 
 default_model_source = model_files[0] if model_files else None
 default_source = os.path.join(current_folder, 'video', 'Sampel_Video_Scm.mp4')
-if not os.path.exists(local_weights_folder):
-    os.makedirs(local_weights_folder)
+# if not os.path.exists(local_weights_folder):
+#     os.makedirs(local_weights_folder)
 
 
-if not os.path.exists(local_file_path_model):
-    subprocess.run(["python", "compare_model_local_server.py"])
+# if not os.path.exists(local_file_path_model):
+#     subprocess.run(["python", "compare_model_local_server.py"])
 
 url = 'https://srs-ssms.com/grading_ai/post_updated_grading_machine.php'
 script_directory = os.path.dirname(os.path.abspath(__file__))
@@ -96,6 +96,8 @@ minfps = 1000
 maxfps = 0
 file_name_without_extension = os.path.splitext(os.path.basename(source))[0]
 
+script_dir = Path(__file__).parent
+os.chdir(script_dir)
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 id_mill = 1
 
@@ -119,8 +121,8 @@ if ip_match:
 elif contains_video_keywords(source):
     stream = source
 else:
-    stream = source
-    
+    stream = default_source
+
 # def print_debug(str):
 #     if debug == True:
 #         print(str)
@@ -146,7 +148,7 @@ def append_hasil(apStr):
         except:
             print("error append!")   
     else:
-        if(ip_match):
+        if(ip_match) and mode == 'testing':
             save_dir= Path(os.getcwd() + '/hasil/')
             formatted_ip = extracted_ip.replace('.', '_')
             output_path = os.path.join(save_dir, str(formatted_ip + '_' + formatted_date_seconds) + ".txt")
@@ -230,10 +232,10 @@ if debug:
 def mouse_callback(event, x, y, flags, param):
     
     global bt  # Declare that you want to modify the global variable bt
-    
     if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click event
-        #print(f"Mouse clicked at ({x}, {y})")
+        print(f"Mouse clicked at ({x}, {y})")
         if x > 1720 and y < 200:
+            print('dimerah ges')
             bt = True
 
 
@@ -350,7 +352,7 @@ if mode == 'sampling':
 
     prefix = str(tiket) +'_'+  str(bisnis_unit) + '_' + str(divisi) + '_'
 
-window = "Yolov8 "+str(imgsz) + " CONF-" + str(conf_thres) + " IOU-" +  str(iou_thres) + " SRC-" + source + " MODEL-" + yolo_model_str
+window = "Yolov8 "+str(imgsz) + " CONF-" + str(conf_thres) + " IOU-" +  str(iou_thres)
 cv2.namedWindow(window)
 cv2.setMouseCallback(window, mouse_callback)
 cv2.setWindowProperty(window,cv2.WND_PROP_FULLSCREEN,cv2.WINDOW_FULLSCREEN)
@@ -656,22 +658,22 @@ finally:
     cap.release()
     if save_vid:
         out.release()
-    #     cmd = [
-    #         'ffmpeg',
-    #         '-i', str(output_file),
-    #         '-c:v', 'libx265',
-    #         '-crf', '23',  
-    #         '-pix_fmt', 'yuv420p',
-    #         '-r', str(fpsVideoCap),
-    #         '-s', f'{frame_width}x{frame_height}',
-    #         str(file_name_without_extension) + '_' + str(date_start) + '_exported.mp4'
-    #     ]
+        cmd = [
+            'ffmpeg',
+            '-i', str(output_file),
+            '-c:v', 'libx265',
+            '-crf', '23',  
+            '-pix_fmt', 'yuv420p',
+            '-r', str(fpsVideoCap),
+            '-s', f'{frame_width}x{frame_height}',
+            str(file_name_without_extension) + '_' + str(date_start) + '_exported.mp4'
+        ]
     cv2.destroyAllWindows()
-    # if save_vid :
-    #     subprocess.run(cmd)
+    if save_vid :
+        subprocess.run(cmd)
 
-        # if os.path.exists(output_file):
-        #     os.remove(output_file)
+        if os.path.exists(output_file):
+            os.remove(output_file)
     
     if debug:
         save_debug.close()
