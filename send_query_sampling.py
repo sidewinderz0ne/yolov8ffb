@@ -14,6 +14,8 @@ url_list_data = 'https://srs-ssms.com/pdf_grading/get_list_data_sampling.php'
 headers = {"content-type": "application/x-www-form-urlencoded",
           'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/46.0.2490.80 Safari/537.36'}
 timer = 0
+script_dir = Path(__file__).parent
+os.chdir(script_dir)
 id_mill_dir = Path(os.getcwd() + '/config/id_mill.TXT')
 
 id_mill = None
