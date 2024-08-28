@@ -613,7 +613,6 @@ class ConfigFrame(tk.Frame):
 class LoginFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(master)
-        
         login_label = tk.Label(self, text="Login", font=("Times New Roman", 20, "bold"))
         login_label.grid(row=0, column=0, columnspan=2, sticky='w', pady=(40, 0))
 
@@ -1494,21 +1493,28 @@ class Frame1(tk.Frame):
                 bunit = str(row_val[4]).replace(' ','')
                 div = str(row_val[5])
                 pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
-                
+
                 if os.path.exists(pdf_path) and os.access(pdf_path, os.R_OK):
                     try:
-                        subprocess.Popen(["xdg-open", pdf_path])
+                        if os.name == 'nt':  # For Windows
+                            os.startfile(pdf_path)
+                        else:  # For Unix-like systems
+                            subprocess.Popen(["xdg-open", pdf_path])
                     except Exception as e:
-                        print(f"Error opening PDF: {e}")
+                        print(f"Error opening PDFsd: {e}")
                 else:
                     bunit = str(row_val[4])
                     pdf_path = str(Path(os.getcwd() + '/hasil/' + formatted_date)) + '/'  + tiket+ '_' + bunit + '_' + div + '_' +'.pdf'
                     print(pdf_path)
                     try:
-                        subprocess.Popen(["xdg-open", pdf_path])
+                        if os.name == 'nt':  # For Windows
+                            os.startfile(pdf_path)
+                        else:  # For Unix-like systems
+                            subprocess.Popen(["xdg-open", pdf_path])
                     except Exception as e:
-                        print(f"Error opening PDF: {e}")
-                        messagebox.showinfo("Alert", f"File Tidak dapat ditemukan")  # Show success message
+                        print(f"Error opening a: {e}")
+                        messagebox.showinfo("Alert", "File Tidak dapat ditemukan")  # Show alert message
+                    
 
 
     def run_script(self, row_item, row_id, row_values):
@@ -3295,7 +3301,6 @@ class MainWindow(tk.Tk):
         x = (screen_width - window_width) // 2
         y = (screen_height - window_height) // 2
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        
 
     def switch_frame(self, new_frame_class, output_inference=None, row_values=None):
         if self.current_frame is not None:
