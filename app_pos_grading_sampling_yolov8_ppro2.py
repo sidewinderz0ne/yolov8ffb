@@ -61,7 +61,10 @@ date_start_conveyor = None
 date_end_conveyor = None
 connection = None 
 accent2 = "#d2d7fc"
-
+auth_user= ''
+auth_password= ''
+is_switch_data_frame = False
+is_edit_pdf_data_frame = False
 script_dir = Path(__file__).parent
 os.chdir(script_dir)
 
@@ -144,7 +147,7 @@ def remove_non_numeric(input_str):
 def create_datetime(date, hour, minute, second):
     return dt(date.year, date.month, date.day, hour, minute, second)
 
-def generate_report(raw, img_dir,class_count_dict,class_names, brondol, brondolBusuk, dirt, editData = None):
+def generate_report(raw,img_dir,class_count_dict,class_names, brondol, brondolBusuk, dirt, editData = None):
 
     global totalJjg
 
@@ -672,6 +675,7 @@ class LoginFrame(tk.Frame):
         script_dir = Path(__file__).parent
         db_directory = script_dir / 'db'
         db_path = db_directory / 'grading_sampling.db'
+        global auth_user, auth_password
 
         if not db_path.exists():
             print(f"Database '{db_path}' does not exist. Running migration script...")
@@ -743,6 +747,8 @@ class LoginFrame(tk.Frame):
 
             if stored_user == user and bcrypt.checkpw(password.encode('utf-8'), stored_password):
                 print("Login successful. Welcome,", user)
+                auth_user = user
+                auth_password = password
                 self.master.switch_frame(Frame1)
             else:
                 print("Login failed. Invalid credentials.")
@@ -863,14 +869,13 @@ def process_data_offline( data):
 def copy_img_edit_mode(tiket):
         path_img = str(Path(os.getcwd() + '/hasil/' + formatted_date + '/'))
         
+        
         files = os.listdir(path_img)
 
         WBTicketNo_modified = tiket.replace('/', '_')
-
-        # Filter out only the image files (you can adjust the list of valid extensions as needed)
+        
         image_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp']
 
-        # Remove "_best" or "_worst" dynamically while maintaining the original casing
         cleaned_filenames = [
             file.rsplit('best', 1)[0].rsplit('worst', 1)[0]  # remove both "best" and "worst"
             for file in files if any(file.lower().endswith(ext) for ext in image_extensions)
@@ -961,7 +966,7 @@ class Frame1(tk.Frame):
         self.top_frame = top_frame
         self.refresh_data()
         
-        self.title_label = tk.Label(top_frame, text=f"TABEL LIST TRUK FFB GRADING PER TRUK {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
+        self.title_label = tk.Label(top_frame, text=f"TABEL LIST TRUK FFB GRADING PER TRUK", font=("Helvetica", 16, "bold"))
         self.title_label.grid(row=0, column=2)
         self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
         self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
@@ -983,8 +988,12 @@ class Frame1(tk.Frame):
 
         self.cctv_combobox.bind("<FocusOut>", self.on_combobox_focus_out)
 
-        self.refresh_button = ttk.Checkbutton(top_frame, text="EDIT DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
-        self.refresh_button.grid(row=0, column=5)
+        if auth_user == 'superadmin' and auth_password == 'superadmin':
+            self.refresh_button = ttk.Checkbutton(top_frame, text="SWITCH DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=lambda : self.password_frame('switch'))
+            self.refresh_button.grid(row=0, column=4)
+
+            self.refresh_button = ttk.Checkbutton(top_frame, text="EDIT DATA PDF", variable=tk.IntVar(value=1), style="ToggleButton", command=lambda : self.password_frame('edit'))
+            self.refresh_button.grid(row=0, column=5)
         
         self.refresh_button = ttk.Checkbutton(top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
         self.refresh_button.grid(row=0, column=6)       
@@ -1052,10 +1061,10 @@ class Frame1(tk.Frame):
         self.tree.column("pushtime", anchor="center") 
         self.tree.column("action", anchor="center") 
 
-    def password_frame(self):
+    def password_frame(self, button_type):
         
         password_overlay = tk.Toplevel(self.master)
-        password_overlay.title("Konfirmasi")
+        password_overlay.title("Konfirmasi Akses")
         
         # Set the size of the overlay frame
         overlay_width = 200
@@ -1079,20 +1088,25 @@ class Frame1(tk.Frame):
         self.password_entry.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")  # Center vertically with sticky
         
         # Example: Add a Submit button
-        submit_button = ttk.Button(password_frame, text="SUBMIT", command=lambda: self.switch_frame_edit_data(password_overlay))
+        submit_button = ttk.Button(password_frame, text="SUBMIT", command=lambda: self.switch_frame_edit_data(password_overlay, button_type))
         submit_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
 
         self.feedback_label = tk.Label(password_frame, text="", fg="red")
         self.feedback_label.grid(row=3, column=0, columnspan=2, padx=10, pady=10)
 
 
-    def switch_frame_edit_data(self, password_overlay):
-        
+    def switch_frame_edit_data(self, password_overlay, button_type):
+        global is_switch_data_frame, is_edit_pdf_data_frame
         password = self.password_entry.get()
-
+        
         if password == 'f':
             password_overlay.destroy()
+            if button_type == 'switch':
+                is_switch_data_frame = True
+            elif button_type == 'edit': 
+                is_edit_pdf_data_frame = True
             self.master.switch_frame(EditBridgeFrame)
+            
         else:
             self.feedback_label.config(text="Error Password Root!", fg="red")
 
@@ -1285,8 +1299,11 @@ class Frame1(tk.Frame):
             self.button_input.grid_remove()  # Remove the button if it already exists
 
         self.button_input = ttk.Button(self.top_frame, text="INPUT DATA TRUK", style="Accent.TButton", command=self.switch_frame2)
-        self.button_input.grid(row=0, column=4)
 
+        if auth_user == 'superadmin' and auth_password == 'superadmin':
+            self.button_input.grid(row=0, column=3)    
+        else: 
+            self.button_input.grid(row=0, column=4)    
     def refresh_data(self):
 
         loading_window = tk.Toplevel(self.master)
@@ -1318,7 +1335,7 @@ class Frame1(tk.Frame):
                 arr_data = self.process_data(record, master_bunit, master_div, master_block)
 
                 # Add/Edit buttons
-                self.refresh_button = ttk.Checkbutton(self.top_frame, text="EDIT DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=self.password_frame)
+                self.refresh_button = ttk.Checkbutton(self.top_frame, text="EDIT DATA", variable=tk.IntVar(value=1), style="ToggleButton", command=lambda : self.password_frame('switch'))
                 self.refresh_button.grid(row=0, column=5)
                 
                 self.refresh_button = ttk.Checkbutton(self.top_frame, text="REFRESH", variable=tk.IntVar(value=1), style="ToggleButton", command=self.refresh_data)
@@ -1819,8 +1836,8 @@ class Frame3(tk.Frame):
         label18 = tk.Label(self, text="Brondolan Busuk : ")
         label18.grid(row=17, column=1, sticky="w")
 
-        self.brondoalBusukEntry = tk.Entry(self)
-        self.brondoalBusukEntry.grid(row=17, column=2, sticky="w")
+        self.brondolanBusukEntry = tk.Entry(self)
+        self.brondolanBusukEntry.grid(row=17, column=2, sticky="w")
 
         unit_label = tk.Label(self, text="kg")
         unit_label.grid(row=17, column=3, sticky="w")
@@ -1963,7 +1980,7 @@ class Frame3(tk.Frame):
             
             if self.submit_clicked and isClosedFrame3 == False:
                 brondol_input = self.brondolanEntry.get()
-                brondolBusuk_input = self.brondoalBusukEntry.get()
+                brondolBusuk_input = self.brondolanBusukEntry.get()
                 dirt_input = self.dirtEntry.get()
 
                 # Remove non-numeric characters
@@ -2210,7 +2227,7 @@ class Frame3(tk.Frame):
         # Check if the Entry widgets still exist before accessing their values
         if self.submit_clicked and isClosedFrame3 == False:
             brondol_input = self.brondolanEntry.get()
-            brondolBusuk_input = self.brondoalBusukEntry.get()
+            brondolBusuk_input = self.brondolanBusukEntry.get()
             dirt_input = self.dirtEntry.get()
 
             # Remove non-numeric characters
@@ -2442,7 +2459,7 @@ class EditBridgeFrame(tk.Frame):
         self.button.grid(row=0, column=0, sticky="ne")
 
 
-        self.title_label = tk.Label(top_frame, text=f"LIST TRUK SETELAH PROSES DETEKSI AI {get_list_mill(log_mill,flag=False)[0]}", font=("Helvetica", 16, "bold"))
+        self.title_label = tk.Label(top_frame, text=f"LIST TRUK SETELAH PROSES DETEKSI AI", font=("Helvetica", 16, "bold"))
         self.title_label.grid(row=0, column=2)
         self.logo_image = tk.PhotoImage(file=Path(os.getcwd() + '/default-img/Logo-CBI(4).png'))  # Replace "logo.png" with your image file path
         self.logo_image = self.logo_image.subsample(2, 2)  # Adjust the subsample values to resize the image
@@ -2476,12 +2493,15 @@ class EditBridgeFrame(tk.Frame):
         self.columnconfigure(0, weight=1)
 
     def switch_frame(self):
+        global is_switch_data_frame, is_edit_pdf_data_frame
+        is_switch_data_frame = False
+        is_edit_pdf_data_frame = False
         self.master.switch_frame(Frame1)
 
     def edit_row(self, row_item, event ):
 
-        row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
 
+        row_id = int(self.tree.item(row_item, "tags")[0])  # Get row ID from tags
         column = self.tree.identify_column(event.x)  # Identify the column clicked
         status_row = self.tree.item(row_item, "values")[-1]
         row_values = self.tree.item(row_item, "values")  # Get values of the row
@@ -2510,7 +2530,12 @@ class EditBridgeFrame(tk.Frame):
         edit_data_overlay.title("Edit Data " + str(WBTicketNo))
         
         overlay_width = 580
-        overlay_height = 500
+
+        if is_switch_data_frame:
+            overlay_height = 500
+        elif is_edit_pdf_data_frame:
+            overlay_height = 500
+        
         screen_width = self.master.winfo_screenwidth()
         screen_height = self.master.winfo_screenheight()
         x = (screen_width - overlay_width) // 2
@@ -2520,43 +2545,188 @@ class EditBridgeFrame(tk.Frame):
         overlay_frame = ttk.Frame(edit_data_overlay)
         overlay_frame.grid(row=0, column=0, padx=10, pady=10)
 
-        tiket_label = ttk.Label(overlay_frame, text="Nomor Tiket")
-        tiket_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+        bold_font = ("Arial", 10, "bold")
 
-        self.tiket_entry = ttk.Entry(overlay_frame, width=30)
+        nopol_label = ttk.Label(overlay_frame, text="Nomor Polisi", width=20)
+        nopol_label.grid(row=0, column=1, padx=10, pady=10, sticky='w')
 
-        tiket = []
-        if status_mode == 'online':
-            start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
-            current_date = datetime.datetime.now().date()
-            start_time = datetime.time(7, 0, 0)
-            # start_date = datetime.datetime.combine(current_date, start_time)
-            
-            end_date = start_date + datetime.timedelta(days=1)
-            connection = connect_to_database()
+        # self.nopol_val = ttk.Entry(overlay_frame, width=30)
+        # self.nopol_val.insert(0, "-") 
+        # self.nopol_val.grid(row=1, column=1, padx=10, pady= 10, sticky='w')
 
-            sql_query = "SELECT  DISTINCT WBTicketNo FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s AND WBTicketNo <> %s AND AI_pull_time IS NULL"
-            cursor = connection.cursor()
-            cursor.execute(sql_query, (start_date, end_date, WBTicketNo))
-            records = cursor.fetchall()
+        driver_label = ttk.Label(overlay_frame, text="Nama Driver", width=20)
+        driver_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
 
-            tiket = [record['WBTicketNo'] for record in records]
-            connection.close()
-        else:
+        # self.driver_val = ttk.Entry(overlay_frame, width=30)
+        # self.driver_val.insert(0, "-")
+        # self.driver_val.grid(row=3, column=0, padx=10, pady= 10, sticky='w')
+
+        bunit_label = ttk.Label(overlay_frame, text="Bisnis Unit", width=20)
+        bunit_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        bunit_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        bunit_val.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        divisi_label = ttk.Label(overlay_frame, text="Divisi", width=20)
+        divisi_label.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+
+        divisi_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        divisi_val.grid(row=5, column=0, padx=10, pady=10, sticky='w')
+
+        # if status_mode == 'online':
+        bunches_label = ttk.Label(overlay_frame, text="Bunches", width=20)
+        bunches_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+
+        bunches_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
+        bunches_val.grid(row=5, column=1, padx=10, pady=10, sticky='w')
+
+        blok_label = ttk.Label(overlay_frame, text="Blok", width=20)
+        blok_label.grid(row=6, column=0, padx=10, pady=10, sticky='w')
+
+        blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
+        blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
+
+
+        owndership_label = ttk.Label(overlay_frame, text="Status", width=20)
+        owndership_label.grid(row=6, column=1, padx=10, pady=10, sticky='w')
+
+        ownership_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
+        ownership_val.grid(row=7, column=1, padx=10, pady=10, sticky='w')
+
+        matched_json = []
+        if is_switch_data_frame:
+
+            tiket_label = ttk.Label(overlay_frame, text="Nomor Tiket")
+            tiket_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+            self.tiket_entry = ttk.Entry(overlay_frame, width=30)
+
+            self.nopol_val = ttk.Entry(overlay_frame, width=30)
+            self.nopol_val.insert(0, "-") 
+            self.nopol_val.grid(row=1, column=1, padx=10, pady= 10, sticky='w')
+
+            self.driver_val = ttk.Entry(overlay_frame, width=30)
+            self.driver_val.insert(0, "-")
+            self.driver_val.grid(row=3, column=0, padx=10, pady= 10, sticky='w')
+
+            tiket = []
+            if status_mode == 'online':
+                start_date = datetime.datetime(2023, 12, 13, 7, 0, 0)
+                current_date = datetime.datetime.now().date()
+                start_time = datetime.time(7, 0, 0)
+                # start_date = datetime.datetime.combine(current_date, start_time)
+                
+                end_date = start_date + datetime.timedelta(days=1)
+                connection = connect_to_database()
+
+                sql_query = "SELECT  DISTINCT WBTicketNo FROM MOPweighbridgeTicket_Staging WHERE Ppro_push_time >= %s AND Ppro_push_time < %s AND WBTicketNo <> %s AND AI_pull_time IS NULL"
+                cursor = connection.cursor()
+                cursor.execute(sql_query, (start_date, end_date, WBTicketNo))
+                records = cursor.fetchall()
+
+                tiket = [record['WBTicketNo'] for record in records]
+                connection.close()
+            else:
+                with open(offline_log_dir, 'r') as file:
+                        data = file.readlines()
+
+                        for line in data:
+                            convert_line = eval(line)
+
+                            status = convert_line['status_inference']
+                            
+                            if str(status) ==  'None':
+                                tiket.append(convert_line['no_tiket'])
+                            
+            self.tiket_combobox = ttk.Combobox(overlay_frame, values=tiket, width=30)  # Adjust the width value as needed
+            self.tiket_combobox.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+            self.tiket_combobox.bind("<<ComboboxSelected>>", lambda event=None: update_label())
+
+        
+        elif is_edit_pdf_data_frame:
+
             with open(offline_log_dir, 'r') as file:
-                    data = file.readlines()
+                data = file.readlines()
 
-                    for line in data:
-                        convert_line = eval(line)
-                        status = convert_line['status_inference']
-                        
-                        if str(status) ==  'None':
-                            tiket.append(convert_line['no_tiket'])
-                        
-        self.tiket_combobox = ttk.Combobox(overlay_frame, values=tiket, width=30)  # Adjust the width value as needed
-        self.tiket_combobox.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-        self.tiket_combobox.bind("<<ComboboxSelected>>", lambda event=None: update_label())
- 
+                for line in data:
+                    convert_line = eval(line)
+                    
+                    
+                    # Check if all the conditions match
+                    if (convert_line['no_tiket'] == WBTicketNo and
+                        convert_line['no_plat'] == VehiclePoliceNO and
+                        convert_line['nama_driver'] == DriverName and
+                        convert_line['bunit'] == BUnit and
+                        convert_line['divisi'] == Divisi and
+                        convert_line['blok'] == Field and
+                        convert_line.get('bunches', '') == Bunches):
+
+                        matched_json.append(convert_line)
+
+        
+            owndership_label = ttk.Label(overlay_frame, text="Brondolan", width=20)
+            owndership_label.grid(row=0, column=2, padx=10, pady=10, sticky='w')
+
+            self.brondolan = ttk.Entry(overlay_frame)
+            self.brondolan.insert(0, "-")
+            self.brondolan.grid(row=1, column=2, padx=10, pady= 10, sticky='w')
+
+            owndership_label = ttk.Label(overlay_frame, text="Brondolan Busuk")
+            owndership_label.grid(row=2, column=2, padx=10, pady=10, sticky='w')
+
+            self.brondolan_busuk = ttk.Entry(overlay_frame)
+            self.brondolan_busuk.insert(0, "-")
+            self.brondolan_busuk.grid(row=3, column=2, padx=10, pady= 10, sticky='w')
+            
+            owndership_label = ttk.Label(overlay_frame, text="Dirt/Kotoran")
+            owndership_label.grid(row=4, column=2, padx=10, pady=10, sticky='w')
+
+            self.dirt = ttk.Entry(overlay_frame)
+            self.dirt.insert(0, "-")
+            self.dirt.grid(row=5, column=2, padx=10, pady= 10, sticky='w')
+
+            nopol_label = ttk.Label(overlay_frame, text="Nomor Tiket")
+            nopol_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+            # Update the fields only if there's a match
+            if matched_json:
+                json_obj = matched_json[0]  # Get the first matched JSON object
+
+                self.no_tiket_val = ttk.Label(overlay_frame, text=json_obj.get('no_tiket', '-'),  font=bold_font)
+                self.no_tiket_val.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+                self.no_plat_val = ttk.Label(overlay_frame, text=json_obj.get('no_plat', '-'),  font=bold_font)
+                self.no_plat_val.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+                self.driver_val = ttk.Label(overlay_frame, text=json_obj.get('nama_driver', '-'),  font=bold_font)
+                self.driver_val.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+
+                bunit_val.config(text=json_obj.get('bunit', '-'))
+                bunit_val.config(text=json_obj.get('bunit', '-'))
+                divisi_val.config(text=json_obj.get('divisi', '-'))
+                blok_val.config(text=json_obj.get('blok', '-'))
+                ownership_val.config(text=json_obj.get('ownership', '-'))
+
+                self.brondolan.delete(0, tk.END)
+                self.brondolan.insert(0, json_obj.get('brondolan', '-'))
+
+                self.brondolan_busuk.delete(0, tk.END)
+                self.brondolan_busuk.insert(0, json_obj.get('brondolan_busuk', '-'))
+
+                self.dirt.delete(0, tk.END)
+                self.dirt.insert(0, json_obj.get('dirt', '-'))
+            else:
+                print("No matching JSON object found.")
+
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.save_edited_pdf(row_values, matched_json,self.brondolan.get(), self.brondolan_busuk.get(), self.dirt.get() ,edit_data_overlay))
+            submit_button.grid( column=0, columnspan=3, padx=10, pady=20, sticky='ew')
+
+        if status_mode == 'online':
+            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
+            submit_button.grid( column=0, columnspan=3, padx=10, pady=10, sticky='ew')
+        else:
+            if is_switch_data_frame:
+                submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"),ownership_val.cget("text"), edit_data_overlay, WBTicketNo))
+                submit_button.grid( column=0, columnspan=3, padx=10, pady=20, sticky='ew')
+
         def update_label():
             loading_window = Toplevel(self.master)
             loading_window.title("Loading...")
@@ -2660,88 +2830,62 @@ class EditBridgeFrame(tk.Frame):
                 loading_window.destroy()
                 
                 messagebox.showinfo("Error", f"Failed to fetch data: {e}")
-            
 
+    def save_edited_pdf(self,rawData,  data,brondolan, brondolan_busuk, dirt, edit_data_overlay):
+        
+        json_data = data[0]
+        convert_line = None
         
 
+        no_tiket = json_data.get('no_tiket', '')
+        bunit = json_data.get('bunit', '')
+        divisi = json_data.get('divisi', '')
+        self.update_json_in_file(offline_log_dir, no_tiket, bunit, divisi, brondolan, brondolan_busuk, dirt)
+        no_tiket = no_tiket.replace("/", "_")
+
+        path_img = str(Path(os.getcwd() + f'/hasil/{formatted_date}/{no_tiket}_{bunit}_{divisi}_/'))
         
-        bold_font = ("Arial", 10, "bold")
-    
-        nopol_label = ttk.Label(overlay_frame, text="Nomor Polisi")
-        nopol_label.grid(row=0, column=1, padx=10, pady=10, sticky='w')
+        classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi']
 
-        self.nopol_val = ttk.Entry(overlay_frame, width=30)
-        self.nopol_val.insert(0, "-") 
-        self.nopol_val.grid(row=1, column=1, padx=10, pady= 10, sticky='w')
+        output = {key: json_data.get(key, 0) for key in classAll}
+        
+        generate_report(rawData, path_img,output, classAll,brondolan,  brondolan_busuk,  dirt)        
+        messagebox.showinfo("Success", "PDF Berhasil terupdate!")  
+        edit_data_overlay.destroy()
+        self.master.switch_frame(EditBridgeFrame)
 
-        driver_label = ttk.Label(overlay_frame, text="Nama Driver")
-        driver_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+    def update_json_in_file(self, offline_log_dir, no_tiket, bunit, divisi, brondolan, brondolan_busuk, dirt):
+        
+        with open(offline_log_dir, 'r') as file:
+            data = file.readlines()
 
-        self.driver_val = ttk.Entry(overlay_frame, width=30)
-        self.driver_val.insert(0, "-")
-        self.driver_val.grid(row=3, column=0, padx=10, pady= 10, sticky='w')
+        updated_data = []
 
-        bunit_label = ttk.Label(overlay_frame, text="Bisnis Unit")
-        bunit_label.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+        for line in data:
+            convert_line = eval(line)  # Convert string to dictionary
 
-        bunit_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
-        bunit_val.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+            # Check if this is the entry we need to update (based on no_tiket, bunit, and divisi)
+            if (convert_line.get('no_tiket') == no_tiket and
+                convert_line.get('bunit') == bunit and
+                convert_line.get('divisi') == divisi):
+                
+                convert_line['brondolan'] = brondolan
+                convert_line['brondolan_busuk'] = brondolan_busuk
+                convert_line['dirt'] = dirt
 
-        divisi_label = ttk.Label(overlay_frame, text="Divisi")
-        divisi_label.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+            updated_data.append(str(convert_line))
 
-        divisi_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
-        divisi_val.grid(row=5, column=0, padx=10, pady=10, sticky='w')
+        # Write the updated data back to the file
+        with open(offline_log_dir, 'w') as file:
+            for line in updated_data:
+                file.write(line + '\n')
 
-        # if status_mode == 'online':
-        bunches_label = ttk.Label(overlay_frame, text="Bunches")
-        bunches_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
-
-        bunches_val = ttk.Label(overlay_frame, text="-",  font=bold_font)
-        bunches_val.grid(row=5, column=1, padx=10, pady=10, sticky='w')
-
-        blok_label = ttk.Label(overlay_frame, text="Blok")
-        blok_label.grid(row=6, column=0, padx=10, pady=10, sticky='w')
-
-        blok_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
-        blok_val.grid(row=7, column=0, padx=10, pady=10, sticky='w')
-
-
-        owndership_label = ttk.Label(overlay_frame, text="Status")
-        owndership_label.grid(row=6, column=1, padx=10, pady=10, sticky='w')
-
-        ownership_val = ttk.Label(overlay_frame, text="-" ,  font=bold_font)
-        ownership_val.grid(row=7, column=1, padx=10, pady=10, sticky='w')
-
-        # blok_entries = []
-        # if '\n' in Field:
-        if status_mode == 'online':
-
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(WBTicketNo, edit_data_overlay))
-            submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
-        else:
-            submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( self.nopol_val.get(), self.driver_val.get(), bunit_val.cget("text"), divisi_val.cget("text"),blok_val.cget("text"),ownership_val.cget("text"), edit_data_overlay, WBTicketNo))
-            submit_button.grid(row=12, column=0, padx=10, pady=20, sticky='w')
-
-        # else:
-        #     blok_label = ttk.Label(overlay_frame, text="Blok")
-        #     blok_label.grid(row=7, column=0, padx=10, pady=10, sticky='w')
-
-        #     blok_entry = ttk.Entry(overlay_frame, width=30)
-        #     blok_entry.insert(0, Field)
-        #     blok_entry.grid(row=8, column=0, padx=10, pady=10)
-
-        #     blok_entries.append(blok_entry)
-        #     if status_mode == 'online':
-        #         submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data(blok_entries, WBTicketNo, edit_data_overlay))
-        #     else:
-        #         submit_button = ttk.Button(overlay_frame, text="Submit", command=lambda: self.update_data_offline( blok_entries, edit_data_overlay, row_values[0]))
-        #     submit_button.grid(row=9, column=0, padx=10, pady=20, sticky='w')
-    
+        print(f"JSON entry for no_tiket {no_tiket}, bunit {bunit}, divisi {divisi} has been updated with new values.")
 
     def update_data_offline(self, nopol, driver, bunit, divisi, blok, ownership, edit_data_overlay, tiket_lama):
 
         classAll = ['unripe','ripe','overripe','empty_bunch','abnormal','long_stalk', 'kastrasi']
+        class_name_values = {key: value for key, value in zip(classAll, class_count)}
         
         new_tiket = self.tiket_combobox.get()        
         sqlite_conn = sqlite3.connect('./db/grading_sampling.db')
@@ -2852,6 +2996,7 @@ class EditBridgeFrame(tk.Frame):
         generate_report(rawData, img_dir,class_name_values, classAll, tic_old['brondolan'],  tic_old['brondolan_busuk'],  tic_old['dirt'] ,1)        
         messagebox.showinfo("Success", "Data Tiket " + tiket_lama + " Berhasil terupdate")  
         edit_data_overlay.destroy()
+        
         self.master.switch_frame(EditBridgeFrame)
         
             
