@@ -233,9 +233,7 @@ def mouse_callback(event, x, y, flags, param):
     
     global bt  # Declare that you want to modify the global variable bt
     if event == cv2.EVENT_LBUTTONDOWN:  # Left mouse button click event
-        print(f"Mouse clicked at ({x}, {y})")
         if x > 1720 and y < 200:
-            print('dimerah ges')
             bt = True
 
 
@@ -418,7 +416,10 @@ try:
             results = model.track(frame, persist=True, conf=conf_thres, iou=iou_thres, imgsz=imgsz, tracker=tracker, verbose=False,stream_buffer=True)
             
             end_time = time()
-            fps = 1 / (end_time - start_time)
+            try:
+                fps = 1 / (end_time - start_time)
+            except:
+                fps = 0
             fps_now = fps
 
             if avgfps == 0:
