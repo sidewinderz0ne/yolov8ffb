@@ -1,0 +1,1 @@
+[{"id": 1, "est": "NBE", "afd": "OA", "imgsz": "1280", "iou": "0.5", "conf": "0.2", "roi": "0.3"}, {"id": 2, "est": "NBE", "afd": "OB", "imgsz": "1280", "iou": "0.5", "conf": "0.2", "roi": "0.3"}, {"id": 3, "est": "NBE", "afd": "OC", "imgsz": "1024", "iou": "0.5", "conf": "0.43", "roi": "0.3"}]

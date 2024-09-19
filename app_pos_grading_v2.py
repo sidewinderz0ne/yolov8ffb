@@ -1309,7 +1309,7 @@ class Frame1(tk.Frame):
 
         loading_window = tk.Toplevel(self.master)
         loading_window.title("Loading...")
-        loading_label = ttk.Label(loading_window, text="Fetching data. Please wait...")
+        loading_label = ttk.Label(loading_window, text="Fetching data and configuration. Please wait...")
         loading_label.pack(padx=20, pady=20)
 
         loading_window.update_idletasks()
@@ -1321,7 +1321,6 @@ class Frame1(tk.Frame):
 
         loading_window.update()
 
-        # Refresh data
         self.tree.delete(*self.tree.get_children())
         database_connection = connect_to_database()
 
@@ -1485,10 +1484,10 @@ class Frame1(tk.Frame):
         row_values = self.tree.item(row_item, "values")  # Get values of the row
         # Extract the column name from the column identifier
         column = column.split("#")[-1]
-
+        bisnit_unit_value = row_values[4]
         divisi_value = row_values[5]
         ownership = row_values[8]
-    
+
         for cb in self.clicked_buttons:
             
             self.tree.tag_configure(cb, background="#3c3248")  # Change row color
@@ -1499,27 +1498,70 @@ class Frame1(tk.Frame):
             self.tree.tag_configure(row_id, background=accent2)  # Change row color
             self.clicked_buttons.append(row_id)
 
-            if int(column) == len(columns):
-                if ownership == "Pihak Ketiga":
-                    current_folder = os.path.dirname(os.path.abspath(__file__))
-                    model_files = glob.glob(os.path.join(current_folder, 'model', '*.pt'))
-                    model_filenames = [os.path.basename(file) for file in model_files]
-                    dialog = PilihModelDialog(self, "Konfirmasi Pemilihan Model AI", model_filenames)
-                    self.wait_window(dialog)
-                    pilihan_model = dialog.result
-                    if pilihan_model:
-                        confirmation_dialog = ConfirmationDialog(self, "Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan?\n")
-                        self.wait_window(confirmation_dialog)
-                        if confirmation_dialog.result:
-                            self.running_script = True
-                            thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values, pilihan_model))
-                            thread.start()
-                else:
-                    confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan?")
-                    if confirmation:
-                        self.running_script = True
-                        thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values, divisi_value))
-                        thread.start()
+            loading_window = tk.Toplevel(self.master)
+            loading_window.title("Loading...")
+            loading_label = ttk.Label(loading_window, text="Checking connection and configuration...")
+            loading_label.pack(padx=20, pady=20)
+
+            loading_window.update_idletasks()
+            width = loading_window.winfo_width()
+            height = loading_window.winfo_height()
+            x = self.master.winfo_x() + (self.master.winfo_width() // 2) - (width // 2)
+            y = self.master.winfo_y() + (self.master.winfo_height() // 2) - (height // 2)
+            loading_window.geometry(f'+{x}+{y}')
+            loading_window.update()
+
+            # Add a delay to keep the window visible
+            # self.master.after(700)  # 1000 milliseconds = 1 second
+
+            is_connected = self.is_connected()
+            config_data = self.fetch_and_store_config(is_connected)
+            loading_window.destroy()
+
+            if not is_connected and not config_data:
+                self.show_result_window("No internet connection and no local configuration available. Process cannot continue.")
+                self.refresh_data()
+            elif not is_connected and config_data:
+                self.show_result_window("No internet connection. Using local configuration file.")
+            elif is_connected and config_data:
+                self.show_result_window("Connected to internet. Configuration data updated and available.")
+            
+            if config_data:
+                if int(column) == len(columns):
+                    if ownership == "Pihak Ketiga":
+                        current_folder = os.path.dirname(os.path.abspath(__file__))
+                        model_files = glob.glob(os.path.join(current_folder, 'model', '*.pt'))
+                        model_filenames = [os.path.basename(file) for file in model_files]
+                        dialog = DialogConfigurationAI(self, "Konfirmasi Konfigurasi AI", model_filenames)
+                        self.wait_window(dialog)
+                        konfigurasi_result = dialog.result
+                        if konfigurasi_result:
+                            confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan?")
+                            if confirmation:
+                                self.running_script = True
+                                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values, konfigurasi_result['model'], konfigurasi_result['conf'], konfigurasi_result['roi'], konfigurasi_result['iou'], konfigurasi_result['imgsz']))
+                                thread.start()
+                    else:
+                        matching_config = self.get_matching_config(config_data, bisnit_unit_value, divisi_value)
+                        if matching_config:
+                            conf = matching_config['conf']
+                            roi = matching_config['roi']
+                            iou = matching_config['iou']
+                            imgsz = matching_config['imgsz']
+                            # print(f"Matching configuration found: conf={conf}, roi={roi}, iou={iou}, imgsz={imgsz}")
+                            confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan?")
+                            if confirmation:
+                                self.running_script = True
+                                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values, divisi_value, conf, roi, iou, imgsz))
+                                thread.start()
+                        else:
+                            # print("No matching configuration found for the given business unit and division.")
+                            confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan?")
+                            if confirmation:
+                                self.running_script = True
+                                thread = threading.Thread(target=self.run_script, args=(row_item, row_id, row_values, divisi_value))
+                                thread.start()
+            
             # if int(column) == len(columns):
 
             #     confirmation = messagebox.askyesno("Konfirmasi", f"Apakah baris SPB nomor {row_values[0]} ini sudah benar dan siap untuk dijalankan ?")
@@ -1558,10 +1600,70 @@ class Frame1(tk.Frame):
                     except Exception as e:
                         print(f"Error opening a: {e}")
                         messagebox.showinfo("Alert", "File Tidak dapat ditemukan")  # Show alert message
+
+    def get_matching_config(self, config_data, bisnis_unit_value, divisi_value):
+        for config in config_data:
+            if config['est'] == bisnis_unit_value and config['afd'] == divisi_value:
+                return {
+                    'est': config['est'],
+                    'afd': config['afd'],
+                    'conf': config['conf'],
+                    'roi': config['roi'],
+                    'iou': config['iou'],
+                    'imgsz': config['imgsz']
+                }
+        return None
+ 
+    def is_connected(self):
+        try:
+            requests.get("https://www.google.com", timeout=3)
+            return True
+        except (requests.ConnectionError, requests.Timeout):
+            return False
+
+    def fetch_and_store_config(self, is_connected):
+        current_folder = os.path.dirname(os.path.abspath(__file__))
+        config_folder = os.path.join(current_folder, 'config')
+        config_file = os.path.join(config_folder, 'config_grading_ai.txt')
+
+        if is_connected:
+            try:
+                url = "https://srs-ssms.com/grading_ai/get_list_config_grading_ai.php"
+                response = requests.get(url)
+                if response.status_code == 200:
+                    data = response.json()
+                    os.makedirs(config_folder, exist_ok=True)
+                    with open(config_file, 'w') as f:
+                        json.dump(data, f)
+                    return data
                     
+                else:
+                    print(f"Failed to fetch data. Status code: {response.status_code}")
+            except requests.RequestException as e:
+                print(f"An error occurred: {e}")
+        else:
+            print("No internet connection. Using local config file if available.")
+            
+            if os.path.exists(config_file):
+                with open(config_file, 'r') as f:
+                    return json.load(f)
+            return None
 
+    def show_result_window(self, message):
+        result_window = tk.Toplevel()
+        result_window.title("Result")
+        ttk.Label(result_window, text=message).pack(padx=20, pady=20)
 
-    def run_script(self, row_item, row_id, row_values, divisi_value):
+        result_window.update_idletasks()
+        width = result_window.winfo_width()
+        height = result_window.winfo_height()
+        x = (result_window.winfo_screenwidth() // 2) - (width // 2)
+        y = (result_window.winfo_screenheight() // 2) - (height // 2)
+        result_window.geometry(f'+{x}+{y}')
+        result_window.update()
+        result_window.destroy()
+
+    def run_script(self, row_item, row_id, row_values, divisi_value, conf=None, roi=None, iou=None, imgsz=None):
         
         loading_window = tk.Toplevel(self.master)
         loading_window.title("Loading...")
@@ -1592,10 +1694,27 @@ class Frame1(tk.Frame):
                                         text=True,
                                         check=True)
             else:
-                result = subprocess.run(['python', 'track-master-afdeling.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source) , '--yolo_model', str(divisi_value)],
-                                        capture_output=True,
-                                        text=True,
-                                        check=True) 
+                command = [
+                    'python', 'track-master-afdeling.py',
+                    '--pull_data', str(row_values),
+                    '--mode', 'sampling',
+                    '--source', str(source),
+                    '--yolo_model', str(divisi_value)
+                ]
+
+                if all([conf, roi, iou, imgsz]):
+                    command.extend([
+                        '--conf_thres', str(conf),
+                        '--roi', str(roi),
+                        '--iou_thres', str(iou),
+                        '--imgsz', str(imgsz)
+                    ])
+
+                result = subprocess.run(command, capture_output=True, text=True, check=True)
+                # result = subprocess.run(['python', 'track-master-afdeling.py', '--pull_data', str(row_values), '--mode','sampling', '--source', str(source) , '--yolo_model', str(divisi_value)],
+                #                         capture_output=True,
+                #                         text=True,
+                #                         check=True) 
 
             output_inference = result.stdout
         except Exception as e:
@@ -3410,8 +3529,8 @@ class Frame2(tk.Frame):
         driver_entry = tk.Entry(user_info_frame, width=widget_width)
         driver_entry.grid(row=2, column=2, pady=(0, label_padding))  # Add bottom margin
 
-        unit_entry = tk.Entry(user_info_frame, width=widget_width)
-        unit_entry.grid(row=4, column=0, pady=(0, label_padding))  # Add bottom margin
+        self.unit_entry = tk.Entry(user_info_frame, width=widget_width)
+        self.unit_entry.grid(row=4, column=0, pady=(0, label_padding))
 
         self.divisi_entry = tk.Entry(user_info_frame, width=widget_width)
         self.divisi_entry.grid(row=4, column=1, pady=(0, label_padding))
@@ -3428,19 +3547,27 @@ class Frame2(tk.Frame):
         if not status_entry.get():
             status_entry.set("Inti")
     
-        entry_fields = [no_tiket_entry, no_plat_entry, driver_entry, unit_entry, self.divisi_entry, blok_entry, bunches_entry, status_entry]
+        entry_fields = [no_tiket_entry, no_plat_entry, driver_entry, self.unit_entry, self.divisi_entry, blok_entry, bunches_entry, status_entry]
 
         style = ttk.Style()
         self.style.configure("Custom.TButton", padding=6, borderwidth=3, relief="groove", background="#2ecc71", font=("Helvetica", 10))
 
-        button = ttk.Button(user_info_frame, style="Custom.TButton", width=widget_width, text="Simpan Data", command=lambda: self.validate_and_save(no_tiket_entry.get(), no_plat_entry.get(), driver_entry.get(), unit_entry.get(), self.divisi_entry.get(), blok_entry.get(), bunches_entry.get(), status_entry.get(), entry_fields))
+        button = ttk.Button(user_info_frame, style="Custom.TButton", width=widget_width, text="Simpan Data", command=lambda: self.validate_and_save(no_tiket_entry.get(), no_plat_entry.get(), driver_entry.get(), self.unit_entry.get(), self.divisi_entry.get(), blok_entry.get(), bunches_entry.get(), status_entry.get(), entry_fields))
         button.grid(row=8, column=1, pady=(20, 30))
     
     def validate_and_save(self, tiket, plat, driver, unit, divisi, blok, bunches, status, entry_fields):
-        if self.validate_divisi():
+        if self.validate_divisi() and self.validate_unit():
             self.save_offline_log(tiket, plat, driver, unit, divisi, blok, bunches, status, entry_fields)
         else:
-            messagebox.showwarning("Validation Error", "Mohon Untuk mengisi kolom Divisi! Contoh : OA, OB, dsb. Jika tidak tersedia boleh diisi dengan '-'")
+            error_message = ""
+            if not self.validate_divisi():
+                error_message += "Mohon untuk mengisi kolom Divisi! \nContoh : OA, OB, dsb. Jika tidak tersedia boleh diisi dengan '-'\n"
+            if not self.validate_unit():
+                error_message += "Mohon untuk mengisi kolom Bisnis Unit!"
+            messagebox.showwarning("Validation Error", error_message)
+        
+    def validate_unit(self):
+        return bool(self.unit_entry.get().strip())
 
     def switch_frame(self):
         self.master.switch_frame(Frame1)
@@ -3453,8 +3580,8 @@ class Frame2(tk.Frame):
         tiket = str(tiket).replace(' ', '')
         plat = str(plat).replace(' ', '')
         driver = str(driver).replace(' ', '')
-        unit = str(unit).replace(' ', '')
-        divisi = str(divisi).replace(' ', '') or '-'  # Only this line is changed
+        unit = str(unit).replace(' ', '') or '-'  # Added this line
+        divisi = str(divisi).replace(' ', '') or '-'
         blok = str(blok).replace(' ', '')
         bunches = str(bunches).replace(' ', '')
         ownership = str(status)
@@ -3474,28 +3601,74 @@ class Frame2(tk.Frame):
         
         self.master.switch_frame(Frame1)
 
-class PilihModelDialog(tk.Toplevel):
+class DialogConfigurationAI(tk.Toplevel):
     def __init__(self, parent, title, options):
         super().__init__(parent)
         self.title(title)
         self.result = None
 
-        label = tk.Label(self, text="Pilih Model AI:")
-        label.pack(padx=10, pady=10)
+        imgsz_options = self.read_options_from_file('imgsz.txt')
+        iou_options = self.read_options_from_file('iou.txt')
+        roi_options = self.read_options_from_file('roi.txt')
+        conf_options = self.read_options_from_file('conf.txt')
 
-        self.combobox = ttk.Combobox(self, values=options)
-        self.combobox.pack(padx=10, pady=10)
-        self.combobox.set(options[0])
+        # ImageSize
+        tk.Label(self, text="Image Size:").grid(row=0, column=0, padx=10, pady=10)
+        self.imgsz_combobox = ttk.Combobox(self, values=imgsz_options)
+        self.imgsz_combobox.grid(row=0, column=1, padx=10, pady=10)
+        self.imgsz_combobox.set(imgsz_options[0] if imgsz_options else "1280")
+
+        # IOU Threshold
+        tk.Label(self, text="IOU Threshold:").grid(row=0, column=2, padx=10, pady=10)
+        self.iou_combobox = ttk.Combobox(self, values=iou_options)
+        self.iou_combobox.grid(row=0, column=3, padx=10, pady=10)
+        self.iou_combobox.set(iou_options[0] if iou_options else "0.5")
+
+        # Model AI
+        tk.Label(self, text="Model AI:").grid(row=1, column=0, padx=10, pady=10)
+        self.model_combobox = ttk.Combobox(self, values=options)
+        self.model_combobox.grid(row=1, column=1, padx=10, pady=10)
+        self.model_combobox.set(options[0] if options else "")
+
+        # ROI
+        tk.Label(self, text="ROI:").grid(row=1, column=2, padx=10, pady=10)
+        self.roi_combobox = ttk.Combobox(self, values=roi_options)
+        self.roi_combobox.grid(row=1, column=3, padx=10, pady=10)
+        self.roi_combobox.set(roi_options[0] if roi_options else "0.3")
+
+        # Conf Threshold
+        tk.Label(self, text="Conf Threshold:").grid(row=2, column=0, padx=10, pady=10)
+        self.conf_combobox = ttk.Combobox(self, values=conf_options)
+        self.conf_combobox.grid(row=2, column=1, padx=10, pady=10)
+        self.conf_combobox.set(conf_options[0] if conf_options else "0.25")
 
         button = ttk.Button(self, text="OK", command=self.on_ok)
-        button.pack(padx=10, pady=10)
+        button.grid(row=5, column=0, columnspan=4, padx=10, pady=10)
+
 
         self.transient(parent)
         self.grab_set()
+        
         self.center_window()
 
+    def read_options_from_file(self, filename):
+        current_folder = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(current_folder, 'config', filename)
+        try:
+            with open(file_path, 'r') as file:
+                return [line.strip() for line in file if line.strip()]
+        except FileNotFoundError:
+            print(f"Warning: {filename} not found in config folder. Using default values.")
+            return []
+        
     def on_ok(self):
-        self.result = self.combobox.get()
+        self.result = {
+            'model': self.model_combobox.get(),
+            'imgsz': self.imgsz_combobox.get(),
+            'iou': self.iou_combobox.get(),
+            'roi': self.roi_combobox.get(),
+            'conf': self.conf_combobox.get()
+        }
         self.destroy()
 
     def center_window(self):
